@@ -1,4 +1,4 @@
-# Cloud Pak for Data Installation on Openshift 4.3
+# Cloud Pak for Data on Openshift 4.3
 
 Cloud Pak for Data Offers 60-day trial on Red Hat Market Place. To access the trial software, a 
 valid Cloud Pak for Data entitlement subscription is required to connect to IBM Cloud Pak registry.
@@ -15,6 +15,8 @@ Please refer to [pre-installation tasks](https://www.ibm.com/support/producthub/
    - NFS
    - [Portworx 2.5](https://www.ibm.com/support/producthub/icpdata/docs/content/SSQNUZ_current/cpd/install/portworx-setup.html)
    - [Openshift Container Storage (cephfs)](https://access.redhat.com/documentation/en-us/red_hat_openshift_container_storage/4.2/) 4.2 or later
+   - [IBM Cloud File Storage Class (gid)](https://cloud.ibm.com/docs/containers?topic=containers-file_storage#file_storageclass_reference)
+   - [AWS EFS](https://docs.openshift.com/container-platform/4.3/storage/persistent_storage/persistent-storage-efs.html)
    - At least 4 virtual processor cores on the compute nodes for Cloud Pak for Data control plane. Check [Cloud Pak for Data services](https://www.ibm.com/support/producthub/icpdata/add-services) for additional service requirements.
    - Image registry accessible to your cluster or configure the [OpenShift Integrated Registry with a route](https://docs.openshift.com/container-platform/4.3/registry/securing-exposing-registry.html).
    - Connectivity to pull images from IBM Cloud Pak registry or download for air-gapped environments
@@ -22,24 +24,25 @@ Please refer to [pre-installation tasks](https://www.ibm.com/support/producthub/
 
 ## Installation Steps
 
- - Download the [cpd installer package](https://github.com/IBM/cpd-cli/releases) for your platform and assign execute permission, for Linux e.g,
+ 1. Download the [cpd installer package](https://github.com/IBM/cpd-cli/releases) for your platform and assign execute permission, for Linux e.g,
  
-   `chmod +x  cpd-linux`
- - Generate the repo.yaml file using your apikey 
- 
-   `./cpd-linux generateRepo --filename repo.yaml --api-key <apikey>`
+      `chmod +x  cpd-linux`
    
- - As a cluster administrator login to the Openshift cluster using `oc login`
+ 2. Generate the repo.yaml file using your apikey 
  
- - Create a project where you want to install Cloud Pak for Data
+      `./cpd-linux generateRepo --filename repo.yaml --api-key <apikey>`
+   
+ 3. As a cluster administrator login to the Openshift cluster using `oc login`
+ 
+ 4. Create a project where you want to install Cloud Pak for Data
  
        `oc new-project <project name>`
        
- - Create the necessary service accounts and SCCs
+ 5. Create the necessary service accounts and SCCs
  
       `./cpd-linux adm -r ./repo.yaml -a lite -n <project name> --apply`
       
- - [Install Cloud Pak for Data](https://www.ibm.com/support/producthub/icpdata/docs/content/SSQNUZ_current/cpd/install/rhos-install.html) control plane
+ 6. [Install Cloud Pak for Data](https://www.ibm.com/support/producthub/icpdata/docs/content/SSQNUZ_current/cpd/install/rhos-install.html) control plane
  
       `PROJECT_NAME=<project name>`
       
