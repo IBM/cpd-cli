@@ -1,6 +1,6 @@
 # Cloud Pak for Data Installation on Openshift 4.3
 
-Cloud Pak for Data Offers 60-day trial on Red Hat MarketPlace. To access the trial software, a 
+Cloud Pak for Data Offers 60-day trial on Red Hat Market Place. To access the trial software, a 
 valid Cloud Pak for Data entitlement subscription is required to connect to IBM Cloud Pak registry.
 If you don't have a paid entitlement you can create a [60 day trial subscription key](https://www.ibm.com/account/reg/us-en/signup?formid=urx-42212). 
 Note: After 60 days please contact IBM Cloud Pak for Data sales.
