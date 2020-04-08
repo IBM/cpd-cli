@@ -22,7 +22,7 @@ Please refer to [pre-installation tasks](https://www.ibm.com/support/producthub/
 
 ## Installation Steps
 
- - Download the cpd installer package for your platform and assign execute permission, for Linux e.g,
+ - Download the [cpd installer package](https://github.com/IBM/cpd-cli/releases) for your platform and assign execute permission, for Linux e.g,
  
    `chmod +x  cpd-linux`
  - Generate the repo.yaml file using your apikey 
