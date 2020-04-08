@@ -1,4 +1,4 @@
-# Cloud Pak for Data Installation on Openshift Container Platform 4.3
+# Cloud Pak for Data Installation on Openshift 4.3
 
 Cloud Pak for Data Offers 60-day trial on Red Hat MarketPlace. To access the trial software, a 
 valid Cloud Pak for Data entitlement subscription is required to connect to IBM Cloud Pak registry.
@@ -23,18 +23,28 @@ Please refer to [pre-installation tasks](https://www.ibm.com/support/producthub/
 ## Installation Steps
 
  - Download the cpd installer package for your platform and assign execute permission, for Linux e.g,
-  `chmod +x  cpd-linux`
+ 
+   `chmod +x  cpd-linux`
  - Generate the repo.yaml file using your apikey 
+ 
    `./cpd-linux generateRepo --filename repo.yaml --api-key <apikey>`
+   
  - As a cluster administrator login to the Openshift cluster using `oc login`
+ 
  - Create a project where you want to install Cloud Pak for Data
+ 
        `oc new-project <project name>`
+       
  - Create the necessary service accounts and SCCs
+ 
       `./cpd-linux adm -r ./repo.yaml -a lite -n <project name> --apply`
- - [Install Cloud Pak for Data control plane](https://www.ibm.com/support/producthub/icpdata/docs/content/SSQNUZ_current/cpd/install/rhos-install.html)
-      ```
-      PROJECT_NAME=<project name>
-      STORAGE_CLASS=<storage class name>
-      ./cpd-linux -c $STORAGE_CLASS -r ./repo.yaml -a lite -n $PROJECT_NAME --transfer-image-to $(oc get route -n openshift-image-registry | tail -1| awk '{print $2}')/$PROJECT_NAME --target-registry-username $(oc whoami | sed 's/://g') --target-registry-password $(oc whoami -t) --cluster-pull-prefix image-registry.openshift-image-registry.svc:5000/$PROJECT_NAME --insecure-skip-tls-verify
-      ```
+      
+ - [Install Cloud Pak for Data](https://www.ibm.com/support/producthub/icpdata/docs/content/SSQNUZ_current/cpd/install/rhos-install.html) control plane
+ 
+      `PROJECT_NAME=<project name>`
+      
+      `STORAGE_CLASS=<storage class name>`
+      
+      `./cpd-linux -c $STORAGE_CLASS -r ./repo.yaml -a lite -n $PROJECT_NAME --transfer-image-to $(oc get route -n openshift-image-registry | tail -1| awk '{print $2}')/$PROJECT_NAME --target-registry-username $(oc whoami | sed 's/://g') --target-registry-password $(oc whoami -t) --cluster-pull-prefix image-registry.openshift-image-registry.svc:5000/$PROJECT_NAME --insecure-skip-tls-verify`
+      
 The IBM® Cloud Pak for Data web client includes a catalog of services that you can use to extend the functionality of Cloud Pak for Data . To install any of these additional services on the platform please select the required [Catalog Services](https://www.ibm.com/support/producthub/icpdata/docs/content/SSQNUZ_current/cpd/svc/services.html) and follow the pre-requisites and installation steps.
