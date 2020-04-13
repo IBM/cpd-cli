@@ -24,30 +24,37 @@ Please refer to [pre-installation tasks](https://www.ibm.com/support/producthub/
 
 ## Installation Steps
 
- 1. Download the [cpd installer package](https://github.com/IBM/cpd-cli/releases) for your platform and assign execute permission, for Linux e.g,
+ 1) Download the [cpd installer package](https://github.com/IBM/cpd-cli/releases) for your platform and assign execute permission, for Linux e.g
  
-      `chmod +x  cpd-linux`
+       `chmod +x  cpd-linux`
    
- 2. Generate the repo.yaml file using your apikey 
+ 2) Generate the `repo.yaml` file using your apikey 
  
-      `./cpd-linux generateRepo --filename repo.yaml --api-key <apikey>`
+       `./cpd-linux generateRepo --filename repo.yaml --api-key <apikey>`
    
- 3. As a cluster administrator login to the Openshift cluster using `oc login`
+ 3) As a cluster administrator login to the Openshift cluster using `oc login`
  
- 4. Create a project where you want to install Cloud Pak for Data
+ 4) Create a project where you want to install Cloud Pak for Data
  
        `oc new-project <project name>`
        
- 5. Create the necessary service accounts and SCCs
+ 5) Create the necessary service accounts and SCCs
  
       `./cpd-linux adm -r ./repo.yaml -a lite -n <project name> --apply`
       
- 6. [Install Cloud Pak for Data](https://www.ibm.com/support/producthub/icpdata/docs/content/SSQNUZ_current/cpd/install/rhos-install.html) control plane
+ 6) Create a file named `override.yaml` with this setting.
+ 
+      ```
+      nginxRepo:
+        resolver: "dns-default.openshift-dns"
+      ```
+      
+ 7) [Install Cloud Pak for Data](https://www.ibm.com/support/producthub/icpdata/docs/content/SSQNUZ_current/cpd/install/rhos-install.html) control plane
  
       `PROJECT_NAME=<project name>`
       
       `STORAGE_CLASS=<storage class name>`
       
-      `./cpd-linux -c $STORAGE_CLASS -r ./repo.yaml -a lite -n $PROJECT_NAME --transfer-image-to $(oc get route -n openshift-image-registry | tail -1| awk '{print $2}')/$PROJECT_NAME --target-registry-username $(oc whoami | sed 's/://g') --target-registry-password $(oc whoami -t) --cluster-pull-prefix image-registry.openshift-image-registry.svc:5000/$PROJECT_NAME --insecure-skip-tls-verify`
+      `./cpd-linux -c $STORAGE_CLASS -r ./repo.yaml -a lite -n $PROJECT_NAME --transfer-image-to $(oc get route -n openshift-image-registry | tail -1| awk '{print $2}')/$PROJECT_NAME --target-registry-username $(oc whoami | sed 's/://g') --target-registry-password $(oc whoami -t) --cluster-pull-prefix image-registry.openshift-image-registry.svc:5000/$PROJECT_NAME -o override.yaml --insecure-skip-tls-verify`
       
 The IBM® Cloud Pak for Data web client includes a catalog of services that you can use to extend the functionality of Cloud Pak for Data . To install any of these additional services on the platform please select the required [Catalog Services](https://www.ibm.com/support/producthub/icpdata/docs/content/SSQNUZ_current/cpd/svc/services.html) and follow the pre-requisites and installation steps.
