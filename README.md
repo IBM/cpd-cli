@@ -31,7 +31,7 @@ will run the installation:
   I've mad an attempt here, but I can't gurantee it's right.
 -->
 ## Downloading the installer
-Download the appropriate version of the installer from the [releases](/releases) page.
+Download the appropriate version of the installer from the [releases](https://github.com/IBM/cpd-cli/releases) page.
 
 
 ## Prerequisites
