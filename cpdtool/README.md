@@ -38,8 +38,11 @@ Export/import modules for CPD service components are installed separately.
 
 ## Download the cpdtool CLI
 
-Download the cpdtool CLI from the releases page.
-
+Download and extract the cpdtool CLI:
+```
+wget https://github.com/IBM/cpd-cli/raw/master/cpdtool/cpdtool.tgz
+tar zxvf cpdtool.tgz
+```
 
 ## Install the cpdtool docker image
 
@@ -124,7 +127,7 @@ OpenShift 4.3 example:
 
 <pre>
 # Initialize the cpdtool first with pvc name for storage and user/password of the CPD admin
-$ cpdtool init --namespace zen --pvc-name zen-pvc -u admin -p password --image-prefix=image-registry.openshift-image-registry.svc:5000/zen
+$ cpdtool init --namespace zen --pvc-name zen-pvc -u admin -p password --image-prefix=$IMAGE_REGISTRY/$NAMESPACE
 </pre>
 
 
@@ -132,7 +135,7 @@ OpenShift 3.11 example:
 
 <pre>
 # Initialize the cpdtool first with pvc name for storage and user/password of the CPD admin
-$ cpdtool init --namespace zen --pvc-name zen-pvc -u admin -p password --image-prefix=docker-registry.default.svc:5000/zen
+$ cpdtool init --namespace zen --pvc-name zen-pvc -u admin -p password --image-prefix=$IMAGE_REGISTRY/$NAMESPACE
 </pre>
 
 
