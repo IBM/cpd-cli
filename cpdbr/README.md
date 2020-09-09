@@ -57,8 +57,11 @@ The CPD backup and restore utility consists of a CLI utility (cpdbr) and a docke
 
 ## Download the cpdbr CLI
 
-Download the cpdbr CLI from the releases page.
-
+Download and extract the cpdbr CLI:
+```
+wget https://github.com/IBM/cpd-cli/raw/master/cpdbr/cpdbr.tgz
+tar zxvf cpdbr.tgz
+```
 
 ## Install the cpdbr docker image
 
