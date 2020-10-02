@@ -38,9 +38,13 @@ Export/import modules for CPD service components are installed separately.
 
 ## Download the cpdtool CLI
 
-Download and extract the cpdtool CLI:
+Download cpdtool CLI:
 ```
-wget https://github.com/IBM/cpd-cli/raw/master/cpdtool/cpdtool.tgz
+if [ "$(uname -m)" == "ppc64le" ]; then
+  wget https://github.com/IBM/cpd-cli/raw/master/cpdtool/ppc64le/cpdtool.tgz
+else
+  wget https://github.com/IBM/cpd-cli/raw/master/cpdtool/cpdtool.tgz
+fi
 tar zxvf cpdtool.tgz
 ```
 
@@ -66,13 +70,17 @@ IMAGE_REGISTRY=`oc get route -n openshift-image-registry | grep image-registry |
 echo $IMAGE_REGISTRY
 NAMESPACE=`oc project -q`
 echo $NAMESPACE
+CPU_ARCH=`uname -m`
+echo $CPU_ARCH
+BUILD_NUM=531
+echo $BUILD_NUM
 
 # Pull cpdtool image from Docker Hub
-podman pull docker.io/ibmcom/cpdtool:1.1.0-531-x86_64
+podman pull docker.io/ibmcom/cpdtool:1.1.0-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag docker.io/ibmcom/cpdtool:1.1.0-531-x86_64 $IMAGE_REGISTRY/$NAMESPACE/cpdtool:1.1.0-531-x86_64
-podman push $IMAGE_REGISTRY/$NAMESPACE/cpdtool:1.1.0-531-x86_64 --tls-verify=false
+podman tag docker.io/ibmcom/cpdtool:1.1.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdtool:1.1.0-${BUILD_NUM}-${CPU_ARCH}
+podman push $IMAGE_REGISTRY/$NAMESPACE/cpdtool:1.1.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 </pre>
 
 OpenShift 3.11, example:
@@ -82,13 +90,18 @@ IMAGE_REGISTRY=`oc registry info`
 echo $IMAGE_REGISTRY
 NAMESPACE=`oc project -q`
 echo $NAMESPACE
+CPU_ARCH=`uname -m`
+echo $CPU_ARCH
+BUILD_NUM=531
+echo $BUILD_NUM
+
 
 # Pull cpdtool image from Docker Hub
-podman pull docker.io/ibmcom/cpdtool:1.1.0-531-x86_64
+podman pull docker.io/ibmcom/cpdtool:1.1.0-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u ocadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag docker.io/ibmcom/cpdtool:1.1.0-531-x86_64 $IMAGE_REGISTRY/$NAMESPACE/cpdtool:1.1.0-531-x86_64
-podman push $IMAGE_REGISTRY/$NAMESPACE/cpdtool:1.1.0-531-x86_64 --tls-verify=false
+podman tag docker.io/ibmcom/cpdtool:1.1.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdtool:1.1.0-${BUILD_NUM}-${CPU_ARCH}
+podman push $IMAGE_REGISTRY/$NAMESPACE/cpdtool:1.1.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 </pre>
 
 
@@ -127,7 +140,7 @@ OpenShift 4.3 example:
 
 <pre>
 # Initialize the cpdtool first with pvc name for storage and user/password of the CPD admin
-$ cpdtool init --namespace zen --pvc-name zen-pvc -u admin -p password --image-prefix=$IMAGE_REGISTRY/$NAMESPACE
+$ cpdtool init --namespace $NAMESPACE --arch $CPU_ARCH --pvc-name zen-pvc -u admin -p password --image-prefix=image-registry.openshift-image-registry.svc:5000/$NAMESPACE
 </pre>
 
 
@@ -135,7 +148,7 @@ OpenShift 3.11 example:
 
 <pre>
 # Initialize the cpdtool first with pvc name for storage and user/password of the CPD admin
-$ cpdtool init --namespace zen --pvc-name zen-pvc -u admin -p password --image-prefix=$IMAGE_REGISTRY/$NAMESPACE
+$ cpdtool init --namespace $NAMESPACE --arch $CPU_ARCH --pvc-name zen-pvc -u admin -p password --image-prefix=docker-registry.default.svc:5000/$NAMESPACE
 </pre>
 
 
@@ -143,7 +156,7 @@ $ cpdtool init --namespace zen --pvc-name zen-pvc -u admin -p password --image-p
 
 <pre>
 # To list the registered auxiliary modules such as export/import
-$ cpdtool list aux-modules --namespace zen
+$ cpdtool list aux-modules --namespace zen --arch $(uname -m)
 ID              NAME          COMPONENT  KIND    VERSION ARCH    NAMESPACE       VENDOR
 cpd-zen-aux     zen-core-aux  zen-core   exim    1.0.0   x86_64  zen             ibm
 cpd-demo-aux    demo-aux      demo       exim    1.0.1   x86_64  zen             ibm   
@@ -152,7 +165,7 @@ cpd-demo-aux    demo-aux      demo       exim    1.0.1   x86_64  zen            
 <pre>
 # To export data from CPD in zen namespace
 # use export status to check its status later
-$ cpdtool export create --namespace zen myexport1
+$ cpdtool export create --namespace zen --arch $(uname -m) myexport1
 </pre>
 
 <pre>
@@ -173,7 +186,7 @@ Duration:    	4m15s
 
 <pre>
 # To export data from CPD in zen namespace via a schedule export at minute 0 past every 12th hour
-$ cpdtool schedule-export create --namespace zen --schedule "0 */12 * * *" myexport2
+$ cpdtool schedule-export create --namespace zen --schedule "0 */12 * * *" --arch $(uname -m) myexport2
 </pre>
 
 <pre>
@@ -181,7 +194,7 @@ $ cpdtool schedule-export create --namespace zen --schedule "0 */12 * * *" myexp
 # Active = 1 means export job is in progress
 # Succeeded = 1 means export job completed successfully
 # Failed = 1 means export job failed
-$ cpdtool schedule-export status --namespace zen myexport2
+$ cpdtool schedule-export status --namespace zen --arch $(uname -m) myexport2
 </pre>
 
 <pre>
@@ -189,55 +202,55 @@ $ cpdtool schedule-export status --namespace zen myexport2
 # Th export must be completed successfully before import can be performed.
 # Note that only one import job is allowed at a time, you'll need to delete 
 # the completed import job to start a new one.
-$ cpdtool import create --from-schedule myexport2 --namespace zen myimport1
+$ cpdtool import create --from-schedule myexport2 --namespace zen --arch $(uname -m) myimport1
 </pre>
 
 <pre>
 # To check the status of the CPD import in zen namespace 
-$ cpdtool import status --namespace zen myimport1
+$ cpdtool import status --namespace zen --arch $(uname -m) myimport1
 </pre>
 
 <pre>
 # To delete the CPD export job in zen namespace (this does not delete the exported data in the volume, 
 # specify --purge option to do so)
-$ cpdtool export delete --namespace zen myexport1
+$ cpdtool export delete --namespace zen --arch $(uname -m) myexport1
 </pre>
 
 <pre>
 # To download the CPD export data in zen namespace as a tar file to the current working directory
-$ cpdtool export download --namespace zen myexport1
+$ cpdtool export download --namespace zen --arch $(uname -m) myexport1
 </pre>
 
 <pre>
 # To retrieve the logs for the CPD export in zen namespace
-$ cpdtool export logs --namespace zen myexport1
+$ cpdtool export logs --namespace zen --arch $(uname -m) myexport1
 </pre>
 
 <pre>
 # To delete the CPD export job as well as the export data stored in the volume in zen namespace 
-$ cpdtool export delete --namespace zen myexport1 --purge
+$ cpdtool export delete --namespace zen --arch $(uname -m) myexport1 --purge
 </pre>
 
 <pre>
 # To delete the scheduled CPD export job as well as the export data stored in the volume in zen namespace 
-$ cpdtool schedule-export delete --namespace zen myexport2 --purge
+$ cpdtool schedule-export delete --namespace zen --arch $(uname -m) myexport2 --purge
 </pre>
 
 
 <pre>
 # To delete the CPD import job in zen namespace 
-$ cpdtool import delete --namespace zen myimport1
+$ cpdtool import delete --namespace zen --arch $(uname -m) myimport1
 </pre>
 
 <pre>
 # To force cleanup any previous k8s resources created by cpdtool and use a different pvc
-$ cpdtool reset --namespace zen -u admin -p password --force
-$ cpdtool init --namespace zen --pvc-name pvc2 -u admin -p password
+$ cpdtool reset --namespace zen -u admin -p password --arch $(uname -m) --force
+$ cpdtool init --namespace zen --pvc-name pvc2 -u admin -p password --arch $(uname -m)
 </pre>
 
 <pre>
 # To download the exported data as an archive
-$ cpdtool export download -n zen myexport1
+$ cpdtool export download -n zen --arch $(uname -m) myexport1
 $ ls cpd-exports*.tar
 cpd-exports-myexport1-20200301101735-data.tar
 </pre>
@@ -245,13 +258,13 @@ cpd-exports-myexport1-20200301101735-data.tar
 <pre>
 # To upload the exported archive to a different cluster before invoking import(the target cluster should have cpdtool environment setup)
 # After the upload is successful, then you can import to the target cluster with the same namespace.
-$ cpdtool export upload -n zen -f cpd-exports-myexport1-20200301101735-data.tar 
+$ cpdtool export upload -n zen -f --arch $(uname -m) cpd-exports-myexport1-20200301101735-data.tar 
 </pre>
 
 <pre>
 # Passing override/custom values to export via -f flag to a specific aux module
 # the top level key must be the aux module name(cpdfwk.module).  e.g.:
-$ cpdtool export create --namespace zen myexport1 -f overridevalues.yaml
+$ cpdtool export create --namespace zen myexport1 -f --arch $(uname -m) overridevalues.yaml
 
 # overridevalues.yaml content with dv auxiliary module's specific key values
 dv-aux:
@@ -281,13 +294,17 @@ IMAGE_REGISTRY=`oc get route -n openshift-image-registry | grep image-registry |
 echo $IMAGE_REGISTRY
 NAMESPACE=`oc project -q`
 echo $NAMESPACE
+CPU_ARCH=`uname -m`
+echo $CPU_ARCH
+if [ "$CPU_ARCH" == "ppc64le" ]; then BUILD_NUM=295; elif [ "$CPU_ARCH" == "x86_64" ]; then BUILD_NUM=222; else BUILD_NUM="UNSUPPORTED_ARCHITECTURE"; fi
+echo $BUILD_NUM
 
 # Pull zen-core-aux image from Docker Hub
-podman pull docker.io/ibmcom/zen-core-aux:1.1.0-222-x86_64
+podman pull docker.io/ibmcom/zen-core-aux:1.1.0-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag docker.io/ibmcom/zen-core-aux:1.1.0-222-x86_64 $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:1.1.0-222-x86_64
-podman push $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:1.1.0-222-x86_64 --tls-verify=false
+podman tag docker.io/ibmcom/zen-core-aux:1.1.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:1.1.0-${BUILD_NUM}-${CPU_ARCH}
+podman push $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:1.1.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 </pre>
 
 OpenShift 3.11, example:
@@ -297,18 +314,30 @@ IMAGE_REGISTRY=`oc registry info`
 echo $IMAGE_REGISTRY
 NAMESPACE=`oc project -q`
 echo $NAMESPACE
+CPU_ARCH=`uname -m`
+echo $CPU_ARCH
+if [ "$CPU_ARCH" == "ppc64le" ]; then BUILD_NUM=295; elif [ "$CPU_ARCH" == "x86_64" ]; then BUILD_NUM=222; else BUILD_NUM="UNSUPPORTED_ARCHITECTURE"; fi
+echo $BUILD_NUM
 
 # Pull zen-core-aux image from Docker Hub
-podman pull docker.io/ibmcom/zen-core-aux:1.1.0-222-x86_64
+podman pull docker.io/ibmcom/zen-core-aux:1.1.0-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u ocadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag docker.io/ibmcom/zen-core-aux:1.1.0-222-x86_64 $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:1.1.0-222-x86_64
-podman push $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:1.1.0-222-x86_64 --tls-verify=false
+podman tag docker.io/ibmcom/zen-core-aux:1.1.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:1.1.0-${BUILD_NUM}-${CPU_ARCH}
+podman push $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:1.1.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 </pre>
 
 ### Install the zen-core-aux helm chart
 
-Download the zen-core-aux helm chart (zen-core-aux-1.1.0.tgz) from the releases page.
+Download the zen-core-aux helm chart (zen-core-aux-1.1.0.tgz):
+```
+if [ "$(uname -m)" == "ppc64le" ]; then
+  wget https://github.com/IBM/cpd-cli/raw/master/cpdtool/ppc64le/zen-core-aux-1.1.0.tgz
+else
+  wget https://github.com/IBM/cpd-cli/raw/master/cpdtool/zen-core-aux-1.1.0.tgz
+fi
+```
+
 Copy the helm chart to the cpd-install-operator pod, and install using helm.
 
 <pre>
