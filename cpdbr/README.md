@@ -59,7 +59,11 @@ The CPD backup and restore utility consists of a CLI utility (cpdbr) and a docke
 
 Download and extract the cpdbr CLI:
 ```
-wget https://github.com/IBM/cpd-cli/raw/master/cpdbr/cpdbr.tgz
+if [ "$(uname -m)" == "ppc64le" ]; then
+  wget https://github.com/IBM/cpd-cli/raw/master/cpdtool/ppc64le/cpdtool.tgz
+else
+  wget https://github.com/IBM/cpd-cli/raw/master/cpdtool/cpdtool.tgz
+fi
 tar zxvf cpdbr.tgz
 ```
 
@@ -85,13 +89,18 @@ IMAGE_REGISTRY=`oc get route -n openshift-image-registry | grep image-registry |
 echo $IMAGE_REGISTRY
 NAMESPACE=`oc project -q`
 echo $NAMESPACE
+CPU_ARCH=`uname -m`
+echo $CPU_ARCH
+BUILD_NUM=402
+echo $BUILD_NUM
+
 
 # Pull cpdbr image from Docker Hub
-podman pull docker.io/ibmcom/cpdbr:1.0.0-402-x86_64
+podman pull docker.io/ibmcom/cpdbr:1.0.0-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag docker.io/ibmcom/cpdbr:1.0.0-402-x86_64 $IMAGE_REGISTRY/$NAMESPACE/cpdbr:1.0.0-402-x86_64
-podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr:1.0.0-402-x86_64 --tls-verify=false
+podman tag docker.io/ibmcom/cpdbr:1.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr:1.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr:1.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 </pre>
 
 OpenShift 3.11 example:
@@ -101,13 +110,17 @@ IMAGE_REGISTRY=`oc registry info`
 echo $IMAGE_REGISTRY
 NAMESPACE=`oc project -q`
 echo $NAMESPACE
+CPU_ARCH=`uname -m`
+echo $CPU_ARCH
+BUILD_NUM=402
+echo $BUILD_NUM
 
 # Pull cpdbr image from Docker Hub
-podman pull docker.io/ibmcom/cpdbr:1.0.0-402-x86_64
+podman pull docker.io/ibmcom/cpdbr:1.0.0-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u ocadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag docker.io/ibmcom/cpdbr:1.0.0-402-x86_64 $IMAGE_REGISTRY/$NAMESPACE/cpdbr:1.0.0-402-x86_64
-podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr:1.0.0-402-x86_64 --tls-verify=false
+podman tag docker.io/ibmcom/cpdbr:1.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr:1.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr:1.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 </pre>
 
 ## cpdbr Setup
@@ -169,7 +182,7 @@ OpenShift 4.3 example:
 
 <pre>
 # Initialize the cpdbr first with pvc name and s3 storage.  Note that the bucket must exist.
-$ cpdbr init --namespace zen --pvc-name cpdbr-pvc --image-prefix=image-registry.openshift-image-registry.svc:5000/zen \
+$ cpdbr init --namespace zen --pvc-name cpdbr-pvc --image-prefix=image-registry.openshift-image-registry.svc:5000/$NAMESPACE \
      --provider=s3 --s3-endpoint="s3 endpoint" --s3-bucket=cpdbr --s3-prefix=zen/
 </pre>
 
@@ -178,7 +191,7 @@ OpenShift 3.11 example:
 
 <pre>
 # Initialize the cpdbr first with pvc name and s3 storage.  Note that the bucket must exist.
-$ cpdbr init -n zen --pvc-name cpdbr-pvc --image-prefix=docker-registry.default.svc:5000/zen \ 
+$ cpdbr init -n zen --pvc-name cpdbr-pvc --image-prefix=docker-registry.default.svc:5000/$NAMESPACE \
      --provider=s3 --s3-endpoint="s3 endpoint" --s3-bucket=cpdbr --s3-prefix=zen/
 
 </pre>
@@ -190,7 +203,7 @@ $ cpdbr init -n zen --pvc-name cpdbr-pvc --image-prefix=docker-registry.default.
 
 <pre>
 cpdbr init -n zen --log-level=debug --verbose --pvc-name cpdbr-pvc \ 
-             --image-prefix=image-registry.openshift-image-registry.svc:5000/zen \ 
+             --image-prefix=image-registry.openshift-image-registry.svc:5000/zen \
              --provider=local
 
 # volume backup for namespace zen, the backup name should be named with namespace as its prefix so to avoid
@@ -235,11 +248,11 @@ oc create secret generic -n zen cpdbr-repo-secret \
 # Note that the specified bucket needs to exist
 
 # cpdbr init with minio example:
-cpdbr init --namespace zen --pvc-name cpdbr-pvc --image-prefix=image-registry.openshift-image-registry.svc:5000/zen \
+cpdbr init --namespace zen --pvc-name cpdbr-pvc --image-prefix=image-registry.openshift-image-registry.svc:5000/$NAMESPACE \
      --provider=s3 --s3-endpoint="http://minio-minio.svc:9000" --s3-bucket=cpdbr --s3-prefix=zen/
      
 # cpdbr init with Amazon S3 example: 
-cpdbr init --namespace zen --pvc-name cpdbr-pvc --image-prefix=image-registry.openshift-image-registry.svc:5000/zen \
+cpdbr init --namespace zen --pvc-name cpdbr-pvc --image-prefix=image-registry.openshift-image-registry.svc:5000/$NAMESPACE \
      --provider=s3 --s3-bucket=cpdbr --s3-prefix=zen/
 
 # volume backup for namespace zen
