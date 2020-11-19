@@ -59,11 +59,7 @@ The CPD backup and restore utility consists of a CLI utility (cpdbr) and a docke
 
 Download and extract the cpdbr CLI:
 ```
-if [ "$(uname -m)" == "ppc64le" ]; then
-  wget https://github.com/IBM/cpd-cli/raw/master/cpdbr/ppc64le/cpdbr.tgz
-else
-  wget https://github.com/IBM/cpd-cli/raw/master/cpdbr/cpdbr.tgz
-fi
+wget https://github.com/IBM/cpd-cli/raw/master/cpdbr/2.0.0/$(uname -m)/cpdbr.tgz
 tar zxvf cpdbr.tgz
 ```
 
@@ -91,16 +87,18 @@ NAMESPACE=`oc project -q`
 echo $NAMESPACE
 CPU_ARCH=`uname -m`
 echo $CPU_ARCH
-BUILD_NUM=402
+BUILD_NUM=730
 echo $BUILD_NUM
+RELEASE_NUM=2.0.0
+echo $RELEASE_NUM
 
 
 # Pull cpdbr image from Docker Hub
-podman pull docker.io/ibmcom/cpdbr:1.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman pull docker.io/ibmcom/cpdbr:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag docker.io/ibmcom/cpdbr:1.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr:1.0.0-${BUILD_NUM}-${CPU_ARCH}
-podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr:1.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
+podman tag docker.io/ibmcom/cpdbr:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH}
+podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 </pre>
 
 OpenShift 3.11 example:
@@ -112,15 +110,17 @@ NAMESPACE=`oc project -q`
 echo $NAMESPACE
 CPU_ARCH=`uname -m`
 echo $CPU_ARCH
-BUILD_NUM=402
+BUILD_NUM=730
 echo $BUILD_NUM
+RELEASE_NUM=2.0.0
+echo $RELEASE_NUM
 
 # Pull cpdbr image from Docker Hub
-podman pull docker.io/ibmcom/cpdbr:1.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman pull docker.io/ibmcom/cpdbr:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u ocadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag docker.io/ibmcom/cpdbr:1.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr:1.0.0-${BUILD_NUM}-${CPU_ARCH}
-podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr:1.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
+podman tag docker.io/ibmcom/cpdbr:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH}
+podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 </pre>
 
 ## cpdbr Setup
