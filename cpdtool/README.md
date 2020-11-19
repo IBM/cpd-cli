@@ -40,11 +40,7 @@ Export/import modules for CPD service components are installed separately.
 
 Download cpdtool CLI:
 ```
-if [ "$(uname -m)" == "ppc64le" ]; then
-  wget https://github.com/IBM/cpd-cli/raw/master/cpdtool/ppc64le/cpdtool.tgz
-else
-  wget https://github.com/IBM/cpd-cli/raw/master/cpdtool/cpdtool.tgz
-fi
+wget https://github.com/IBM/cpd-cli/raw/master/cpdtool/2.0.0/$(uname -m)/cpdtool.tgz
 tar zxvf cpdtool.tgz
 ```
 
@@ -72,15 +68,17 @@ NAMESPACE=`oc project -q`
 echo $NAMESPACE
 CPU_ARCH=`uname -m`
 echo $CPU_ARCH
-BUILD_NUM=531
+BUILD_NUM=650
 echo $BUILD_NUM
+RELEASE_NUM=2.0.0
+echo $RELEASE_NUM
 
 # Pull cpdtool image from Docker Hub
-podman pull docker.io/ibmcom/cpdtool:1.1.0-${BUILD_NUM}-${CPU_ARCH}
+podman pull docker.io/ibmcom/cpdtool:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag docker.io/ibmcom/cpdtool:1.1.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdtool:1.1.0-${BUILD_NUM}-${CPU_ARCH}
-podman push $IMAGE_REGISTRY/$NAMESPACE/cpdtool:1.1.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
+podman tag docker.io/ibmcom/cpdtool:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdtool:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH}
+podman push $IMAGE_REGISTRY/$NAMESPACE/cpdtool:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 </pre>
 
 OpenShift 3.11, example:
@@ -92,16 +90,18 @@ NAMESPACE=`oc project -q`
 echo $NAMESPACE
 CPU_ARCH=`uname -m`
 echo $CPU_ARCH
-BUILD_NUM=531
+BUILD_NUM=650
 echo $BUILD_NUM
+RELEASE_NUM=2.0.0
+echo $RELEASE_NUM
 
 
 # Pull cpdtool image from Docker Hub
-podman pull docker.io/ibmcom/cpdtool:1.1.0-${BUILD_NUM}-${CPU_ARCH}
+podman pull docker.io/ibmcom/cpdtool:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u ocadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag docker.io/ibmcom/cpdtool:1.1.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdtool:1.1.0-${BUILD_NUM}-${CPU_ARCH}
-podman push $IMAGE_REGISTRY/$NAMESPACE/cpdtool:1.1.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
+podman tag docker.io/ibmcom/cpdtool:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdtool:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH}
+podman push $IMAGE_REGISTRY/$NAMESPACE/cpdtool:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 </pre>
 
 
@@ -198,16 +198,29 @@ $ cpdtool schedule-export status --namespace zen --arch $(uname -m) myexport2
 </pre>
 
 <pre>
-# To import CPD data from the above scheduled export in zen namespace
+# To import CPD data from the above export in zen namespace
 # Th export must be completed successfully before import can be performed.
 # Note that only one import job is allowed at a time, you'll need to delete 
 # the completed import job to start a new one.
-$ cpdtool import create --from-schedule myexport2 --namespace zen --arch $(uname -m) myimport1
+$ cpdtool import create --from-export myexport1 --namespace zen --arch $(uname -m) myimport1
 </pre>
 
 <pre>
 # To check the status of the CPD import in zen namespace 
 $ cpdtool import status --namespace zen --arch $(uname -m) myimport1
+</pre>
+
+<pre>
+# To import CPD data from the above scheduled export in zen namespace
+# Th export must be completed successfully before import can be performed.
+# Note that only one import job is allowed at a time, you'll need to delete 
+# the completed import job to start a new one.
+$ cpdtool import create --from-schedule myexport2 --namespace zen --arch $(uname -m) myimport2
+</pre>
+
+<pre>
+# To check the status of the CPD import in zen namespace 
+$ cpdtool import status --namespace zen --arch $(uname -m) myimport2
 </pre>
 
 <pre>
@@ -296,15 +309,17 @@ NAMESPACE=`oc project -q`
 echo $NAMESPACE
 CPU_ARCH=`uname -m`
 echo $CPU_ARCH
-if [ "$CPU_ARCH" == "ppc64le" ]; then BUILD_NUM=295; elif [ "$CPU_ARCH" == "x86_64" ]; then BUILD_NUM=222; else BUILD_NUM="UNSUPPORTED_ARCHITECTURE"; fi
+BUILD_NUM=303
 echo $BUILD_NUM
+RELEASE_NUM=2.0.0
+echo $RELEASE_NUM
 
 # Pull zen-core-aux image from Docker Hub
-podman pull docker.io/ibmcom/zen-core-aux:1.1.0-${BUILD_NUM}-${CPU_ARCH}
+podman pull docker.io/ibmcom/zen-core-aux:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag docker.io/ibmcom/zen-core-aux:1.1.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:1.1.0-${BUILD_NUM}-${CPU_ARCH}
-podman push $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:1.1.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
+podman tag docker.io/ibmcom/zen-core-aux:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH}
+podman push $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:2.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 </pre>
 
 OpenShift 3.11, example:
@@ -316,49 +331,50 @@ NAMESPACE=`oc project -q`
 echo $NAMESPACE
 CPU_ARCH=`uname -m`
 echo $CPU_ARCH
-if [ "$CPU_ARCH" == "ppc64le" ]; then BUILD_NUM=295; elif [ "$CPU_ARCH" == "x86_64" ]; then BUILD_NUM=222; else BUILD_NUM="UNSUPPORTED_ARCHITECTURE"; fi
+BUILD_NUM=303
 echo $BUILD_NUM
+RELEASE_NUM=2.0.0
+echo $RELEASE_NUM
 
 # Pull zen-core-aux image from Docker Hub
-podman pull docker.io/ibmcom/zen-core-aux:1.1.0-${BUILD_NUM}-${CPU_ARCH}
+podman pull docker.io/ibmcom/zen-core-aux:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u ocadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag docker.io/ibmcom/zen-core-aux:1.1.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:1.1.0-${BUILD_NUM}-${CPU_ARCH}
-podman push $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:1.1.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
+podman tag docker.io/ibmcom/zen-core-aux:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH}
+podman push $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 </pre>
 
 ### Install the zen-core-aux helm chart
 
-Download the zen-core-aux helm chart (zen-core-aux-1.1.0.tgz):
+Download the zen-core-aux helm chart (zen-core-aux-2.0.0.tgz):
 ```
-if [ "$(uname -m)" == "ppc64le" ]; then
-  wget https://github.com/IBM/cpd-cli/raw/master/cpdtool/ppc64le/zen-core-aux-1.1.0.tgz
-else
-  wget https://github.com/IBM/cpd-cli/raw/master/cpdtool/zen-core-aux-1.1.0.tgz
-fi
+wget https://github.com/IBM/cpd-cli/raw/master/cpdtool/${RELEASE_NUM}/$(uname -m)/zen-core-aux-${RELEASE_NUM}.tgz
 ```
 
 Copy the helm chart to the cpd-install-operator pod, and install using helm.
 
+
+On the CP4D node:
 <pre>
-Example:
 # Delete any existing zen-core-aux-exim configmaps
 oc delete cm cpd-zen-aux-zen-core-aux-exim-cm
 oc delete cm zen-core-aux-exim-cm
 # Find the cpd-install-operator pod
-oc get po | grep cpd-install
+CPD_INSTALL_POD="$(oc get po | grep cpd-install | awk '{print $1}')"
+echo "$CPD_INSTALL_POD"
 cpd-install-operator-84bb575c7c-s67f7
 # Copy the helm chart to the pod
-oc cp zen-core-aux-1.1.0.tgz cpd-install-operator-84bb575c7c-s67f7:/tmp/zen-core-aux-1.1.0.tgz
-# Inside the pod, run helm install
-oc rsh cpd-install-operator-84bb575c7c-s67f7
-cd tmp
-helm install zen-core-aux-1.1.0.tgz --name zen-core-aux --tls
+oc cp zen-core-aux-${RELEASE_NUM}.tgz ${CPD_INSTALL_POD}:/tmp/zen-core-aux-${RELEASE_NUM}.tgz
+# Log into the install pod. We'll run helm install in next steps
+oc rsh ${CPD_INSTALL_POD}
 </pre>
 
-Note: If the helm release already exists, uninstall using
+In the shell opened by the previous command:
 <pre>
+cd tmp
+# delete old helm release, just in case it is already installed
 helm delete --purge zen-core-aux --tls
+helm install zen-core-aux-2.0.0.tgz --name zen-core-aux --tls
 </pre>
 
 Once the zen-core-aux image and helm chart are installed, the zen-core auxiliary component is considered registered.
