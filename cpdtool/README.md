@@ -1,179 +1,169 @@
-# cpdtool
-CPD Export/Import Utility
+## CPD Export And Import CLI
 
-**Quick links:**
+The export-import CLI a command line interface (CLI) utility for CloudPak for Data (CPD) that can perform 
+CPD addon auxiliary functions such as export and import through registered CPD auxiliary assemblies. It allows 
+for the migration of Cloud Pak for Data metadata from one cluster to another.
 
-- [Overview](#overview)
-- [CPDTool Command References](#cpdtool-command-references)
-- [CPDTool Installation](#cpdtool-installation)
-- [CPDTool Setup](#cpdtool-setup)
-- [Examples](#examples)
-- [Zen Core Auxiliary Component](#Zen-Core-Auxiliary-Component)
+### Prerequisite
+1. The OpenShift client "oc" is included in the PATH and has access to the cluster
+1. profile / config must be set prior executing export-import commands, profile setup instructions are [here](https://github.ibm.com/PrivateCloud-analytics/cpd-cli/wiki/Config-commands)
+1. setup a shared volume PVC/PV
 
+### Security And Roles
+export-import requires cluster admin or similar roles 
 
-## Overview
-cpdtool is a command line interface (CLI) utility for CloudPak for Data (CPD) that can perform CPD addon auxiliary 
-functions such as export and import through registered CPD auxiliary assemblies.  It allows for the migration of 
-Cloud Pak for Data metadata from one cluster to another.
+### export-import commands
+Export import supports the following commands
+1.  export              - Work with CPD exports
+1.  import              - Work with CPD imports
+1.  init                - initialize cpd-cli export-import
+1.  list                - List CPD resources
+1.  reset               - reset cpd-cli export-import
+1.  schedule-export     - Work with CPD schedule export
+1.  version             - print the version information
 
+### Setup
 
-## CPDTool Command References
+#### Ensure the OpenShift client "oc" is available and has access to the cluster
 
-The cpdtool binary has these sub-commands:
- 
-- cpdtool init
-- cpdtool reset 
-- cpdtool export
-- cpdtool import
-- cpdtool schedule-export
-- cpdtool list
-- cpdtool version
+If necessary, download "oc", include it in the PATH, and configure access to the cluster using a kubeconfig file.
 
-
-## CPDTool Installation
-
-The CPD export and import utility consists of a CLI utility (cpdtool) and a docker image.
-Export/import modules for CPD service components are installed separately.
+https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/
 
 
-## Download the cpdtool CLI
+#### Install the cpdtool docker image
+Install docker or podman
 
-Download cpdtool CLI:
-```
-wget https://github.com/IBM/cpd-cli/raw/master/cpdtool/2.0.0/$(uname -m)/cpdtool.tgz
-tar zxvf cpdtool.tgz
-```
-
-## Install the cpdtool docker image
-
-
-### Install docker or podman
-
-Check if "docker" or "podman" is available on the system, and install if needed.  Either "docker" or "podman" can be used in the example steps below.
+Check if "docker" or "podman" is available on the system, and install if needed. Either "docker" or "podman" can be used in the example steps below.
 
 https://podman.io/getting-started/installation.html
 
+Note your docker image registry may be different than what is documented here, so please adjust those related flags accordingly.
 
-### Install the cpdtool docker image using docker or podman
+#### Install the cpdtool docker image using docker or podman from Docker Hub
 
-Note your docker image registry may be different than what is documented here, so please
-adjust those related flags accordingly.
-    
+Note: Use the Build Number from cpd-cli export-import version command
+
 OpenShift 4.3 example:
-
-<pre>
+```
 IMAGE_REGISTRY=`oc get route -n openshift-image-registry | grep image-registry | awk '{print $2}'`
 echo $IMAGE_REGISTRY
 NAMESPACE=`oc project -q`
 echo $NAMESPACE
 CPU_ARCH=`uname -m`
 echo $CPU_ARCH
-BUILD_NUM=650
+# build-number can be obtained from cpd-cli export-import version command 
+BUILD_NUM=<build-number>
 echo $BUILD_NUM
-RELEASE_NUM=2.0.0
-echo $RELEASE_NUM
 
 # Pull cpdtool image from Docker Hub
-podman pull docker.io/ibmcom/cpdtool:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH}
+podman pull docker.io/ibmcom/cpdtool:2.0.0-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag docker.io/ibmcom/cpdtool:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdtool:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH}
-podman push $IMAGE_REGISTRY/$NAMESPACE/cpdtool:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
-</pre>
+podman tag docker.io/ibmcom/cpdtool:2.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdtool:2.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman push $IMAGE_REGISTRY/$NAMESPACE/cpdtool:2.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
+```
 
 OpenShift 3.11, example:
-
-<pre>
+```
 IMAGE_REGISTRY=`oc registry info`
 echo $IMAGE_REGISTRY
 NAMESPACE=`oc project -q`
 echo $NAMESPACE
 CPU_ARCH=`uname -m`
 echo $CPU_ARCH
-BUILD_NUM=650
+# build-number can be obtained from cpd-cli export-import version command 
+BUILD_NUM=<build-number>
 echo $BUILD_NUM
-RELEASE_NUM=2.0.0
-echo $RELEASE_NUM
 
 
 # Pull cpdtool image from Docker Hub
-podman pull docker.io/ibmcom/cpdtool:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH}
+podman pull docker.io/ibmcom/cpdtool:2.0.0-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u ocadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag docker.io/ibmcom/cpdtool:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdtool:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH}
-podman push $IMAGE_REGISTRY/$NAMESPACE/cpdtool:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
-</pre>
+podman tag docker.io/ibmcom/cpdtool:2.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdtool:2.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman push $IMAGE_REGISTRY/$NAMESPACE/cpdtool:2.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
+```
 
+#### Shared Volume PVC
+export-import requires a shared volume pvc to be created and bounded for use in its init command.
+If your pv is Portworx, ensure that it is shared enabled.
 
-## CPDTool Setup
-
-### PVC For Exported Data
-cpdtool requires a shared volume pvc to be created and bounded for use in its init command.
-
-Note the target pvc in which you create to store the exported data needs to be a shared volume to 
-allow multiple pods to attach the same pvc.  If your pv is Portworx, ensure that it is shared enabled.
-
-<pre>
 Example:
-oc apply -f demo.nfs.pvc
+```
+oc apply -f zen-pvc.yaml
 
+zen-pvc.yaml content:
 
-kind: PersistentVolumeClaim
 apiVersion: v1
+kind: PersistentVolumeClaim
 metadata:
-  name: demo-nfs-pvc
+  name: zen-pvc
 spec:
   storageClassName: nfs-client
   accessModes:
     - ReadWriteMany
   resources:
     requests:
-      storage: 10Gi
-</pre>
+      storage: 200Gi
+```
 
-### Initialize cpdtool
+#### Profile setup
+```
+# set up the cpd-cli profile named default
+# <api-key> can be retrieved from CPD web console
+# <route> can be retrieved from oc get route -n <namespace>
 
-Note your docker image registry may be different than what is documented here, so please
-adjust those related flags accordingly.
-    
+$ cpd-cli config users set admin --username admin --apikey <api-key>
+$ cpd-cli config profiles set default --user admin --url https://<route>
+```
+
+#### Initialize export-import
+Note your docker image registry may be different than what is documented here, so please adjust those related flags accordingly.
+
 OpenShift 4.3 example:
-
-<pre>
+```
 # Initialize the cpdtool first with pvc name for storage and user/password of the CPD admin
-$ cpdtool init --namespace $NAMESPACE --arch $CPU_ARCH --pvc-name zen-pvc -u admin -p password --image-prefix=image-registry.openshift-image-registry.svc:5000/$NAMESPACE
-</pre>
-
+$ cpd-cli export-import init --namespace $NAMESPACE --arch $CPU_ARCH --pvc-name zen-pvc --profile=default --image-prefix=image-registry.openshift-image-registry.svc:5000/$NAMESPACE --profile=default
+```
 
 OpenShift 3.11 example:
-
-<pre>
+```
 # Initialize the cpdtool first with pvc name for storage and user/password of the CPD admin
-$ cpdtool init --namespace $NAMESPACE --arch $CPU_ARCH --pvc-name zen-pvc -u admin -p password --image-prefix=docker-registry.default.svc:5000/$NAMESPACE
-</pre>
+$ cpd-cli export-import init --namespace $NAMESPACE --arch $CPU_ARCH --pvc-name zen-pvc --profile=default --image-prefix=docker-registry.default.svc:5000/$NAMESPACE --profile=default
+```
 
+### Examples
 
-## Examples
+```
+# set up the cpd-cli profile named default
+# <api-key> can be retrieved from CPD web console
+# <route> can be retrieved from oc get route -n <namespace>
 
-<pre>
+$ cpd-cli config users set admin --username admin --apikey <api-key>
+$ cpd-cli config profiles set default --user admin --url https://<route>
+```
+
+```
 # To list the registered auxiliary modules such as export/import
-$ cpdtool list aux-modules --namespace zen --arch $(uname -m)
+$ cpd-cli export-import list aux-modules --namespace zen --profile=default --arch $(uname -m)
 ID              NAME          COMPONENT  KIND    VERSION ARCH    NAMESPACE       VENDOR
 cpd-zen-aux     zen-core-aux  zen-core   exim    1.0.0   x86_64  zen             ibm
 cpd-demo-aux    demo-aux      demo       exim    1.0.1   x86_64  zen             ibm   
-</pre>
+```
 
-<pre>
+```
 # To export data from CPD in zen namespace
 # use export status to check its status later
-$ cpdtool export create --namespace zen --arch $(uname -m) myexport1
-</pre>
+$ cpd-cli export-import export create --namespace zen --profile=default --arch $(uname -m) myexport1
+```
 
-<pre>
+```
 # To check the status of the CPD export in zen namespace
 # Active = 1 means export job is in progress
 # Succeeded = 1 means export job completed successfully
 # Failed = 1 means export job failed
-$ cpdtool export status -n zen myexport1
+$ cpd-cli export-import export status -n zen --profile=default myexport1
 Name:        	myexport1                      
 Job Name:    	cpd-ex-myexport1               
 Active:      	0                              
@@ -182,127 +172,110 @@ Failed:      	0
 Start Time:  	Sun, 01 Mar 2020 04:17:31 -0600
 Completed At:	Sun, 01 Mar 2020 04:21:46 -0600
 Duration:    	4m15s
-</pre>
+```
 
-<pre>
+```
 # To export data from CPD in zen namespace via a schedule export at minute 0 past every 12th hour
-$ cpdtool schedule-export create --namespace zen --schedule "0 */12 * * *" --arch $(uname -m) myexport2
-</pre>
+$ cpd-cli export-import schedule-export create --namespace zen --schedule "0 */12 * * *" --arch $(uname -m) --profile=default myexport2
+```
 
-<pre>
+```
 # To check the status of the CPD scheduled export in zen namespace
 # Active = 1 means export job is in progress
 # Succeeded = 1 means export job completed successfully
 # Failed = 1 means export job failed
-$ cpdtool schedule-export status --namespace zen --arch $(uname -m) myexport2
-</pre>
+$ cpd-cli export-import schedule-export status --namespace zen --arch $(uname -m) --profile=default myexport2
+```
 
-<pre>
-# To import CPD data from the above export in zen namespace
-# Th export must be completed successfully before import can be performed.
-# Note that only one import job is allowed at a time, you'll need to delete 
-# the completed import job to start a new one.
-$ cpdtool import create --from-export myexport1 --namespace zen --arch $(uname -m) myimport1
-</pre>
-
-<pre>
-# To check the status of the CPD import in zen namespace 
-$ cpdtool import status --namespace zen --arch $(uname -m) myimport1
-</pre>
-
-<pre>
+```
 # To import CPD data from the above scheduled export in zen namespace
 # Th export must be completed successfully before import can be performed.
 # Note that only one import job is allowed at a time, you'll need to delete 
 # the completed import job to start a new one.
-$ cpdtool import create --from-schedule myexport2 --namespace zen --arch $(uname -m) myimport2
-</pre>
+$ cpd-cli export-import import create --from-schedule myexport2 --namespace zen --arch $(uname -m) --profile=default myimport1
+```
 
-<pre>
+```
 # To check the status of the CPD import in zen namespace 
-$ cpdtool import status --namespace zen --arch $(uname -m) myimport2
-</pre>
+$ cpd-cli export-import import status --namespace zen --arch $(uname -m) --profile=default myimport1
+```
 
-<pre>
+```
 # To delete the CPD export job in zen namespace (this does not delete the exported data in the volume, 
 # specify --purge option to do so)
-$ cpdtool export delete --namespace zen --arch $(uname -m) myexport1
-</pre>
+$ cpd-cli export-import export delete --namespace zen --arch $(uname -m) --profile=default myexport1
+```
 
-<pre>
+```
 # To download the CPD export data in zen namespace as a tar file to the current working directory
-$ cpdtool export download --namespace zen --arch $(uname -m) myexport1
-</pre>
+$ cpd-cli export-import export download --namespace zen --arch $(uname -m) --profile=default myexport1
+```
 
-<pre>
+```
 # To retrieve the logs for the CPD export in zen namespace
-$ cpdtool export logs --namespace zen --arch $(uname -m) myexport1
-</pre>
+$ cpd-cli export-import export logs --namespace zen --arch $(uname -m) --profile=default myexport1
+```
 
-<pre>
+```
 # To delete the CPD export job as well as the export data stored in the volume in zen namespace 
-$ cpdtool export delete --namespace zen --arch $(uname -m) myexport1 --purge
-</pre>
+$ cpd-cli export-import export delete --namespace zen --arch $(uname -m) --profile=default myexport1 --purge
+```
 
-<pre>
+```
 # To delete the scheduled CPD export job as well as the export data stored in the volume in zen namespace 
-$ cpdtool schedule-export delete --namespace zen --arch $(uname -m) myexport2 --purge
-</pre>
+$ cpd-cli export-import schedule-export delete --namespace zen --arch $(uname -m) --profile=default myexport2 --purge
+```
 
-
-<pre>
+```
 # To delete the CPD import job in zen namespace 
-$ cpdtool import delete --namespace zen --arch $(uname -m) myimport1
-</pre>
+$ cpd-cli export-import import delete --namespace zen --arch $(uname -m) --profile=default myimport1
+```
 
-<pre>
+```
 # To force cleanup any previous k8s resources created by cpdtool and use a different pvc
-$ cpdtool reset --namespace zen -u admin -p password --arch $(uname -m) --force
-$ cpdtool init --namespace zen --pvc-name pvc2 -u admin -p password --arch $(uname -m)
-</pre>
+$ cpd-cli export-import reset --namespace zen --profile=default --arch $(uname -m) --force
+$ cpd-cli export-import init --namespace zen --pvc-name pvc2 --profile=default --arch $(uname -m)
+```
 
-<pre>
+```
 # To download the exported data as an archive
-$ cpdtool export download -n zen --arch $(uname -m) myexport1
+$ cpd-cli export-import export download -n zen --arch $(uname -m) --profile=default myexport1
 $ ls cpd-exports*.tar
 cpd-exports-myexport1-20200301101735-data.tar
-</pre>
+```
 
-<pre>
+```
 # To upload the exported archive to a different cluster before invoking import(the target cluster should have cpdtool environment setup)
 # After the upload is successful, then you can import to the target cluster with the same namespace.
-$ cpdtool export upload -n zen -f --arch $(uname -m) cpd-exports-myexport1-20200301101735-data.tar 
-</pre>
+$ cpd-cli export-import export upload -n zen -f --arch $(uname -m) --profile=default cpd-exports-myexport1-20200301101735-data.tar 
+```
 
-<pre>
+```
 # Passing override/custom values to export via -f flag to a specific aux module
 # the top level key must be the aux module name(cpdfwk.module).  e.g.:
-$ cpdtool export create --namespace zen myexport1 -f --arch $(uname -m) overridevalues.yaml
+$ cpd-cli export-import export create --namespace zen myexport1 -f --arch $(uname -m) --profile=default overridevalues.yaml
+```
 
-# overridevalues.yaml content with dv auxiliary module's specific key values
-dv-aux:
+```
+# overridevalues.yaml content with sample auxiliary module's specific key values
+sample-aux:
   pvc1: testpvc1
   pvc2: testpvc2
-</pre>
+```
 
+### Zen Core Auxiliary Component
+The cpdtool framework is responsible for dispatching jobs provided by CPD services to export metadata from one 
+CPD installation to another. Registered export/import modules for each service component contain jobs that perform 
+the actual export and import logic. The zen-core auxiliary module performs export and import for the CPD control plane.
 
-## Zen Core Auxiliary Component
+Note your docker image registry may be different than what is documented here, so please adjust those related flags accordingly.
 
-The cpdtool framework is responsible for dispatching jobs provided by CPD services to export metadata
-from one CPD installation to another.  Registered export/import modules for each service component contain 
-jobs that perform the actual export and import logic.  The zen-core auxiliary module performs export and
-import for the CPD control plane.
+#### Install the zen-core-aux docker image from Docker Hub
 
-### Zen Core Auxiliary Installation
+For CPD 3.5, use zen-core-aux 2.0.0.
 
-### Install the zen-core-aux docker image
-
-Note your docker image registry may be different than what is documented here, so please
-adjust those related flags accordingly.
-    
 OpenShift 4.3 example:
-
-<pre>
+```
 IMAGE_REGISTRY=`oc get route -n openshift-image-registry | grep image-registry | awk '{print $2}'`
 echo $IMAGE_REGISTRY
 NAMESPACE=`oc project -q`
@@ -311,20 +284,18 @@ CPU_ARCH=`uname -m`
 echo $CPU_ARCH
 BUILD_NUM=303
 echo $BUILD_NUM
-RELEASE_NUM=2.0.0
-echo $RELEASE_NUM
 
 # Pull zen-core-aux image from Docker Hub
-podman pull docker.io/ibmcom/zen-core-aux:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH}
+podman pull docker.io/ibmcom/zen-core-aux:2.0.0-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag docker.io/ibmcom/zen-core-aux:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH}
+podman tag docker.io/ibmcom/zen-core-aux:2.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:2.0.0-${BUILD_NUM}-${CPU_ARCH}
 podman push $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:2.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
-</pre>
+```
 
 OpenShift 3.11, example:
 
-<pre>
+```
 IMAGE_REGISTRY=`oc registry info`
 echo $IMAGE_REGISTRY
 NAMESPACE=`oc project -q`
@@ -333,78 +304,69 @@ CPU_ARCH=`uname -m`
 echo $CPU_ARCH
 BUILD_NUM=303
 echo $BUILD_NUM
-RELEASE_NUM=2.0.0
-echo $RELEASE_NUM
 
 # Pull zen-core-aux image from Docker Hub
-podman pull docker.io/ibmcom/zen-core-aux:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH}
+podman pull docker.io/ibmcom/zen-core-aux:2.0.0-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u ocadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag docker.io/ibmcom/zen-core-aux:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH}
-podman push $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:${RELEASE_NUM}-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
-</pre>
+podman tag docker.io/ibmcom/zen-core-aux:2.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:2.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman push $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:2.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
+```
 
-### Install the zen-core-aux helm chart
+#### Install the zen-core-aux helm chart
 
 Download the zen-core-aux helm chart (zen-core-aux-2.0.0.tgz):
-```
-wget https://github.com/IBM/cpd-cli/raw/master/cpdtool/${RELEASE_NUM}/$(uname -m)/zen-core-aux-${RELEASE_NUM}.tgz
-```
+For x86_64: https://github.com/IBM/cpd-cli/cpdtool/x86_64/zen-core-aux-2.0.0.tgz
+For ppc64le: https://github.com/IBM/cpd-cli/cpdtool/ppc64le/zen-core-aux-2.0.0.tgz
 
 Copy the helm chart to the cpd-install-operator pod, and install using helm.
-
-
-On the CP4D node:
-<pre>
+```
+Example:
 # Delete any existing zen-core-aux-exim configmaps
 oc delete cm cpd-zen-aux-zen-core-aux-exim-cm
 oc delete cm zen-core-aux-exim-cm
 # Find the cpd-install-operator pod
-CPD_INSTALL_POD="$(oc get po | grep cpd-install | awk '{print $1}')"
-echo "$CPD_INSTALL_POD"
+oc get po | grep cpd-install
 cpd-install-operator-84bb575c7c-s67f7
 # Copy the helm chart to the pod
-oc cp zen-core-aux-${RELEASE_NUM}.tgz ${CPD_INSTALL_POD}:/tmp/zen-core-aux-${RELEASE_NUM}.tgz
-# Log into the install pod. We'll run helm install in next steps
-oc rsh ${CPD_INSTALL_POD}
-</pre>
-
-In the shell opened by the previous command:
-<pre>
+oc cp zen-core-aux-2.0.0.tgz cpd-install-operator-84bb575c7c-s67f7:/tmp/zen-core-aux-2.0.0.tgz
+# Inside the pod, run helm install
+oc rsh cpd-install-operator-84bb575c7c-s67f7
 cd tmp
-# delete old helm release, just in case it is already installed
-helm delete --purge zen-core-aux --tls
 helm install zen-core-aux-2.0.0.tgz --name zen-core-aux --tls
-</pre>
+```
 
-Once the zen-core-aux image and helm chart are installed, the zen-core auxiliary component is considered registered.
-Executing "cpdtool export create" will dispatch the zen-core-aux export job.
+Note: If the helm release already exists, uninstall using
+```
+helm delete --purge zen-core-aux --tls
+```
 
-### Data exported by zen-core-aux
+Once the zen-core-aux image and helm chart are installed, the zen-core auxiliary component is considered registered. Executing "cpdtool export create" will dispatch the zen-core-aux export job.
 
-1. JDBC drivers
-1. Global connections
+#### Data exported by zen-core-aux
+
 1. User accounts and roles
 1. LDAP configuration
 
-### Requirements / Limitations
+#### Requirements / Limitations
+     
+1. Import is only supported on new CPD deployments. There should be no created user accounts, roles, global connections, etc.
+1. Exported data is not encrypted
+1. The following PVCs must use a shared volume to allow multiple pods to attach the same PVC:
+   - The destination PVC to store exported data
+   - user-home-pvc
+   - zen-meta-couchdb-pvc
 
-1.  Import is only supported on new CPD deployments.  There should be no created user accounts, roles, global connections, etc.
-1.  Exported data is not encrypted
-1.  The following PVCs must use a shared volume to allow multiple pods to attach the same PVC:
-      - The destination PVC to store exported data
-      - user-home-pvc
-      - zen-meta-couchdb-pvc
 
-### Cleanup steps to allow re-import
+#### Cleanup steps to allow re-import
 
 To allow another import for the control plane component, perform the following cleanup steps.
 
-1.  Delete created user accounts using the CPD console
-1.  Delete created roles using the CPD console
-1.  Delete created connections by deleting rows in the "connections" and "connection_users" tables in the metastoredb.
+1. Delete created user accounts using the CPD console
+1. Delete created roles using the CPD console
+1. Delete created connections by deleting rows in the "connections" and "connection_users" tables in the metastoredb.
 
-<pre>
+```
 Example:
 
 kubectl exec -it zen-metastoredb-0 sh
@@ -417,8 +379,600 @@ select * from connection_users;
 delete from connection_users where 1=1;
 \q
 exit
-</pre>
+```
 
+### Command References
+  
+##### command help
 
+```
+CPD Command Line Tool
 
+Usage:
+  cpd-cli export-import [flags]
+  cpd-cli export-import [command]
+
+Available Commands:
+  export              Work with CPD exports
+  help                Help about any command
+  import              Work with CPD imports
+  init                initialize cpd-cli export-import
+  list                List CPD resources
+  reset               reset cpd-cli export-import
+  schedule-export     Work with CPD schedule export
+  version             print the version information
+
+Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+  -h, --help                              help for cpd-cli export-import
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+Use "cpd-cli export-import [command] --help" for more information about a command.
+```
+
+##### command init
+
+```
+initialize cpd-cli export-import
+
+Usage:
+  cpd-cli export-import init [flags]
+
+Flags:
+      --aux-pod-cpu-limit string     CPU limit for CPD auxiliary pod. ("0" means unbounded) (default "0")
+      --aux-pod-cpu-request string   CPU request for CPD auxiliary pod. ("0" means unbounded) (default "0")
+      --aux-pod-mem-limit string     Memory limit for CPD auxiliary pod. ("0" means unbounded) (default "0")
+      --aux-pod-mem-request string   Memory request for CPD auxiliary pod. ("0" means unbounded) (default "0")
+  -h, --help                         help for init
+      --image-prefix string          Specify the image prefix (default "image-registry.openshift-image-registry.svc:5000/zen")
+      --pvc-name string              Specify the persistence volume claim name for backup/export
+      --service-account string       Specify service account (default "cpd-admin-sa")
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+```
+
+##### command reset
+```
+reset cpd-cli export-import
+
+Usage:
+  cpd-cli export-import reset [flags]
+
+Flags:
+      --force   Force reset
+  -h, --help    help for reset
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+```
+
+##### command export
+```
+Work with CPD exports
+
+Usage:
+  cpd-cli export-import export [command]
+
+Available Commands:
+  create      Create an export
+  delete      Delete an export
+  download    Download export data
+  list        List exports
+  logs        Get logs
+  purge       Purge exports older than the retention time
+  status      Check export status
+  upload      Upload export data
+
+Flags:
+  -h, --help   help for export
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+Use "cpd-cli export-import export [command] --help" for more information about a command.
+
+Create an export
+
+Usage:
+  cpd-cli export-import export create NAME [flags]
+
+Flags:
+  -c, --component string    Specify the CPD component for export.
+  -h, --help                help for create
+  -f, --values ValueFiles   specify values in a YAML file(can specify multiple) (default [])
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+Delete an export
+
+Usage:
+  cpd-cli export-import export delete NAME [flags]
+
+Flags:
+  -h, --help        help for delete
+      --no-prompt   prompt for confirmation before proceeding with the operation
+      --purge       purge the data from storage
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+List exports
+
+Usage:
+  cpd-cli export-import export list [flags]
+
+Aliases:
+  list, ls
+
+Flags:
+  -h, --help   help for list
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+Check export status
+
+Usage:
+  cpd-cli export-import export status NAME [flags]
+
+Flags:
+  -h, --help   help for status
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+Download export data
+
+Usage:
+  cpd-cli export-import export download NAME [flags]
+
+Flags:
+  -h, --help   help for download
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+Upload export data
+
+Usage:
+  cpd-cli export-import export upload [flags]
+
+Flags:
+  -f, --file string   archive file to upload
+  -h, --help          help for upload
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+Get logs
+
+Usage:
+  cpd-cli export-import export logs NAME [flags]
+
+Aliases:
+  logs, log
+
+Flags:
+  -h, --help   help for logs
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+Purge exports older than the retention time
+
+Usage:
+  cpd-cli export-import export purge NAME [flags]
+
+Flags:
+  -h, --help                      help for purge
+      --no-prompt                 Prompt for confirmation before proceeding with the operation
+      --retention-time duration   Specifies how long to keep the data ('h' for hours, 'm' for minutes).  Defaults to 720h. (default 720h0m0s)
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+```
+
+##### command import
+```
+Work with CPD imports
+
+Usage:
+  cpd-cli export-import import [command]
+
+Available Commands:
+  create      Create an import
+  delete      Delete an import
+  list        List imports
+  logs        Get logs
+  status      Check import status
+
+Flags:
+  -h, --help   help for import
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+Use "cpd-cli export-import import [command] --help" for more information about a command.
+
+Create an import
+
+Usage:
+  cpd-cli export-import import create NAME [flags]
+
+Flags:
+      --from-export string     The export name to import from
+      --from-schedule string   The schedule name to import from
+  -h, --help                   help for create
+  -f, --values ValueFiles      specify values in a YAML file(can specify multiple) (default [])
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+Delete an import
+
+Usage:
+  cpd-cli export-import import delete NAME [flags]
+
+Flags:
+  -h, --help        help for delete
+      --no-prompt   prompt for confirmation before proceeding with the operation
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+Check import status
+
+Usage:
+  cpd-cli export-import import status NAME [flags]
+
+Flags:
+  -h, --help   help for status
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+List imports
+
+Usage:
+  cpd-cli export-import import list [flags]
+
+Aliases:
+  list, ls
+
+Flags:
+  -h, --help   help for list
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+Get logs
+
+Usage:
+  cpd-cli export-import import logs NAME [flags]
+
+Aliases:
+  logs, log
+
+Flags:
+  -h, --help   help for logs
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+```
+
+##### command list
+```
+List CPD resources
+
+Usage:
+  cpd-cli export-import list [command]
+
+Aliases:
+  list, ls
+
+Available Commands:
+  aux-module  List auxiliary modules
+
+Flags:
+  -h, --help   help for list
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+Use "cpd-cli export-import list [command] --help" for more information about a command.
+
+List auxiliary modules
+
+Usage:
+  cpd-cli export-import list aux-module [flags]
+
+Aliases:
+  aux-module, aux-modules
+
+Flags:
+  -h, --help   help for aux-module
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+```
+
+##### command schedule-export
+```
+Work with CPD schedule export
+
+Usage:
+  cpd-cli export-import schedule-export [command]
+
+Available Commands:
+  create      Create a schedule
+  delete      Delete a schedule
+  download    Download export data
+  list        List scheduled exports
+  logs        Get logs
+  purge       Purge exports older than the retention time
+  status      Check schedule status
+  upload      Upload export data
+
+Flags:
+  -h, --help   help for schedule-export
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+Use "cpd-cli export-import schedule-export [command] --help" for more information about a command.
+
+Create a schedule
+
+Usage:
+  cpd-cli export-import schedule-export create NAME [flags]
+
+Flags:
+  -c, --component string    Specify the CPD component for export.
+  -h, --help                help for create
+      --schedule string     Specify a schedule in the Cron format the job should be run with.
+  -f, --values ValueFiles   specify values in a YAML file(can specify multiple) (default [])
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+Delete a schedule
+
+Usage:
+  cpd-cli export-import schedule-export delete NAME [flags]
+
+Flags:
+  -h, --help        help for delete
+      --no-prompt   prompt for confirmation before proceeding with the operation
+      --purge       purge the data from storage
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+Download export data
+
+Usage:
+  cpd-cli export-import schedule-export download NAME [flags]
+
+Flags:
+  -h, --help   help for download
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+List scheduled exports
+
+Usage:
+  cpd-cli export-import schedule-export list [flags]
+
+Aliases:
+  list, ls
+
+Flags:
+  -h, --help   help for list
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+Get logs
+
+Usage:
+  cpd-cli export-import schedule-export logs NAME [flags]
+
+Aliases:
+  logs, log
+
+Flags:
+  -h, --help   help for logs
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+Purge exports older than the retention time
+
+Usage:
+  cpd-cli export-import schedule-export purge [flags]
+
+Flags:
+  -h, --help                      help for purge
+      --no-prompt                 Prompt for confirmation before proceeding with the operation
+      --retention-time duration   Specifies how long to keep the data ('h' for hours, 'm' for minutes).  Defaults to 720h. (default 720h0m0s)
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+Check schedule status
+
+Usage:
+  cpd-cli export-import schedule-export status NAME [flags]
+
+Flags:
+  -h, --help   help for status
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+Upload export data
+
+Usage:
+  cpd-cli export-import schedule-export upload [flags]
+
+Flags:
+  -f, --file string   archive file to upload
+  -h, --help          help for upload
+
+Global Flags:
+      --arch string                       Provide the architecture (default "x86_64")
+      --cpdconfig $HOME/.cpd-cli/config   cpd configuration location e.g. $HOME/.cpd-cli/config
+      --log-level string                  command log level: debug, info, warn, error, panic (default "info")
+  -n, --namespace string                  The namespace in which cpd-cli export-import should operate (default "zen")
+      --profile profile-name              profile-name from cpd configuration
+      --verbose                           Logs will include more detailed messages
+
+```
 
