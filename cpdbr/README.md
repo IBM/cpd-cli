@@ -66,6 +66,8 @@ https://podman.io/getting-started/installation.html
 Note your docker image registry may be different than what is documented here, so please adjust those related flags accordingly.
 
 #### Install the cpdbr docker image using docker or podman from Docker Hub
+
+Note: Use the Build Number from cpd-cli backup-restore version command
                  
 OpenShift 4.3 example:
 ```
