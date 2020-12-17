@@ -316,8 +316,8 @@ podman push $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:2.0.0-${BUILD_NUM}-${CPU_ARC
 #### Install the zen-core-aux helm chart
 
 Download the zen-core-aux helm chart (zen-core-aux-2.0.0.tgz):
-For x86_64: https://github.com/IBM/cpd-cli/cpdtool/x86_64/zen-core-aux-2.0.0.tgz
-For ppc64le: https://github.com/IBM/cpd-cli/cpdtool/ppc64le/zen-core-aux-2.0.0.tgz
+ * For x86_64: https://github.com/IBM/cpd-cli/raw/master/cpdtool/2.0.0/x86_64/zen-core-aux-2.0.0.tgz
+ * For ppc64le: https://github.com/IBM/cpd-cli/raw/master/cpdtool/2.0.0/ppc64le/zen-core-aux-2.0.0.tgz
 
 Copy the helm chart to the cpd-install-operator pod, and install using helm.
 ```
