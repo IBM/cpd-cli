@@ -293,6 +293,19 @@ cpd-cli backup-restore volume-restore list -n zen
 cpd-cli backup-restore reset -n zen --force
 ```
 
+#### Cleanup After Stopping A Backup Or Restore In Progress
+A backup or restore job can be deleted by calling the volume-backup / volume-restore delete command.  If the job is deleted before completion, subsequent backup or restore operations may fail since a lock file is still present.  In the backup or restore pod, there is an error with the message:
+```
+[ERROR] A backup/restore operation for zen is in progress.  Wait for the operation to complete.
+cpdbr/cmd.checkLockFile
+```
+If this is the case, and there are no backup or restore pods still running, run the unlock command to remove the lock file.  e.g.
+```
+cpd-cli backup-restore volume-backup unlock NAME -n zen --log-level=debug --verbose
+```
+NAME is a backup name, or if one does not exist, a random name.  Afterwards, retry the backup or restore operation.
+
+
 ### Snapshot Examples
 ```
 # takes local volume snapshots for zen namespace
