@@ -21,7 +21,6 @@ will run the installation.
 | Linux             | cpd-cli-linux-* |
 | Mac OS            | cpd-cli-darwin-* |
 | POWER             | cpd-cli-ppc64le-* |
-| Windows           | cpd-cli-windows-* |
 | z/OS              | cpd-cli-s390x-* |
 
 
@@ -32,7 +31,6 @@ will run the installation.
 | Linux            | cpd-linux |
 | Mac OS           | cpd-darwin |
 | POWER            | cpd-ppcle |
-| Windows          | cpd-windows |
 
 
 ## Downloading the installer
