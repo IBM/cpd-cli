@@ -16,12 +16,12 @@ will run the installation.
 
 ### 3.5.x installer
 
-| Operating system  | Installer |
-| :--               | :--       |
-| Linux             | cpd-cli-linux-* |
-| Mac OS            | cpd-cli-darwin-* |
-| POWER             | cpd-cli-ppc64le-* |
-| z/OS              | cpd-cli-s390x-* |
+| Operating system              | Installer |
+| :--                           | :--       |
+| Linux on x86-64               | cpd-cli-linux-* |
+| Mac OS                        | cpd-cli-darwin-* |
+| POWER                         | cpd-cli-ppc64le-* |
+| Linux on Z(s390x)             | cpd-cli-s390x-* |
 
 
 ### 3.0.1 installer
