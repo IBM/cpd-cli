@@ -299,12 +299,11 @@ A backup or restore job can be deleted by calling the volume-backup / volume-res
 [ERROR] A backup/restore operation for zen is in progress.  Wait for the operation to complete.
 cpdbr/cmd.checkLockFile
 ```
-If this is the case, and there are no backup or restore pods still running, run the unlock command to remove the lock file.  e.g.
+If this is the case, and there are no backup or restore pods still running, log into the cpdbr-aux pod and remove the lock file. e.g.
 ```
-cpd-cli backup-restore volume-backup unlock NAME -n zen --log-level=debug --verbose
+oc rsh cpdbr-aux-d89c785cf-8tsgk
+rm /data/cpd/data/volbackups/.lock
 ```
-NAME is a backup name, or if one does not exist, a random name.  Afterwards, retry the backup or restore operation.
-
 
 ### Snapshot Examples
 ```

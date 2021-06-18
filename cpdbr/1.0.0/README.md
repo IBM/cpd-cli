@@ -59,7 +59,7 @@ The CPD backup and restore utility consists of a CLI utility (cpdbr) and a docke
 
 Download and extract the cpdbr CLI:
 ```
-wget https://github.com/IBM/cpd-cli/raw/master/cpdbr/$(uname -m)/cpdbr.tgz
+wget https://github.com/IBM/cpd-cli/raw/master/cpdbr/1.0.0/$(uname -m)/cpdbr.tgz
 tar zxvf cpdbr.tgz
 ```
 
