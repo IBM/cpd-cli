@@ -6,7 +6,7 @@ for the migration of Cloud Pak for Data metadata from one cluster to another.
 
 ### Prerequisite
 1. The OpenShift client "oc" is included in the PATH and has access to the cluster
-1. profile / config must be set prior executing export-import commands, profile setup instructions are [here](https://github.ibm.com/PrivateCloud-analytics/cpd-cli/wiki/Config-commands)
+1. profile / config must be set prior executing export-import commands, profile setup instructions are [here](https://www.ibm.com/docs/en/cloud-paks/cp-data/3.5.0?topic=installing-creating-cpd-cli-profile)
 1. setup a shared volume PVC/PV
 
 ### Security And Roles
@@ -175,24 +175,11 @@ Duration:    	4m15s
 ```
 
 ```
-# To export data from CPD in zen namespace via a schedule export at minute 0 past every 12th hour
-$ cpd-cli export-import schedule-export create --namespace zen --schedule "0 */12 * * *" --arch $(uname -m) --profile=default myexport2
-```
-
-```
-# To check the status of the CPD scheduled export in zen namespace
-# Active = 1 means export job is in progress
-# Succeeded = 1 means export job completed successfully
-# Failed = 1 means export job failed
-$ cpd-cli export-import schedule-export status --namespace zen --arch $(uname -m) --profile=default myexport2
-```
-
-```
-# To import CPD data from the above scheduled export in zen namespace
+# To import CPD data from the above export in the zen namespace
 # Th export must be completed successfully before import can be performed.
 # Note that only one import job is allowed at a time, you'll need to delete 
 # the completed import job to start a new one.
-$ cpd-cli export-import import create --from-schedule myexport2 --namespace zen --arch $(uname -m) --profile=default myimport1
+$ cpd-cli export-import import create --from-export myexport1 --namespace zen --arch $(uname -m) --profile=default myimport1 --log-level=debug --verbose
 ```
 
 ```
@@ -222,11 +209,6 @@ $ cpd-cli export-import export delete --namespace zen --arch $(uname -m) --profi
 ```
 
 ```
-# To delete the scheduled CPD export job as well as the export data stored in the volume in zen namespace 
-$ cpd-cli export-import schedule-export delete --namespace zen --arch $(uname -m) --profile=default myexport2 --purge
-```
-
-```
 # To delete the CPD import job in zen namespace 
 $ cpd-cli export-import import delete --namespace zen --arch $(uname -m) --profile=default myimport1
 ```
@@ -247,13 +229,13 @@ cpd-exports-myexport1-20200301101735-data.tar
 ```
 # To upload the exported archive to a different cluster before invoking import(the target cluster should have cpdtool environment setup)
 # After the upload is successful, then you can import to the target cluster with the same namespace.
-$ cpd-cli export-import export upload -n zen -f --arch $(uname -m) --profile=default cpd-exports-myexport1-20200301101735-data.tar 
+$ cpd-cli export-import export upload -n zen --arch $(uname -m) --profile=default -f cpd-exports-myexport1-20200301101735-data.tar 
 ```
 
 ```
 # Passing override/custom values to export via -f flag to a specific aux module
 # the top level key must be the aux module name(cpdfwk.module).  e.g.:
-$ cpd-cli export-import export create --namespace zen myexport1 -f --arch $(uname -m) --profile=default overridevalues.yaml
+$ cpd-cli export-import export create --namespace zen myexport1 --arch $(uname -m) --profile=default -f overridevalues.yaml
 ```
 
 ```
