@@ -1,6 +1,8 @@
 # cpdtool
 CPD Export/Import Utility
 
+cpdtool version 1.1.0.  For use with CPD 3.0.x.
+
 **Quick links:**
 
 - [Overview](#overview)
@@ -45,7 +47,8 @@ tar zxvf cpdtool.tgz
 ```
 
 ## Install the cpdtool docker image
-
+For OCP 3.11, docker can be used to push docker images.<br>
+For OCP 3.11 or 4.x, podman can be used to push docker images.
 
 ### Install docker or podman
 
@@ -59,7 +62,7 @@ https://podman.io/getting-started/installation.html
 Note your docker image registry may be different than what is documented here, so please
 adjust those related flags accordingly.
     
-OpenShift 4.3 example:
+OpenShift 4.x example:
 
 <pre>
 IMAGE_REGISTRY=`oc get route -n openshift-image-registry | grep image-registry | awk '{print $2}'`
@@ -132,7 +135,7 @@ spec:
 Note your docker image registry may be different than what is documented here, so please
 adjust those related flags accordingly.
     
-OpenShift 4.3 example:
+OpenShift 4.x example:
 
 <pre>
 # Initialize the cpdtool first with pvc name for storage and user/password of the CPD admin
@@ -181,24 +184,11 @@ Duration:    	4m15s
 </pre>
 
 <pre>
-# To export data from CPD in zen namespace via a schedule export at minute 0 past every 12th hour
-$ cpdtool schedule-export create --namespace zen --schedule "0 */12 * * *" --arch $(uname -m) myexport2
-</pre>
-
-<pre>
-# To check the status of the CPD scheduled export in zen namespace
-# Active = 1 means export job is in progress
-# Succeeded = 1 means export job completed successfully
-# Failed = 1 means export job failed
-$ cpdtool schedule-export status --namespace zen --arch $(uname -m) myexport2
-</pre>
-
-<pre>
-# To import CPD data from the above scheduled export in zen namespace
+# To import CPD data from the above export in the zen namespace
 # Th export must be completed successfully before import can be performed.
 # Note that only one import job is allowed at a time, you'll need to delete 
 # the completed import job to start a new one.
-$ cpdtool import create --from-schedule myexport2 --namespace zen --arch $(uname -m) myimport1
+$ cpdtool import create --from-export myexport1 --namespace zen --arch $(uname -m) myimport1 --log-level=debug --verbose
 </pre>
 
 <pre>
@@ -228,12 +218,6 @@ $ cpdtool export delete --namespace zen --arch $(uname -m) myexport1 --purge
 </pre>
 
 <pre>
-# To delete the scheduled CPD export job as well as the export data stored in the volume in zen namespace 
-$ cpdtool schedule-export delete --namespace zen --arch $(uname -m) myexport2 --purge
-</pre>
-
-
-<pre>
 # To delete the CPD import job in zen namespace 
 $ cpdtool import delete --namespace zen --arch $(uname -m) myimport1
 </pre>
@@ -254,13 +238,13 @@ cpd-exports-myexport1-20200301101735-data.tar
 <pre>
 # To upload the exported archive to a different cluster before invoking import(the target cluster should have cpdtool environment setup)
 # After the upload is successful, then you can import to the target cluster with the same namespace.
-$ cpdtool export upload -n zen -f --arch $(uname -m) cpd-exports-myexport1-20200301101735-data.tar 
+$ cpdtool export upload -n zen --arch $(uname -m) -f cpd-exports-myexport1-20200301101735-data.tar 
 </pre>
 
 <pre>
 # Passing override/custom values to export via -f flag to a specific aux module
 # the top level key must be the aux module name(cpdfwk.module).  e.g.:
-$ cpdtool export create --namespace zen myexport1 -f --arch $(uname -m) overridevalues.yaml
+$ cpdtool export create --namespace zen myexport1 --arch $(uname -m) -f overridevalues.yaml
 
 # overridevalues.yaml content with dv auxiliary module's specific key values
 dv-aux:
@@ -283,7 +267,7 @@ import for the CPD control plane.
 Note your docker image registry may be different than what is documented here, so please
 adjust those related flags accordingly.
     
-OpenShift 4.3 example:
+OpenShift 4.x example:
 
 <pre>
 IMAGE_REGISTRY=`oc get route -n openshift-image-registry | grep image-registry | awk '{print $2}'`
