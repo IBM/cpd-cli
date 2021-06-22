@@ -1,6 +1,6 @@
 ## CPD Volume Backup And Restore CLI
 
-cpdbr version 4.0.0.  Included as a part of cpd-cli 2.x.  For use with CPD 4.0.x, 3.5.x, 3.0.x.
+cpdbr version 2.0.0.  Included as a part of cpd-cli 1.x.  For use with CPD 3.5.x, 3.0.x.
 
 The backup-restore CLI is a data backup/restore utility for Cloud Pak For Data (CPD) that may be used as an 
 augmentation or helper utility to the CPD add-on services' backup/restore procedure.
@@ -85,11 +85,11 @@ echo $BUILD_NUM
 
 
 # Pull cpdbr image from Docker Hub
-podman pull docker.io/ibmcom/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman pull docker.io/ibmcom/cpdbr:2.0.0-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag docker.io/ibmcom/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
-podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
+podman tag docker.io/ibmcom/cpdbr:2.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr:2.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr:2.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 ```
 
 OpenShift 3.11 example:
@@ -104,11 +104,11 @@ BUILD_NUM=<build-number>
 echo $BUILD_NUM
 
 # Pull cpdbr image from Docker Hub
-podman pull docker.io/ibmcom/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman pull docker.io/ibmcom/cpdbr:2.0.0-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u ocadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag docker.io/ibmcom/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
-podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
+podman tag docker.io/ibmcom/cpdbr:2.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr:2.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr:2.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 ```
                  
 OpenShift 4.x air-gapped installation example:
@@ -120,9 +120,9 @@ BUILD_NUM=<build-number>
 echo $BUILD_NUM
 
 # Pull cpdbr image from Docker Hub
-podman pull docker.io/ibmcom/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman pull docker.io/ibmcom/cpdbr:2.0.0-${BUILD_NUM}-${CPU_ARCH}
 # Save image to file
-podman save docker.io/ibmcom/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} > cpdbr-img-4.0.0-${BUILD_NUM}-${CPU_ARCH}.tar
+podman save docker.io/ibmcom/cpdbr:2.0.0-${BUILD_NUM}-${CPU_ARCH} > cpdbr-img-2.0.0-${BUILD_NUM}-${CPU_ARCH}.tar
 
 # Transfer file to air-gapped cluster
 
@@ -138,9 +138,9 @@ BUILD_NUM=<build-number>
 echo $BUILD_NUM
 
 podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman load -i cpdbr-img-4.0.0-${BUILD_NUM}-${CPU_ARCH}.tar
-podman tag docker.io/ibmcom/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
-podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
+podman load -i cpdbr-img-2.0.0-${BUILD_NUM}-${CPU_ARCH}.tar
+podman tag docker.io/ibmcom/cpdbr:2.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr:2.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr:2.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 ```
 
 #### Shared Volume PVC
@@ -247,8 +247,6 @@ cpd-cli backup-restore volume-restore status -n zen zen-volrestore1
 cpd-cli backup-restore volume-restore list -n zen
 
 # reset cpdbr for zen namespace
-# To force cleanup any k8s resources previously created by cpdbr.  Use when finished with volume backup,
-# or if cpdbr needs to be re-initialized with new values.  This does not delete backup data in the target PVC.
 cpd-cli backup-restore reset -n zen --force
 ```
 
@@ -295,8 +293,6 @@ cpd-cli backup-restore volume-restore status -n zen volrestore1
 cpd-cli backup-restore volume-restore list -n zen
 
 # reset cpdbr for zen namespace
-# To force cleanup any k8s resources previously created by cpdbr.  Use when finished with volume backup,
-# or if cpdbr needs to be re-initialized with new values.  This does not delete backup data in the target PVC.
 cpd-cli backup-restore reset -n zen --force
 ```
 
@@ -306,11 +302,11 @@ A backup or restore job can be deleted by calling the volume-backup / volume-res
 [ERROR] A backup/restore operation for zen is in progress.  Wait for the operation to complete.
 cpdbr/cmd.checkLockFile
 ```
-If this is the case, and there are no backup or restore pods still running, run the unlock command to remove the lock file.  e.g.
+If this is the case, and there are no backup or restore pods still running, log into the cpdbr-aux pod and remove the lock file. e.g.
 ```
-cpd-cli backup-restore volume-backup unlock -n zen --log-level=debug --verbose
+oc rsh cpdbr-aux-d89c785cf-8tsgk
+rm /data/cpd/data/volbackups/.lock
 ```
-Afterwards, retry the backup or restore operation.
 
 ### Snapshot Examples
 ```

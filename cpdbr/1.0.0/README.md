@@ -1,5 +1,7 @@
 # cpdbr
-CPD Backup And Restore Utilities
+CPD Volume Backup And Restore Utilities
+
+cpdbr version 1.0.0.  For use with CPD 3.0.x
 
 cpdbr is a data backup/restore utility for Cloud Pak For Data (CPD) that may be used as an augmentation
 or helper utility to the CPD add-on services' backup/restore procedure.
@@ -59,12 +61,13 @@ The CPD backup and restore utility consists of a CLI utility (cpdbr) and a docke
 
 Download and extract the cpdbr CLI:
 ```
-wget https://github.com/IBM/cpd-cli/raw/master/cpdbr/$(uname -m)/cpdbr.tgz
+wget https://github.com/IBM/cpd-cli/raw/master/cpdbr/1.0.0/$(uname -m)/cpdbr.tgz
 tar zxvf cpdbr.tgz
 ```
 
 ## Install the cpdbr docker image
-
+For OCP 3.11, docker can be used to push docker images.<br>
+For OCP 3.11 or 4.x, podman can be used to push docker images.
 
 ### Install docker or podman
 
@@ -78,7 +81,7 @@ https://podman.io/getting-started/installation.html
 Note your docker image registry may be different than what is documented here, so please
 adjust those related flags accordingly.
     
-OpenShift 4.3 example:
+OpenShift 4.x example:
 
 <pre>
 IMAGE_REGISTRY=`oc get route -n openshift-image-registry | grep image-registry | awk '{print $2}'`
@@ -174,7 +177,7 @@ oc create secret generic -n zen cpdbr-repo-secret \
 Note your docker image registry may be different than what is documented here, so please
 adjust those related flags accordingly.
     
-OpenShift 4.3 example:
+OpenShift 4.x example:
 
 <pre>
 # Initialize the cpdbr first with pvc name and s3 storage.  Note that the bucket must exist.
