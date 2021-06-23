@@ -1,20 +1,24 @@
-# IBM Cloud Pak for Data Installer
+# IBM Cloud Pak for Data command-line interface
 
-Use the IBM Cloud Pak for Data installer to install the Cloud Pak for Data [control plane](https://www.ibm.com/support/producthub/icpdata/docs/content/SSQNUZ_latest/cpd/plan/architecture.html#architecture__control-plane) and [services](https://www.ibm.com/support/producthub/icpdata/docs/content/SSQNUZ_latest/svc-nav/head/services.html) on your Red Hat OpenShift cluster.
+The way that you use the IBM Cloud Pak for Data command-line interface depends on the version of Cloud Pak for Data that you are using.
 
-**Tip:** All of the links in this readme point to the _latest_ version of the docs. For previous versions of the documentation, see the [product documentation in IBM Knowledge Center](https://www.ibm.com/support/knowledgecenter/SSQNUZ).
+- In 4.0, the command-line interface is used to complete [administrative tasks](https://www.ibm.com/docs/SSQNUZ_4.0/cpd/admin/cpd-cli.html)
+- In 3.0 and 3.5, the command-line interface is used to install the Cloud Pak for Data [control plane](https://www.ibm.com/docs/SSQNUZ_3.5.0/cpd/plan/architecture.html#architecture__control-plane) and [services](https://www.ibm.com/docs/SSQNUZ_3.5.0/svc-nav/head/services.html) on your Red Hat OpenShift cluster.
 
-## About the installer
 
+## Version 4.0 users
+For information on using the command-line interface, see the [cpd-cli command reference](https://www.ibm.com/docs/SSQNUZ_4.0/cpd/admin/cpd-cli.html) in the product documentation.
+
+For information on installing IBM Cloud Pak for Data, see [Installing IBM Cloud Pak for Data](https://www.ibm.com/docs/SSQNUZ_4.0/cpd/install/install.html) in the product documentation.
+<br/>
+<br/>
+
+## Version 3.5 users
 You can install Cloud Pak for Data from a remote system that can connect to your cluster.
 
-Download the Enterprise Edition (EE) package or the Standard Edition (EE) package.
-The package includes the appropriate licenses and installer files.
+Download the Enterprise Edition (EE) package or the Standard Edition (EE) package. The package includes the appropriate licenses and installer files.
 
-Ensure that you use the installer that corresponds to the operating system where you
-will run the installation.
-
-### 3.5.x installer
+Ensure that you use the installer that corresponds to the operating system where you will run the installation.
 
 | Operating system              | Installer |
 | :--                           | :--       |
@@ -24,7 +28,37 @@ will run the installation.
 | Linux on Z(s390x)             | cpd-cli-s390x-* |
 
 
-### 3.0.1 installer
+
+#### Downloading the installer
+Download the appropriate version of the installer from the [releases](https://github.com/IBM/cpd-cli/releases) page.
+
+
+#### Prerequisites
+
+- Before you install the Cloud Pak for Data control plane, review the [system
+requirements](https://www.ibm.com/docs/SSQNUZ_3.5.0/cpd/plan/rhos-reqs.html).
+
+- Before you install services on Cloud Pak for Data, review the [system requirements
+for services](https://www.ibm.com/docs/SSQNUZ_3.5.0/sys-reqs/services_prereqs.html).
+
+
+#### Installing Cloud Pak for Data
+To install Cloud Pak for Data:
+
+1. Complete the [pre-installation tasks](https://www.ibm.com/docs/SSQNUZ_3.5.0/cpd/install/install.html).
+
+1. [Install the Cloud Pak for Data control plane](https://www.ibm.com/docs/SSQNUZ_3.5.0/cpd/install/rhos-install.html).
+
+1. [Install the relevant services](https://www.ibm.com/docs/SSQNUZ_3.5.0/svc-nav/head/services.html) on your cluster.  
+
+
+## Version 3.0 users
+You can install Cloud Pak for Data from a remote system that can connect to your cluster.
+
+Download the Enterprise Edition (EE) package or the Standard Edition (EE) package. The package includes the appropriate licenses and installer files.
+
+Ensure that you use the installer that corresponds to the operating system where you will run the installation.
+
 
 | Operating system | Installer |
 | :--              | :--       |
@@ -33,24 +67,24 @@ will run the installation.
 | POWER            | cpd-ppcle |
 
 
-## Downloading the installer
+#### Downloading the installer
 Download the appropriate version of the installer from the [releases](https://github.com/IBM/cpd-cli/releases) page.
 
 
-## Prerequisites
+#### Prerequisites
 
 - Before you install the Cloud Pak for Data control plane, review the [system
-requirements](https://www.ibm.com/support/producthub/icpdata/docs/content/SSQNUZ_latest/cpd/plan/rhos-reqs.html).
+requirements](https://www.ibm.com/docs/en/cloud-paks/cp-data/3.0.1?topic=planning-system-requirements).
 
 - Before you install services on Cloud Pak for Data, review the [system requirements
-for services](https://www.ibm.com/support/producthub/icpdata/docs/content/SSQNUZ_latest/sys-reqs/services_prereqs.html).
+for services](https://www.ibm.com/docs/en/cloud-paks/cp-data/3.0.1?topic=requirements-system-services).
 
 
-## Installing Cloud Pak for Data
+#### Installing Cloud Pak for Data
 To install Cloud Pak for Data:
 
-1. Complete the [pre-installation tasks](https://www.ibm.com/support/producthub/icpdata/docs/content/SSQNUZ_latest/cpd/install/install.html).
+1. Complete the [pre-installation tasks](https://www.ibm.com/docs/en/cloud-paks/cp-data/3.0.1?topic=installing).
 
-1. [Install the Cloud Pak for Data control plane](https://www.ibm.com/support/producthub/icpdata/docs/content/SSQNUZ_latest/cpd/install/rhos-install.html).
+1. [Install the Cloud Pak for Data control plane](https://www.ibm.com/docs/en/cloud-paks/cp-data/3.0.1?topic=installing-openshift-cluster).
 
-1. [Install the relevant services](https://www.ibm.com/support/producthub/icpdata/docs/content/SSQNUZ_latest/svc-nav/head/services.html) on your cluster.  
+1. [Install the relevant services](https://www.ibm.com/docs/en/cloud-paks/cp-data/3.0.1?topic=integrations-services-in-catalog) on your cluster.  
