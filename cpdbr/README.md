@@ -1,6 +1,6 @@
 ## CPD Volume Backup And Restore CLI
 
-cpdbr version 4.0.0.  Included as a part of cpd-cli 2.x.  For use with CPD 4.0.x, 3.5.x, 3.0.x.
+cpdbr version 4.0.0.  Included as a part of cpd-cli 10.x.  For use with CPD 4.0.x, 3.5.x, 3.0.x.
 
 The backup-restore CLI is a data backup/restore utility for Cloud Pak For Data (CPD) that may be used as an 
 augmentation or helper utility to the CPD add-on services' backup/restore procedure.
