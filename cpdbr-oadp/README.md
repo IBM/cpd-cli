@@ -1,6 +1,6 @@
 # CPD OADP Backup And Restore CLI
 
-cpdbr-oadp version 4.0.0 (Technology Preview).  Included as a part of cpd-cli 2.x.  For use with CPD 4.0.x.
+cpdbr-oadp version 4.0.0 (Technology Preview).  Included as a part of cpd-cli 10.x.  For use with CPD 4.0.x.
 
 ## Overview
 
