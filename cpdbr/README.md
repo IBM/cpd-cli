@@ -1,6 +1,6 @@
 ## CPD Volume Backup And Restore CLI
 
-cpdbr version 4.0.0.  Included as a part of cpd-cli 10.x.  For use with CPD 4.0.x, 3.5.x, 3.0.x.
+cpdbr version 4.0.0.  Included as a part of the latest cpd-cli 10.x release.  For use with CPD 4.0.x, 3.5.x, 3.0.x.
 
 The backup-restore CLI is a data backup/restore utility for Cloud Pak For Data (CPD) that may be used as an 
 augmentation or helper utility to the CPD add-on services' backup/restore procedure.
@@ -218,8 +218,6 @@ $ cpd-cli backup-restore init -n $NAMESPACE --pvc-name cpdbr-pvc --image-prefix=
 
 ### Volume Backup/Restore Examples
 
-Note that the "volume-backup create" and "volume-restore create" commands have the auto-quiesce feature 
-enabled by default, which always scales down/up Kubernetes resources.
 
 #### Local Repository Example
 ```
@@ -348,9 +346,6 @@ cpd-cli backup-restore version
 ### Quiesce and Volume Backup/Restore Examples
 
 The quiesce command suspends write operations in application workloads so that backups or other maintenance activities can be performed.  The backup-restore utility may scale down application Kubernetes resources, or call hooks provided by CPD services to perform the quiesce.  Quiesce hooks provided by CPD services may offer optimizations or other enhancements compared to scaling down all resources in the namespace.  Micro-services can be quiesced in a certain order, or services can be suspended without having to bring down pods.
-
-The "volume-backup create" and "volume-restore create" commands have the auto-quiesce feature 
-enabled by default, which ignores quiesce hooks and always scales down/up Kubernetes resources.  To take advantage of quiesce hooks, call the quiesce command explicity, and pass the --skip-quiesce option to "volume-backup create".
 
 Quiesce (with default options) and volume-backup (with --skip-quiesce) can be used when the application storage provider doesn't enforce ReadWriteOnce volume access, such as on NFS.  For storage providers that enforce RWO such as Portworx, quiesce should be called with the --ignore-hooks, which scales down resources so the backup pod can mount volumes to perform file copying.
 
