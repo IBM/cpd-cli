@@ -1,6 +1,6 @@
 # CPD OADP Backup And Restore CLI
 
-cpdbr-oadp version 4.0.0 (Technology Preview).  Included as a part of cpd-cli 10.x.  For use with CPD 4.0.x.
+cpdbr-oadp version 4.0.0 (Technology Preview).  Included as a part of the latest cpd-cli 10.x release.  For use with CPD 4.0.x.
 
 ## Overview
 
@@ -28,7 +28,7 @@ handler performs pod scale down/up on the "unmanaged" k8s workload.
 There are two types of backups, Velero restic and Ceph CSI snapshots on
 OCS.
 
-Restic backups can be used for NFS, Portworx and OCS Ceph volumes.
+Restic backups can be used for NFS (configured with no_root_squash), Portworx and OCS Ceph volumes.
 Restic is an open source utility to perform volume backups via file
 copying, and includes features such as encryption and deduplication.
 
@@ -67,6 +67,7 @@ Cluster
 - The cpdbr-velero-plugin is available only for linux x86\_64.
 - cpdbr-oadp's deployment for restic backups needs network access to the image registry registry.redhat.io.
 - Ceph CSI snapshots is available for OCS 4.6+
+- If CPD is installed on NFS, NFS storage must be configured with no_root_squash for OADP restic backups.
 
 Client
 - cpdbr-oadp is available for darwin, linux, windows, and ppc64le.
@@ -125,67 +126,81 @@ Example using NFS storage class:
     2.  Obtain an access token from
         <https://hub.docker.com/settings/security>
 
-    3.  Create a docker pull secret
+    3.  Create a docker pull secret.  Substitute 'myuser' and 'myaccesstoken' with the docker account user and token.
         ```
         oc create secret docker-registry --docker-server=docker.io --docker-username=myuser --docker-password=myaccesstoken -n velero dockerpullsecret
         ```
-    4.  Add the image pull secret to the default service account
+    4.  Add the image pull secret to the 'default' service account
         ```
-        oc edit sa default -n velero
-
-        imagePullSecrets:
-        - name: default-dockercfg-zr656
-        - name: dockerpullsecret
+        oc secrets link default dockerpullsecret --for=pull -n velero
         ```
 
     5.  Restart the minio pods
-
-4.  Create two persistent volumes and update the deployment. Change the
+4. Update the image used by the minio pod
+   ```
+   oc set image deployment/minio minio=minio/minio:RELEASE.2021-06-17T00-10-46Z -n velero
+   ```
+5.  Create two persistent volumes and update the deployment. Change the
     storage class and size as needed.
 
-    1.  ```oc apply -f minio-config-pvc.yaml```
+    1.  Create config PVC
 
+        ```
+        oc apply -f minio-config-pvc.yaml
+        ```
         ```
         apiVersion: v1
         kind: PersistentVolumeClaim
         metadata:
-            namespace: velero
-            name: minio-config-pvc
+          namespace: velero
+          name: minio-config-pvc
         spec:
-            accessModes:
+          accessModes:
             - ReadWriteMany
-            resources:
+          resources:
             requests:
-                storage: 1Gi
-            storageClassName: nfs-client
+              storage: 1Gi
+          storageClassName: nfs-client
+        ```
+    2.  Create storage PVC
+
+        ```
+        oc apply -f minio-storage-pvc.yaml
+        ```
+        ```
+        apiVersion: v1
+        kind: PersistentVolumeClaim
+        metadata:
+          namespace: velero
+          name: minio-storage-pvc
+        spec:
+          accessModes:
+            - ReadWriteMany
+          resources:
+            requests:
+              storage: 400Gi
+          storageClassName: nfs-client
+        ```
+
+    3.  Set config volume
+        ```
+        oc set volume deployment.apps/minio --add --overwrite --name=config --mount-path=/config --type=persistentVolumeClaim --claim-name="minio-config-pvc" -n velero
         ```
     
-    2. ```oc apply -f minio-storage-pvc.yaml```
-
+    4.  Set storage volume
         ```
-        apiVersion: v1
-        kind: PersistentVolumeClaim
-        metadata:
-            namespace: velero
-            name: minio-storage-pvc
-        spec:
-            accessModes:
-            - ReadWriteMany
-            resources:
-            requests:
-                storage: 400Gi
-            storageClassName: nfs-client
+        oc set volume deployment.apps/minio --add --overwrite --name=storage --mount-path=/storage --type=persistentVolumeClaim --claim-name="minio-storage-pvc" -n velero
         ```
 
-    3.  ```oc set volume deployment.apps/minio --add --overwrite --name=config --mount-path=/config --type=persistentVolumeClaim --claim-name="minio-config-pvc" -n velero```
-
-    4.  ```oc set volume deployment.apps/minio --add --overwrite --name=storage --mount-path=/storage --type=persistentVolumeClaim --claim-name="minio-storage-pvc" -n velero```
-
-5.  Expose the minio service
+6.  Check that the MinIO pods are up and running.
+    ```
+    oc get pods -n velero
+    ```
+7.  Expose the minio service
     ```
     oc expose svc minio -n velero
     ```
-6.  Get the MinIO URL
+8.  Get the MinIO URL
     ```
     oc get route minio -n velero
     ```
@@ -197,7 +212,7 @@ Example using NFS storage class:
 
     minio/minio123
 
-7.  Go to the MinIO web UI and create a bucket called "velero"
+9.  Go to the MinIO web UI and create a bucket called "velero"
 
 
 ### Install the cpdbr-velero-plugin
@@ -228,7 +243,7 @@ Example using NFS storage class:
 
 ### Install OADP 
 
-Note: At the time of this writing, OADP is at version 0.2.3 (using velero v1.6.0 RC1)
+Note: At the time of this writing, OADP is at version 0.2.6 (using velero v1.6.0 RC1)
 
 1.  OADP can be installed from the OperatorHub in the Openshift Console
 
@@ -268,48 +283,54 @@ Note: At the time of this writing, OADP is at version 0.2.3 (using velero v1.6.0
     Replace the "s\_3\_\_url" in the backup storage location with the URL
     of the object store obtained above.
 
-    ```
-    apiVersion: konveyor.openshift.io/v1alpha1
-    kind: Velero
-    metadata:
-        name: example-velero
-    spec:
-        olm_managed: true
-        custom_velero_plugins:
-        - image: image-registry.openshift-image-registry.svc:5000/oadp-operator/cpdbr-velero-plugin:4.0.0-beta1-1-x86_64
-        name: cpdbr-velero-plugin
-        default_velero_plugins:
-        - aws
-        - openshift
-        - csi
-        backup_storage_locations:
-        - name: default
-        provider: aws
-        object_storage:
-            bucket: velero
-        config:
-            region: minio
-            s_3__force_path_style: "true"
-            s_3__url: http://minio-velero.apps.mycluster.cp.fyre.ibm.com
-        credentials_secret_ref:
-            name: oadp-repo-secret
-            namespace: oadp-operator
-        enable_restic: true
-        velero_resource_allocation:
-        limits:
-            cpu: "1"
-            memory: 512Mi
-        requests:
-            cpu: 500m
-            memory: 256Mi
-        restic_resource_allocation:
-        limits:
-            cpu: "1"
-            memory: 16Gi
-        requests:
-            cpu: 500m
-            memory: 256Mi
-    ```
+    Note: If the s3 url needs to changed after Velero is installed, uninstall Velero and OADP, and reinstall.
+    See [Uninstalling OADP and Velero](#uninstalling-oadp-and-velero).
+
+```
+apiVersion: konveyor.openshift.io/v1alpha1
+kind: Velero
+metadata:
+  name: example-velero
+spec:
+  olm_managed: true
+  custom_velero_plugins:
+  - image: image-registry.openshift-image-registry.svc:5000/oadp-operator/cpdbr-velero-plugin:4.0.0-beta1-1-x86_64
+    name: cpdbr-velero-plugin
+  default_velero_plugins:
+  - aws
+  - openshift
+  - csi
+  backup_storage_locations:
+  - name: default
+    provider: aws
+    object_storage:
+      bucket: velero
+    config:
+      region: minio
+      s3_force_path_style: "true"
+      s3_url: http://minio-velero.apps.mycluster.cp.fyre.ibm.com
+      s_3__force_path_style: "true"
+      s_3__url: http://minio-velero.apps.mycluster.cp.fyre.ibm.com
+    credentials_secret_ref:
+      name: oadp-repo-secret
+      namespace: oadp-operator
+  enable_restic: true
+  velero_resource_allocation:
+    limits:
+      cpu: "1"
+      memory: 512Mi
+    requests:
+      cpu: 500m
+      memory: 256Mi
+  restic_resource_allocation:
+    limits:
+      cpu: "1"
+      memory: 16Gi
+    requests:
+      cpu: 500m
+      memory: 256Mi
+
+```
 
 4.  Check that the velero pods are running in the "oadp-operator" namespace
     ```
@@ -338,17 +359,13 @@ Note: At the time of this writing, OADP is at version 0.2.3 (using velero v1.6.0
     2.  Obtain an access token from
         <https://hub.docker.com/settings/security>
 
-    3.  Create a docker pull secret
+    3.  Create a docker pull secret.  Substitute 'myuser' and 'myaccesstoken' with the docker account user and token.
         ```
         oc create secret docker-registry --docker-server=docker.io --docker-username=myuser --docker-password=myaccesstoken -n oadp-operator dockerpullsecret
         ```
-    4.  Add the image pull secret to the velero service account
+    4.  Add the image pull secret to the 'velero' service account
         ```
-        oc edit sa velero -n oadp-operator
-
-        imagePullSecrets:
-        - name: velero-dockercfg-gb7lk
-        - name: dockerpullsecret
+        oc secrets link velero dockerpullsecret --for=pull -n oadp-operator
         ```
 
     5.  Restart the velero or restic pods
@@ -367,38 +384,37 @@ DeletionPolicy is Retain, with label "velero.io/csi-volumesnapshot-class" 
 
 1.  ```oc apply -f ocs-storagecluster-rbdplugin-snapclass-velero.yaml```
 
-    ```
-    apiVersion: snapshot.storage.k8s.io/v1beta1 
-    deletionPolicy: Retain 
-    driver: openshift-storage.rbd.csi.ceph.com 
-    kind: VolumeSnapshotClass 
-    metadata: 
-        name: ocs-storagecluster-rbdplugin-snapclass-velero 
-        labels: 
-        velero.io/csi-volumesnapshot-class: "true" 
-    parameters: 
-        clusterID: openshift-storage 
-        csi.storage.k8s.io/snapshotter-secret-name: rook-csi-rbd-provisioner 
-        csi.storage.k8s.io/snapshotter-secret-namespace: openshift-storage
-
-    ```
+```
+apiVersion: snapshot.storage.k8s.io/v1beta1 
+deletionPolicy: Retain 
+driver: openshift-storage.rbd.csi.ceph.com 
+kind: VolumeSnapshotClass 
+metadata: 
+  name: ocs-storagecluster-rbdplugin-snapclass-velero 
+  labels: 
+    velero.io/csi-volumesnapshot-class: "true" 
+parameters: 
+  clusterID: openshift-storage 
+  csi.storage.k8s.io/snapshotter-secret-name: rook-csi-rbd-provisioner 
+  csi.storage.k8s.io/snapshotter-secret-namespace: openshift-storage
+```
 
 2.  ```oc apply -f ocs-storagecluster-cephfsplugin-snapclass-velero.yaml```
 
-    ```
-    apiVersion: snapshot.storage.k8s.io/v1beta1 
-    deletionPolicy: Retain 
-    driver: openshift-storage.cephfs.csi.ceph.com 
-    kind: VolumeSnapshotClass 
-    metadata: 
-        name: ocs-storagecluster-cephfsplugin-snapclass-velero 
-        labels: 
-        velero.io/csi-volumesnapshot-class: "true" 
-    parameters: 
-        clusterID: openshift-storage 
-        csi.storage.k8s.io/snapshotter-secret-name: rook-csi-cephfs-provisioner 
-        csi.storage.k8s.io/snapshotter-secret-namespace: openshift-storage
-    ```
+```
+apiVersion: snapshot.storage.k8s.io/v1beta1 
+deletionPolicy: Retain 
+driver: openshift-storage.cephfs.csi.ceph.com 
+kind: VolumeSnapshotClass 
+metadata: 
+  name: ocs-storagecluster-cephfsplugin-snapclass-velero 
+  labels: 
+    velero.io/csi-volumesnapshot-class: "true" 
+parameters: 
+  clusterID: openshift-storage 
+  csi.storage.k8s.io/snapshotter-secret-name: rook-csi-cephfs-provisioner 
+  csi.storage.k8s.io/snapshotter-secret-namespace: openshift-storage
+```
 
 
 ## Example Steps for Restic Backup
@@ -412,7 +428,7 @@ DeletionPolicy is Retain, with label "velero.io/csi-volumesnapshot-class" 
 
 1.  Create a backup with restic for the entire CPD instance namespace, e.g.:
     ```
-    cpd-cli oadp backup create --include-namespaces=zen --exclude-resources='Event,Event.events.k8s.io' --default-volumes-to-restic --cleanup-completed-resources zen-backup --log-level=debug --verbose
+    cpd-cli oadp backup create --include-namespaces=zen --exclude-resources='Event,Event.events.k8s.io' --default-volumes-to-restic --snapshot-volumes=false --cleanup-completed-resources zen-backup --log-level=debug --verbose
     ```
 
 2.  Note down and save the values of the following annotations in the backup namespace
@@ -515,7 +531,7 @@ Multiple namespaces, separated by commas, can be specified in
 
 Create a restic backup for CPD instance namespaces zen1 and zen2, e.g.:
 ```
-cpd-cli oadp backup create --include-namespaces=zen1,zen2 --exclude-resources='Event,Event.events.k8s.io' --default-volumes-to-restic --cleanup-completed-resources zen-backup --log-level=debug --verbose
+cpd-cli oadp backup create --include-namespaces=zen1,zen2 --exclude-resources='Event,Event.events.k8s.io' --default-volumes-to-restic --snapshot-volumes=false --cleanup-completed-resources zen-backup --log-level=debug --verbose
 ```
 
 ### Restore
@@ -553,18 +569,18 @@ cpd-cli oadp backup create --include-namespaces=zen1,zen2 --exclude-resources='E
 
     When the backup is complete, check that snapshots are created and READYTOUSE is true.
 
-    ```
-    oc get volumesnapshots -n zen 
+```
+oc get volumesnapshots -n zen 
 
-    NAME                                     READYTOUSE   SOURCEPVC   SOURCESNAPSHOTCONTENT                                 RESTORESIZE   SNAPSHOTCLASS                                      SNAPSHOTCONTENT                                       CREATIONTIME   AGE 
-    velero-cpd-install-operator-pvc-rbcqf    true                     velero-velero-cpd-install-operator-pvc-rbcqf-8hm5c    0             ocs-storagecluster-cephfsplugin-snapclass-velero   velero-velero-cpd-install-operator-pvc-rbcqf-8hm5c    2d3h           2d3h 
-    velero-cpd-install-shared-pvc-hkh2g      true                     velero-velero-cpd-install-shared-pvc-hkh2g-bfq4g      0             ocs-storagecluster-cephfsplugin-snapclass-velero   velero-velero-cpd-install-shared-pvc-hkh2g-bfq4g      2d3h           2d3h 
-    velero-datadir-zen-metastoredb-0-qhhkb   true                     velero-velero-datadir-zen-metastoredb-0-qhhkb-h7nt5   0             ocs-storagecluster-rbdplugin-snapclass-velero      velero-velero-datadir-zen-metastoredb-0-qhhkb-h7nt5   2d3h           2d3h 
-    velero-datadir-zen-metastoredb-1-gvxrw   true                     velero-velero-datadir-zen-metastoredb-1-gvxrw-klfgf   0             ocs-storagecluster-rbdplugin-snapclass-velero      velero-velero-datadir-zen-metastoredb-1-gvxrw-klfgf   2d3h           2d3h 
-    velero-datadir-zen-metastoredb-2-9gsvk   true                     velero-velero-datadir-zen-metastoredb-2-9gsvk-ggtfn   0             ocs-storagecluster-rbdplugin-snapclass-velero      velero-velero-datadir-zen-metastoredb-2-9gsvk-ggtfn   2d3h           2d3h 
-    velero-influxdb-pvc-5x8zh                true                     velero-velero-influxdb-pvc-5x8zh-twt2q                0             ocs-storagecluster-cephfsplugin-snapclass-velero   velero-velero-influxdb-pvc-5x8zh-twt2q                2d3h           2d3h 
-    velero-user-home-pvc-kbsn5               true                     velero-velero-user-home-pvc-kbsn5-m7g55               0             ocs-storagecluster-cephfsplugin-snapclass-velero   velero-velero-user-home-pvc-kbsn5-m7g55               2d3h           2d3h
-    ``` 
+NAME                                     READYTOUSE   SOURCEPVC   SOURCESNAPSHOTCONTENT                                 RESTORESIZE   SNAPSHOTCLASS                                      SNAPSHOTCONTENT                                       CREATIONTIME   AGE 
+velero-cpd-install-operator-pvc-rbcqf    true                     velero-velero-cpd-install-operator-pvc-rbcqf-8hm5c    0             ocs-storagecluster-cephfsplugin-snapclass-velero   velero-velero-cpd-install-operator-pvc-rbcqf-8hm5c    2d3h           2d3h 
+velero-cpd-install-shared-pvc-hkh2g      true                     velero-velero-cpd-install-shared-pvc-hkh2g-bfq4g      0             ocs-storagecluster-cephfsplugin-snapclass-velero   velero-velero-cpd-install-shared-pvc-hkh2g-bfq4g      2d3h           2d3h 
+velero-datadir-zen-metastoredb-0-qhhkb   true                     velero-velero-datadir-zen-metastoredb-0-qhhkb-h7nt5   0             ocs-storagecluster-rbdplugin-snapclass-velero      velero-velero-datadir-zen-metastoredb-0-qhhkb-h7nt5   2d3h           2d3h 
+velero-datadir-zen-metastoredb-1-gvxrw   true                     velero-velero-datadir-zen-metastoredb-1-gvxrw-klfgf   0             ocs-storagecluster-rbdplugin-snapclass-velero      velero-velero-datadir-zen-metastoredb-1-gvxrw-klfgf   2d3h           2d3h 
+velero-datadir-zen-metastoredb-2-9gsvk   true                     velero-velero-datadir-zen-metastoredb-2-9gsvk-ggtfn   0             ocs-storagecluster-rbdplugin-snapclass-velero      velero-velero-datadir-zen-metastoredb-2-9gsvk-ggtfn   2d3h           2d3h 
+velero-influxdb-pvc-5x8zh                true                     velero-velero-influxdb-pvc-5x8zh-twt2q                0             ocs-storagecluster-cephfsplugin-snapclass-velero   velero-velero-influxdb-pvc-5x8zh-twt2q                2d3h           2d3h 
+velero-user-home-pvc-kbsn5               true                     velero-velero-user-home-pvc-kbsn5-m7g55               0             ocs-storagecluster-cephfsplugin-snapclass-velero   velero-velero-user-home-pvc-kbsn5-m7g55               2d3h           2d3h
+```
 
 3.  List backups, e.g.:
     ```
@@ -627,56 +643,98 @@ cpd-cli oadp backup create --include-namespaces=zen1,zen2 --exclude-resources='E
 
 Note: Do not force delete the namespace.
 
-1.  Delete Client(s) in CPD-Instance Namespace(s)
+1.  Delete Client(s) in CPD-Instance Namespace(s) - only required if the CPD Instance has been configured with **iamintegration: true**.
     ```
-    # Bedrock watching CPD Instance Namespace:
-    oc delete client -n <CPD Instance Namespace> --all 
-    # Automatically deletes cpd-oidcclient-secret Secret
-      
+    # Bedrock IAM OIDC watching CPD Instance Namespace:
+      oc delete client -n <cpd-instance-namespace> --all
+      # Automatically deletes cpd-oidcclient-secret Secret
+
     # Bedrock not watching CPD Instance Namespace:
-    oc edit client <client-name> -n <CPD Instance Namespace> 
-    # Delete finalizer
-    oc delete client -n <CPD Instance Namespace> --all
-    oc delete secret cpd-oidcclient-secret -n <CPD Instance Namespace>
+      # Get Client name
+      oc get client -n <cpd-instance-namespace>
+
+      # Delete metadata.finalizers from Client
+      oc patch client <client-name> -n <cpd-instance-namespace> -p '{"metadata":{"finalizers":[]}}' --type=merge
+
+      # Delete Clients
+      oc delete client -n <cpd-instance-namespace> --all
+      oc delete secret cpd-oidcclient-secret -n <cpd-instance-namespace> 
     ```
-2.  Delete finalizer from or delete CCS(s) in CPD-Instance Namespace(s)
+
+2.  Delete finalizers from and delete CCS(s) in CPD-Instance Namespace(s)
     ```
-    oc delete ccs -n <CPD Instance Namespace> --all
-    # May need to delete "finalizer" from ccs
-    oc edit ccs <ccs-name> -n <CPD Instance Namespace>
-    # Delete finalizer
+    # Get CCS name
+    oc get ccs -n <cpd-instance-namespace>
+
+    # Delete metadata.finalizers from CCS
+    oc patch ccs <ccs-name> -n <cpd-instance-namespace> -p '{"metadata":{"finalizers":[]}}' --type=merge
+
+    # Delete CCS
+    oc delete ccs -n <cpd-instance-namespace> --all
     ```
-3.  Delete OperandRequest(s) in CPD-Instance Namespace(s)
+
+3.  Delete finalizers from Zen-Service Operand Request in CPD-Instance Namespace(s)
     ```
-    oc delete operandrequests -n <CPD Instance Namespace> --all
+    # Get Zen-Service OperandRequest name, typically "zen-service"
+    oc get operandrequest -n <cpd-instance-namespace>
+
+    # Delete metadata.finalizers from Zen-Service Operand Request
+    oc patch operandrequest <zen-service-operandrequest-name> -n <cpd-instance-namespace> -p '{"metadata":{"finalizers":[]}}' --type=merge  
     ```
-4.  Delete ZenService(s) in CPD-Instance Namespace(s)
+    
+4.  Delete OperandRequest(s) in CPD-Instance Namespace(s)
     ```
-    oc delete zenservice -n <CPD Instance Namespace> --all
+    oc delete operandrequests -n <cpd-instance-namespace> --all
     ```
-5.  Delete finalizer from the admin RoleBinding in CPD-Instance Namespace(s)
+
+5.  Delete ZenService(s) in CPD-Instance Namespace(s)
     ```
-    oc edit rolebinding admin -n <CPD Instance Namespace>
-    # Remove finalizer from RoleBinding
+    oc delete zenservice -n <cpd-instance-namespace> --all
     ```
-6.  Remove CPD-Instance Namespace(s) from cpd-operators NamespaceScope CR in CPD-Operators Namespace<br>
-    (Only applicable for Custom Install - Bedrock and CPD Operators are deployed in separate Namespaces)
+
+6.  Delete finalizers from the admin RoleBinding in CPD-Instance Namespace(s)
     ```
-    oc edit namespacescope cpd-operators -n <CPD Operators Namespace>
-    # Remove <CPD Instance> Namespace from namespaceMembers field
+    oc patch rolebinding admin -n <cpd-instance-namespace> -p '{"metadata":{"finalizers":[]}}' --type=merge  
     ```
-7.  Delete CPD-Instance Namespace(s)
+
+7.  Remove CPD-Instance Namespace(s) from cpd-operators NamespaceScope CR in CPD-Operators Namespace
+    (Only applicable for Custom/Specialized Install - Bedrock and CPD Operators are deployed in separate Namespaces)
     ```
-    oc delete namespace <CPD Instance Namespace>
+    oc edit namespacescope cpd-operators -n <cpd-operators-namespace>
+    # Remove <cpd-instance-namespace> Namespace from namespaceMembers field
+      
+      or
+      
+    # Retrieve existing namespaceMembers field
+    oc get namespacescope cpd-operators -n <cpd-operators-namespace> -o jsonpath={.spec.namespaceMembers}
+    # Remove <cpd-instance-namespace> Namespace from namespaceMembers field
+    oc patch namespacescope cpd-operators -n <cpd-operators-namespace> -p $'{"spec":{"namespaceMembers":["<remaining-namespaces"]}}' --type=merge
+    ```
+
+8.  Delete CPD-Instance Namespace(s), remove any remaining finalizers
+    ```
+    oc delete ns <cpd-instance-namespace>
+    
+    # Confirm project delete and check for status messages of "type": "NamespaceFinalizersRemaining"
+    oc get project <cpd-instance-namespace> -o jsonpath="{.status}"
+
+    # If finalizers are remaining, follow pattern above to locate Resources and Delete finalizers
     ```
 
 ## Restoring CPD Instance Namespace to Same Cluster
 
 1.  Add CPD-Instance Namespace(s) to cpd-operators NamespaceScope CR in CPD-Operators Namespace<br>
-    (Only applicable for Custom Install - Bedrock and CPD Operators are deployed in separate Namespaces)
+    (Only applicable for Custom/Specialized Install - Bedrock and CPD Operators are deployed in separate Namespaces)
     ```
-    oc edit namespacescope cpd-operators -n <CPD Operators Namespace>
-    Add <CPD Instance> Namespace to the namespaceMembers field
+    oc edit namespacescope cpd-operators -n <cpd-operators-namespace>
+    # Add <cpd-instance-namespace> to the namespaceMembers field
+      
+      or
+      
+    # Retrieve existing namespaceMembers field
+    oc get namespacescope cpd-operators -n <cpd-operators-namespace> -o jsonpath={.spec.namespaceMembers}
+    # Add <cpd-instance-namespace> Namespace from namespaceMembers field
+    oc patch namespacescope cpd-operators -n <cpd-operators-namespace> -p $'{"spec":{"namespaceMembers":["<existing-namespaces","<cpd-instance-namespace>"]}}' --type=merge
     ```
 
 ```
@@ -684,13 +742,13 @@ apiVersion: operator.ibm.com/v1
 kind: NamespaceScope
 metadata:
   name: cpd-operators
-  namespace: <CPD Operators Namespace>
+  namespace: <cpd-operators-namespace>
 spec:
   csvInjector:
     enable: false
   namespaceMembers:
-  - <CPD Operators Namespace>
-  - <CPD Instance Namespace>
+  - <cpd-operators-namespace>
+  - <cpd-instance-namespace>
 ```
 
 2.  Restore CPD-Instance Namespace(s) using cpdbr-oadp.
@@ -704,6 +762,19 @@ For additional tracing, run commands using --log-level=debug --verbose.
 
 ### Velero log
 In the oadp-operator namespace, check the log of the velero pod for errors.
+
+## General OADP Installation Troubleshooting Tips
+
+1.  Check that the MinIO pods in the “velero” namespace are up and running.  Run “oc describe po” and “oc logs” on any pods that are failing for diagnostic information.
+2.  Check that the velero and restic pods in the “oadp-operator” namespace are up and running.  Run “oc describe po” and “oc logs” on any pods that are failing for diagnostic information.
+
+## Uninstalling OADP and Velero
+1.  Uninstall the Velero instance in the OADP operator using the OpenShift Console
+2.  Uninstall the OADP operator using the OpenShift Console
+3.  Run
+    ```
+    oc delete crd $(oc get crds | grep velero.io | awk -F ' ' '{print $1}')
+    ```
 
 
 
