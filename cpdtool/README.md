@@ -1,6 +1,6 @@
 ## CPD Export And Import CLI
 
-cpdtool version 4.0.0.  Included as a part of cpd-cli 10.x.  For use with CPD 4.0.x, 3.5.x, 3.0.x.
+cpdtool version 4.0.0.  Included as a part of the latest cpd-cli 10.x release.  For use with CPD 4.0.x, 3.5.x, 3.0.x.
 
 The export-import CLI a command line interface (CLI) utility for CloudPak for Data (CPD) that can perform 
 CPD addon auxiliary functions such as export and import through registered CPD auxiliary assemblies. It allows 
