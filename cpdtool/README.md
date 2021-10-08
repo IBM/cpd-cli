@@ -8,8 +8,9 @@ for the migration of Cloud Pak for Data metadata from one cluster to another.
 
 ### Prerequisite
 1. The OpenShift client "oc" is included in the PATH and has access to the cluster
-1. profile / config must be set prior executing export-import commands, profile setup instructions are [here](https://www.ibm.com/docs/en/cloud-paks/cp-data/3.5.0?topic=installing-creating-cpd-cli-profile)
-1. setup a shared volume PVC/PV
+1. Profile / config must be set prior executing export-import commands, profile setup instructions are [here](https://www.ibm.com/docs/en/cloud-paks/cp-data/3.5.0?topic=installing-creating-cpd-cli-profile)
+1. Setup a shared volume PVC/PV
+1. If CPD is installed on NFS, NFS storage must be configured with no_root_squash.
 
 ### Security And Roles
 export-import requires cluster admin or similar roles 
