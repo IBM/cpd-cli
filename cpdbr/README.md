@@ -21,15 +21,18 @@ that recreates your Kubernetes resources such as configmaps, secrets, pvcs, pvs,
 Your service may need to provide pre/post scripts to handle backup and restore scenarios that may be applicable 
 to your service.
 
+Volume-only backup and snapshot can only be used on the CPD instance namespace (e.g. zen), and not for Foundational or CPD operators namespaces (e.g. ibm-common-services).   
+
 ### Prerequisite
 1. The OpenShift client "oc" is included in the PATH and has access to the cluster
-1. setup a shared volume PVC/PV
-1. setup a Kubernetes secret for repository
+1. Setup a shared volume PVC/PV
+1. Setup a Kubernetes secret for repository
 1  oc 3.11+
-1. additional prerequistes for snapshot related commands:
+1. Additional prerequistes for snapshot related commands:
      - Portworx 2.3.4+ (Enterprise)
      - Stork 2.3.2+  [https://github.com/libopenstorage/stork](https://github.com/libopenstorage/stork)
-     
+1. If CPD is installed on NFS, NFS storage must be configured with no_root_squash for volume-backup with restic.
+
 
 ### Security And Roles
 backup-restore requires cluster admin or similar roles that are able to create/read/write/delete access Stork CRDs and the
@@ -202,17 +205,26 @@ oc create secret generic -n zen cpdbr-repo-secret \
 #### Initialize backup-restore
 Note your docker image registry may be different than what is documented here, so please adjust those related flags accordingly.
 
-OpenShift 4.x example:
+##### S3 Repository Example
+OpenShift 4.x:
 ```
 # Initialize the cpdbr first with pvc name and s3 storage.  Note that the bucket must exist.
 $ cpd-cli backup-restore init --namespace $NAMESPACE --pvc-name cpdbr-pvc --image-prefix=image-registry.openshift-image-registry.svc:5000/$NAMESPACE \
      --provider=s3 --s3-endpoint="s3 endpoint" --s3-bucket=cpdbr --s3-prefix=$NAMESPACE/
 ```
-OpenShift 3.11 example:
+
+OpenShift 3.11:
 ```
 # Initialize the cpdbr first with pvc name and s3 storage.  Note that the bucket must exist.
 $ cpd-cli backup-restore init -n $NAMESPACE --pvc-name cpdbr-pvc --image-prefix=docker-registry.default.svc:5000/$NAMESPACE \
      --provider=s3 --s3-endpoint="s3 endpoint" --s3-bucket=cpdbr --s3-prefix=$NAMESPACE/
+```
+
+##### Local Repository Example
+```
+cpd-cli backup-restore init -n zen --log-level=debug --verbose --pvc-name cpdbr-pvc \ 
+             --image-prefix=image-registry.openshift-image-registry.svc:5000/zen \
+             --provider=local
 ```
 
 
@@ -380,6 +392,19 @@ cpd-cli backup-restore volume-restore create --from-backup myid --namespace zen 
 # unquiesce deployments and statefulsets for zen namespace (calls unquiesce hooks or scales up resources)
 cpd-cli backup-restore unquiesce -n zen
 ```
+
+### Checking Logs for Errors
+
+#### cpdbr/cpd-cli log
+The CPD-CLI\*.log can be found in cpd-cli-workspace/logs.  Errors during quiesce and unquiesce are captured in this log.
+
+For additional tracing, run commands using --log-level=debug --verbose.
+
+#### volume backup and restore log
+
+Check "cpd-cli backup-restore volume-backup logs \<backup-name\>" or "cpd-cli backup-restore volume-restore logs \<restore-name\>" for errors.  
+Errors running the backup/restore job are captured in these logs.
+
 
 ### Command References
 
@@ -886,7 +911,7 @@ Global Flags:
 Unlock a volume backup
 
 Usage:
-  cpd-cli backup-restore volume-backup unlock NAME [flags]
+  cpd-cli backup-restore volume-backup unlock [flags]
 
 Flags:
   -h, --help   help for unlock
