@@ -1,11 +1,12 @@
 # CPD OADP Backup And Restore CLI
 
-cpdbr-oadp version 4.0.0 (Technology Preview).  Included as a part of the latest cpd-cli 10.x release.  For use with CPD 4.0.x.
+cpdbr-oadp version 4.0.0.  Included as a part of the latest cpd-cli 10.x release.  For use with CPD 4.0.2 and above.
 
 ## Overview
 
-This document shows example steps to perform backup and restore of the
-CPD instance namespace using:
+This README shows example usage of cpdbr-oadp, a backup utility for Cloud Pak for Data.
+Steps are shown to perform offline backup and restore of an CPD instance namespace on the same cluster.
+The backup utility requires the following components:
 - OADP/Velero (OpenShift API for Data Protection) and its default plugins
 - A custom Velero plugin *cpdbr-velero-plugin*
 - The *cpd-cli oadp* CLI, also referred to as *cpdbr-oadp*.  The cpdbr-oadp CLI is included as a part of the cpd-cli utility.
@@ -23,7 +24,7 @@ defined by CPD services via CPD backup/restore ConfigMaps to quiesce before
 performing a backup. After the backup is completed, the post-backup
 hooks are invoked to unquiesce. Exec hooks can be also defined via
 Velero annotations. If no hooks are specified, the cpdbr-oadp default
-handler performs pod scale down/up on the "unmanaged" k8s workload.
+handler performs pod scale down/up on the "unmanaged" K8s workloads.
 
 There are two types of backups, Velero restic and Ceph CSI snapshots on
 OCS.
@@ -39,33 +40,17 @@ instead of performing a full copy. However, there is currently no method
 to move data from Ceph snapshots to another cluster, and thus snapshots
 should not be used for disaster recovery purposes.
 
-## Backup/Restore Scenarios for CPD 4.0 (Technology Preview)
-- cpdbr-oadp can only be used to backup and restore CPD instance namespaces to the same cluster,
-  for CPD services that support backups with OADP.<br>
-  The Bedrock/Foundational Services namespace and CPD operators namespace must still exist.
-- CPD instances must be installed with iamintegration: false.
-- List of CPD services that can be backed up/restored using OADP:
-    - Db2 (oltp & wh)
-    - DO
-    - BigSQL
-    - WML
-    - Spark
-    - SPSS
-    - CCS
-    - WSL
-    - WML-A
-    - DV
-    - Hadoop Integration
-    - DataStage
+## Backup/Restore Scenario
+- This README contains example usage of cpdbr-oadp.  Steps are shown to backup and restore a CPD instance namespace on
+  the same cluster, for CPD services that support backups with OADP.<br>
+  The Foundational Services namespace and CPD operators namespace must still exist.
+- For backing up and restoring Cloud Pak for Data on a new cluster, refer to the IBM Cloud Pak for Data documentation.
 
 ## System Requirements
 
 Cluster
-- OADP is available for OCP 4.5+ on linux x86\_64. It is not available for ppc64le and s390x.
-- OADP cannot be used in an air-gapped environment.  There must be network access to image
-  registries such as quay.io and docker.io.
-- The cpdbr-velero-plugin is available only for linux x86\_64.
-- cpdbr-oadp's deployment for restic backups needs network access to the image registry registry.redhat.io.
+- OADP is available for OCP 4.6+ on linux x86_64. It is not available for ppc64le and s390x.
+- The cpdbr-velero-plugin is available only for linux x86_64.
 - Ceph CSI snapshots is available for OCS 4.6+
 - If CPD is installed on NFS, NFS storage must be configured with no_root_squash for OADP restic backups.
 
@@ -108,7 +93,7 @@ Example using NFS storage class:
 1.  ```wget https://github.com/vmware-tanzu/velero/releases/download/v1.6.0/velero-v1.6.0-linux-amd64.tar.gz```
 2.  ```tar xvfz velero-v1.6.0-linux-amd64.tar.gz```
 3.  From the extracted velero folder, run the following. This creates a
-    MinIO deployment in the "velero" namespace.
+    sample MinIO deployment in the "velero" namespace.
     ```
     oc apply -f examples/minio/00-minio-deployment.yaml
     ```
@@ -121,7 +106,7 @@ Example using NFS storage class:
 
     If this occurs, try the following:
 
-    1.  Create a docker account
+    1.  Create a docker account and login
 
     2.  Obtain an access token from
         <https://hub.docker.com/settings/security>
@@ -140,6 +125,8 @@ Example using NFS storage class:
    ```
    oc set image deployment/minio minio=minio/minio:RELEASE.2021-06-17T00-10-46Z -n velero
    ```
+
+#### Creating PVCs for MinIO
 5.  Create two persistent volumes and update the deployment. Change the
     storage class and size as needed.
 
@@ -192,15 +179,20 @@ Example using NFS storage class:
         oc set volume deployment.apps/minio --add --overwrite --name=storage --mount-path=/storage --type=persistentVolumeClaim --claim-name="minio-storage-pvc" -n velero
         ```
 
-6.  Check that the MinIO pods are up and running.
+6.  Set resource limits for the minio deployment.
+    ```
+    oc set resources deployment minio -n velero --requests=cpu=500m,memory=256Mi --limits=cpu=1,memory=1Gi
+    ```
+
+7.  Check that the MinIO pods are up and running.
     ```
     oc get pods -n velero
     ```
-7.  Expose the minio service
+8.  Expose the minio service
     ```
     oc expose svc minio -n velero
     ```
-8.  Get the MinIO URL
+9.  Get the MinIO URL
     ```
     oc get route minio -n velero
     ```
@@ -212,7 +204,83 @@ Example using NFS storage class:
 
     minio/minio123
 
-9.  Go to the MinIO web UI and create a bucket called "velero"
+10.  Go to the MinIO web UI and create a bucket called "velero"
+
+### Sample Object Store using MinIO (Air-Gapped Installation)
+
+For testing purposes, steps are shown to install a local MinIO server, which is an
+open-source object store.
+
+1. On a cluster with network access, pull MinIO images and save them as files.
+    ```
+    # Cluster needs access to docker.io
+
+    # Login to docker.io to avoid pull rate limit errors.  Create a Docker account if needed.
+    podman login docker.io
+
+    podman pull docker.io/minio/minio:RELEASE.2021-06-17T00-10-46Z
+    podman save docker.io/minio/minio:RELEASE.2021-06-17T00-10-46Z > minio-img-RELEASE.2021-06-17T00-10-46Z.tar
+
+    podman pull docker.io/minio/mc:latest
+    podman save docker.io/minio/mc:latest > mc-img-latest.tar
+    ```
+
+2. Download Velero, which includes a sample MinIO deployment
+    ```
+    wget https://github.com/vmware-tanzu/velero/releases/download/v1.6.0/velero-v1.6.0-linux-amd64.tar.gz
+    ```
+
+3. Transfer the image tar files and Velero tar.gz to the air-gapped cluster
+
+4. On the air-gapped cluster, create the "velero" namespace.
+
+5. Push the images to the internal registry.
+    ```
+    IMAGE_REGISTRY=`oc get route -n openshift-image-registry | grep image-registry | awk '{print $2}'`
+    echo $IMAGE_REGISTRY
+    NAMESPACE=velero
+    echo $NAMESPACE
+
+    # Login to internal registry
+    podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
+
+    podman load -i minio-img-RELEASE.2021-06-17T00-10-46Z.tar
+    podman tag docker.io/minio/minio:RELEASE.2021-06-17T00-10-46Z $IMAGE_REGISTRY/$NAMESPACE/minio:RELEASE.2021-06-17T00-10-46Z
+    podman push $IMAGE_REGISTRY/$NAMESPACE/minio:RELEASE.2021-06-17T00-10-46Z --tls-verify=false
+
+    podman load -i mc-img-latest.tar
+    podman tag docker.io/minio/mc:latest $IMAGE_REGISTRY/$NAMESPACE/mc:latest
+    podman push $IMAGE_REGISTRY/$NAMESPACE/mc:latest --tls-verify=false
+    ```
+    
+6. Extract the Velero tar.gz
+    ```
+    tar xvfz velero-v1.6.0-linux-amd64.tar.gz
+    ```
+
+7. From the extracted velero folder, modify the sample MinIO deployment yaml
+    ```
+    vi examples/minio/00-minio-deployment.yaml
+
+    a. Change
+    image: minio/minio:latest
+    to 
+    image: image-registry.openshift-image-registry.svc:5000/velero/minio:RELEASE.2021-06-17T00-10-46Z
+
+    b. Change
+    image: minio/mc:latest
+    to
+    image: image-registry.openshift-image-registry.svc:5000/velero/mc:latest
+    ```
+
+8. From the extracted velero folder, run the following. This creates a sample MinIO deployment in the "velero" namespace.
+    ```
+    oc apply -f examples/minio/00-minio-deployment.yaml
+    ```
+
+9. Create two PVCs for Minio, and follow the remaining steps.
+   
+   See [Creating PVCs for MinIO](#creating-pvcs-for-minio)
 
 
 ### Install the cpdbr-velero-plugin
@@ -245,19 +313,25 @@ Example using NFS storage class:
 
 Note: At the time of this writing, OADP is at version 0.2.6 (using velero v1.6.0 RC1)
 
-1.  OADP can be installed from the OperatorHub in the Openshift Console
+1. Annotate the OADP operator namespace so that restic pods can be scheduled on all nodes.
+   ```
+   oc annotate namespace oadp-operator openshift.io/node-selector=""
+   ```
+
+2.  OADP can be installed from the OperatorHub in the Openshift Console
 
     Follow the steps in
 
-    <https://github.com/konveyor/oadp-operator#getting-started-with-basic-install-olmoperatorhub>
+    <https://github.com/openshift/oadp-operator/tree/oadp-0.2.6/#getting-started-with-basic-install-olmoperatorhub>
 
-2.  Create a secret in the "oadp-operator" namespace with the object store credentials
+    Note: For OADP 0.2.6, select the "alpha" Update Channel in OperatorHub -> OADP Operator -> Install -> Install Operator (Update Channel)
 
-    1.  Create a file "credentials-velero" containing the credentials for the object store
+3.  Create a secret in the "oadp-operator" namespace with the object store credentials
 
-        ```
+    1.  Create a file "credentials-velero" containing the credentials for the object store<br>
         vi credentials-velero
 
+        ```
         [default]
         aws_access_key_id=minio
         aws_secret_access_key=minio123
@@ -267,20 +341,20 @@ Note: At the time of this writing, OADP is at version 0.2.6 (using velero v1.6.0
     2.  ```oc create secret generic oadp-repo-secret --namespace oadp-operator --from-file cloud=./credentials-velero```
 
 
-3.  Create a Velero instance
+4.  Create a Velero instance (OADP 0.2.6)
 
     Follow the steps in
 
-    <https://github.com/konveyor/oadp-operator#creating-velero-cr>
+    <https://github.com/openshift/oadp-operator/tree/oadp-0.2.6/#creating-velero-cr>
 
     The following is an example of a custom resource for a Velero
     instance. Note that the CSI plugin is enabled, which allows snapshots
-    of CSI-backed volumes. Restic is enabled via enable\_restic: true
+    of CSI-backed volumes. Restic is enabled via enable_restic: true
 
-    The cpdbr-velero-plugin is specified under the custom\_velero\_plugins
+    The cpdbr-velero-plugin is specified under the custom_velero_plugins
     property.
 
-    Replace the "s\_3\_\_url" in the backup storage location with the URL
+    Replace the "s_3__url" in the backup storage location with the URL
     of the object store obtained above.
 
     Note: If the s3 url needs to changed after Velero is installed, uninstall Velero and OADP, and reinstall.
@@ -325,14 +399,15 @@ spec:
   restic_resource_allocation:
     limits:
       cpu: "1"
-      memory: 16Gi
+      memory: 4Gi
     requests:
       cpu: 500m
       memory: 256Mi
 
 ```
 
-4.  Check that the velero pods are running in the "oadp-operator" namespace
+5.  Check that the velero pods are running in the "oadp-operator" namespace.  
+    The restic daemonset should create one restic pod for each worker node.
     ```
     oc get po -n oadp-operator
 
@@ -354,7 +429,7 @@ spec:
 
     If this occurs, try the following:
 
-    1.  Create a docker account
+    1.  Create a docker account and login
 
     2.  Obtain an access token from
         <https://hub.docker.com/settings/security>
@@ -370,6 +445,213 @@ spec:
 
     5.  Restart the velero or restic pods
 
+### OAPD Air-gapped Installation Example (OADP 0.2.6)
+
+1. On a cluster with network access, pull images and save them as files.
+    ```
+    # Requires access to docker.io, quay.io, and registry.redhat.io.
+    CPU_ARCH=`uname -m`
+    echo $CPU_ARCH
+    BUILD_NUM=1
+    echo $BUILD_NUM
+
+    # Login to registry.redhat.io.  Create a Red Hat account if needed.
+    podman login registry.redhat.io
+
+    # Login to docker.io to avoid pull rate limit errors.  Create a Docker account if needed.
+    podman login docker.io
+
+    podman pull docker.io/ibmcom/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}
+    podman save docker.io/ibmcom/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH} > cpdbr-velero-plugin-img-4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}.tar
+
+    podman pull quay.io/konveyor/registry:oadp-0.2.6
+    podman save quay.io/konveyor/registry:oadp-0.2.6 > registry-img-026.tar
+
+    podman pull quay.io/konveyor/oadp-operator:v0.2.6
+    podman save quay.io/konveyor/oadp-operator:v0.2.6 > oadp-operator-img-026.tar
+
+    podman pull quay.io/konveyor/velero:konveyor-oadp
+    podman save quay.io/konveyor/velero:konveyor-oadp > velero-img-konveyor-oadp.tar
+
+    podman pull quay.io/konveyor/openshift-velero-plugin:oadp-dev
+    podman save quay.io/konveyor/openshift-velero-plugin:oadp-dev > openshift-velero-plugin-img-oadp-dev.tar
+
+    podman pull quay.io/konveyor/velero-plugin-for-aws:konveyor-oadp
+    podman save quay.io/konveyor/velero-plugin-for-aws:konveyor-oadp > velero-plugin-for-aws-img-konveyor-oadp.tar
+
+    podman pull docker.io/velero/velero-plugin-for-csi:main
+    podman save docker.io/velero/velero-plugin-for-csi:main > velero-plugin-for-csi-img-main.tar
+
+    podman pull docker.io/velero/velero-restic-restore-helper:latest
+    podman save docker.io/velero/velero-restic-restore-helper:latest > velero-restic-restore-helper-img-latest.tar
+
+    podman pull registry.redhat.io/ubi8/ubi-minimal:latest
+    podman save registry.redhat.io/ubi8/ubi-minimal:latest > ubi-minimal-img-latest.tar
+    ```
+
+
+2. Clone and tar the OADP git repository
+    ```
+    git clone https://github.com/openshift/oadp-operator.git --branch v0.2.6
+    tar cvfz oadp-operator.tgz oadp-operator
+    ```
+
+3. Transfer the image tar files and OADP git repo tgz to the air-gapped cluster
+
+4. On the air-gapped cluster, create the "oadp-operator" namespace.
+
+5. Push the images to the internal registry.
+    ```
+    IMAGE_REGISTRY=`oc get route -n openshift-image-registry | grep image-registry | awk '{print $2}'`
+    echo $IMAGE_REGISTRY
+    NAMESPACE=oadp-operator
+    echo $NAMESPACE
+    CPU_ARCH=`uname -m`
+    echo $CPU_ARCH
+    BUILD_NUM=1
+    echo $BUILD_NUM
+
+    # Login to internal registry
+    podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
+
+    podman load -i cpdbr-velero-plugin-img-4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}.tar
+    podman tag docker.io/ibmcom/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}
+    podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
+
+    podman load -i registry-img-026.tar
+    podman tag quay.io/konveyor/registry:oadp-0.2.6 $IMAGE_REGISTRY/$NAMESPACE/registry:oadp-0.2.6
+    podman push $IMAGE_REGISTRY/$NAMESPACE/registry:oadp-0.2.6 --tls-verify=false
+
+    podman load -i oadp-operator-img-026.tar
+    podman tag quay.io/konveyor/oadp-operator:v0.2.6 $IMAGE_REGISTRY/$NAMESPACE/oadp-operator:v0.2.6
+    podman push $IMAGE_REGISTRY/$NAMESPACE/oadp-operator:v0.2.6 --tls-verify=false
+
+    podman load -i velero-img-konveyor-oadp.tar
+    podman tag quay.io/konveyor/velero:konveyor-oadp $IMAGE_REGISTRY/$NAMESPACE/velero:konveyor-oadp
+    podman push $IMAGE_REGISTRY/$NAMESPACE/velero:konveyor-oadp --tls-verify=false
+
+    podman load -i openshift-velero-plugin-img-oadp-dev.tar
+    podman tag quay.io/konveyor/openshift-velero-plugin:oadp-dev $IMAGE_REGISTRY/$NAMESPACE/openshift-velero-plugin:oadp-dev
+    podman push $IMAGE_REGISTRY/$NAMESPACE/openshift-velero-plugin:oadp-dev --tls-verify=false
+
+    podman load -i velero-plugin-for-aws-img-konveyor-oadp.tar
+    podman tag quay.io/konveyor/velero-plugin-for-aws:konveyor-oadp $IMAGE_REGISTRY/$NAMESPACE/velero-plugin-for-aws:konveyor-oadp
+    podman push $IMAGE_REGISTRY/$NAMESPACE/velero-plugin-for-aws:konveyor-oadp --tls-verify=false
+
+    podman load -i velero-plugin-for-csi-img-main.tar
+    podman tag docker.io/velero/velero-plugin-for-csi:main $IMAGE_REGISTRY/$NAMESPACE/velero-plugin-for-csi:main
+    podman push $IMAGE_REGISTRY/$NAMESPACE/velero-plugin-for-csi:main --tls-verify=false
+
+    podman load -i velero-restic-restore-helper-img-latest.tar
+    podman tag docker.io/velero/velero-restic-restore-helper:latest $IMAGE_REGISTRY/$NAMESPACE/velero-restic-restore-helper:latest
+    podman push $IMAGE_REGISTRY/$NAMESPACE/velero-restic-restore-helper:latest --tls-verify=false
+
+    podman load -i ubi-minimal-img-latest.tar
+    podman tag registry.redhat.io/ubi8/ubi-minimal:latest $IMAGE_REGISTRY/$NAMESPACE/ubi-minimal:latest
+    podman push $IMAGE_REGISTRY/$NAMESPACE/ubi-minimal:latest --tls-verify=false
+    ```
+
+6. Extract the OADP git repository
+    ```
+    tar xvfz oadp-operator.tgz
+    ```
+
+7. Modify the operator yaml file
+    ```
+    cd oadp-operator
+    vi deploy/non-olm/operator.yaml
+
+    Change
+    image: "quay.io/konveyor/oadp-operator:latest"
+    to
+    image: "image-registry.openshift-image-registry.svc:5000/oadp-operator/oadp-operator:v0.2.6"
+    ```
+
+8.  Modify the Velero CR konveyor.openshift.io_v1alpha1_velero_cr.yaml
+
+    Replace the "s_3__url" in the backup storage location with the URL of the object store.
+
+    Note that "olm_managed" is false.
+```
+vi deploy/crds/konveyor.openshift.io_v1alpha1_velero_cr.yaml
+
+
+apiVersion: konveyor.openshift.io/v1alpha1
+kind: Velero
+metadata:
+  name: example-velero
+spec:
+  olm_managed: false
+  custom_velero_plugins:
+  - image: image-registry.openshift-image-registry.svc:5000/oadp-operator/cpdbr-velero-plugin:4.0.0-beta1-1-x86_64
+    name: cpdbr-velero-plugin
+  default_velero_plugins:
+  - aws
+  - openshift
+  - csi
+  backup_storage_locations:
+  - name: default
+    provider: aws
+    object_storage:
+      bucket: velero
+    config:
+      region: minio
+      s3_force_path_style: "true"
+      s3_url: http://minio-velero.apps.mycluster.cp.fyre.ibm.com
+      s_3__force_path_style: "true"
+      s_3__url: http://minio-velero.apps.mycluster.cp.fyre.ibm.com
+    credentials_secret_ref:
+      name: oadp-repo-secret
+      namespace: oadp-operator
+  enable_restic: true
+  velero_resource_allocation:
+    limits:
+      cpu: "1"
+      memory: 512Mi
+    requests:
+      cpu: 500m
+      memory: 256Mi
+  restic_resource_allocation:
+    limits:
+      cpu: "1"
+      memory: 4Gi
+    requests:
+      cpu: 500m
+      memory: 256Mi
+  velero_image_fqin: image-registry.openshift-image-registry.svc:5000/oadp-operator/velero:konveyor-oadp
+  velero_restic_restore_helper_image: image-registry.openshift-image-registry.svc:5000/oadp-operator/velero-restic-restore-helper
+  velero_restic_restore_helper_version: latest
+  velero_aws_plugin_image: image-registry.openshift-image-registry.svc:5000/oadp-operator/velero-plugin-for-aws
+  velero_aws_plugin_version: konveyor-oadp
+  velero_openshift_plugin_image: image-registry.openshift-image-registry.svc:5000/oadp-operator/openshift-velero-plugin
+  velero_openshift_plugin_version: oadp-dev
+  velero_csi_plugin_image: image-registry.openshift-image-registry.svc:5000/oadp-operator/velero-plugin-for-csi
+  velero_csi_plugin_version: main
+  velero_registry_image: image-registry.openshift-image-registry.svc:5000/oadp-operator/registry
+  velero_registry_tag: oadp-0.2.6
+```
+
+9.  Create a secret in the "oadp-operator" namespace with the object store credentials
+
+    1.  Create a file "credentials-velero" containing the credentials for the object store
+
+        ```
+        vi credentials-velero
+
+        [default]
+        aws_access_key_id=minio
+        aws_secret_access_key=minio123
+        ```
+
+
+    2.  ```oc create secret generic oadp-repo-secret --namespace oadp-operator --from-file cloud=./credentials-velero```
+
+10.  Install OADP and a Velero instance
+```
+oc create -f deploy/non-olm -n oadp-operator
+oc create -f deploy/crds/konveyor.openshift.io_veleros_crd.yaml -n oadp-operator
+oc create -f deploy/crds/konveyor.openshift.io_v1alpha1_velero_cr.yaml -n oadp-operator
+```
 
 ### Configure cpdbr-oadp
 
@@ -419,6 +701,14 @@ parameters:
 
 ## Example Steps for Restic Backup
 
+### Prerequistes
+    
+  - Check IBM Cloud Pak for Data documentation to see which services support OADP backup.
+  - Check IBM Cloud Pak for Data documentation for additional backup prerequisite tasks that are service specific.
+
+
+### Configure cpdbr-oadp client
+
    Configure cpdbr-oadp client config to point to the namespace where the velero instance is installed, e.g.:
    ```
    cpd-cli oadp client config set namespace=oadp-operator
@@ -429,6 +719,11 @@ parameters:
 1.  Create a backup with restic for the entire CPD instance namespace, e.g.:
     ```
     cpd-cli oadp backup create --include-namespaces=zen --exclude-resources='Event,Event.events.k8s.io' --default-volumes-to-restic --snapshot-volumes=false --cleanup-completed-resources zen-backup --log-level=debug --verbose
+    ```
+
+    In an air-gapped environment, additionally specify the internal registry image prefix with the OADP namespace.
+    ```
+    cpd-cli oadp backup create --include-namespaces=zen --exclude-resources='Event,Event.events.k8s.io' --default-volumes-to-restic --snapshot-volumes=false --cleanup-completed-resources --image-prefix=image-registry.openshift-image-registry.svc:5000/oadp-operator zen-backup --log-level=debug --verbose
     ```
 
 2.  Note down and save the values of the following annotations in the backup namespace
@@ -468,7 +763,8 @@ parameters:
 
 ### Restic Restore of CPD instance namespace
 
-Restore to same cluster.  Bedrock namespace and CPD operators namespace must still exist.
+Restore to same cluster.  Foundational Services namespace and CPD operators namespace must still exist.
+
 
 1.  To simulate a disaster, delete the CPD instance namespace.
 
@@ -490,11 +786,20 @@ Restore to same cluster.  Bedrock namespace and CPD operators namespace must sti
 
     1.  See steps in [Restoring CPD Instance Namespace to Same Cluster](#restoring-cpd-instance-namespace-to-same-cluster)
 
-    2.  Restore CPD instance namespace
+    2.  Restore Zen Service Custom Resource and Certificates
+        ```
+        cpd-cli oadp restore create --from-backup=zen-backup --include-resources='namespaces,zenservices,secrets,certificates.cert-manager.io,certificates.certmanager.k8s.io,issuers.cert-manager.io,issuers.certmanager.k8s.io' zen-service-restore --skip-hooks --log-level=debug --verbose
+        ```
+
+    3.  Restore CPD instance namespace
         ```
         cpd-cli oadp restore create --from-backup=zen-backup --exclude-resources='ImageTag,clients' zen-restore --include-cluster-resources=true --log-level=debug --verbose
         ```
 
+        In an air-gapped environment, additionally specify the internal registry image prefix with the OADP namespace.
+        ```
+        cpd-cli oadp restore create --from-backup=zen-backup --exclude-resources='ImageTag,clients' zen-restore --include-cluster-resources=true --image-prefix=image-registry.openshift-image-registry.svc:5000/oadp-operator --log-level=debug --verbose
+        ```
 
 4.  List restores
     ```
@@ -542,13 +847,23 @@ cpd-cli oadp backup create --include-namespaces=zen1,zen2 --exclude-resources='E
 
 2.  See steps in [Restoring CPD Instance Namespace to Same Cluster](#restoring-cpd-instance-namespace-to-same-cluster)
 
-3.  Restore CPD instance namespaces
+3.  Restore Zen Service Custom Resource and Certificates
+    ```
+    cpd-cli oadp restore create --from-backup=zen-backup --include-resources='namespaces,zenservices,secrets,certificates.cert-manager.io,certificates.certmanager.k8s.io,issuers.cert-manager.io,issuers.certmanager.k8s.io' zen-service-restore --skip-hooks --log-level=debug --verbose
+    ```
+
+4.  Restore CPD instance namespaces
     ```
     cpd-cli oadp restore create --from-backup=zen-backup --exclude-resources='ImageTag,clients' zen-restore --include-cluster-resources=true --log-level=debug --verbose
     ```
 
 
 ## Examples Steps for Ceph CSI Backup
+
+### Prerequistes
+    
+  - Check IBM Cloud Pak for Data documentation to see which services support OADP backup.
+  - Check IBM Cloud Pak for Data documentation for additional backup prerequisite tasks that are service specific.
 
 ### Storage Requirements
 
@@ -617,7 +932,12 @@ velero-user-home-pvc-kbsn5               true                     velero-velero-
 
     1.  See steps in [Restoring CPD Instance Namespace to Same Cluster](#restoring-cpd-instance-namespace-to-same-cluster)
 
-    2.  Restore CPD instance namespace
+    2.  Restore Zen Service Custom Resource and Certificates
+        ```
+        cpd-cli oadp restore create --from-backup=zen-backup --include-resources='namespaces,zenservices,secrets,certificates.cert-manager.io,certificates.certmanager.k8s.io,issuers.cert-manager.io,issuers.certmanager.k8s.io' zen-service-restore --skip-hooks --log-level=debug --verbose
+        ```
+
+    3.  Restore CPD instance namespace
         ```
         cpd-cli oadp restore create --from-backup=zen-backup --exclude-resources='ImageTag,clients' zen-restore --include-cluster-resources=true --log-level=debug --verbose
         ```
@@ -645,11 +965,11 @@ Note: Do not force delete the namespace.
 
 1.  Delete Client(s) in CPD-Instance Namespace(s) - only required if the CPD Instance has been configured with **iamintegration: true**.
     ```
-    # Bedrock IAM OIDC watching CPD Instance Namespace:
+    # Foundational Services IAM OIDC watching CPD Instance Namespace:
       oc delete client -n <cpd-instance-namespace> --all
       # Automatically deletes cpd-oidcclient-secret Secret
 
-    # Bedrock not watching CPD Instance Namespace:
+    # Foundational Services not watching CPD Instance Namespace:
       # Get Client name
       oc get client -n <cpd-instance-namespace>
 
@@ -661,16 +981,34 @@ Note: Do not force delete the namespace.
       oc delete secret cpd-oidcclient-secret -n <cpd-instance-namespace> 
     ```
 
-2.  Delete finalizers from and delete CCS(s) in CPD-Instance Namespace(s)
+2.  Delete service specific finalizers from service CR's, and delete service CR's in CPD-Instance Namespace(s).
+    Note: This list of service CR's is not comprehensive, and depends on the deployed services.
+
     ```
-    # Get CCS name
+    # Get CCS CR, delete finalizers and delete CR
     oc get ccs -n <cpd-instance-namespace>
-
-    # Delete metadata.finalizers from CCS
     oc patch ccs <ccs-name> -n <cpd-instance-namespace> -p '{"metadata":{"finalizers":[]}}' --type=merge
-
-    # Delete CCS
     oc delete ccs -n <cpd-instance-namespace> --all
+    
+    # Get IIS CR, delete finalizers and delete CR
+    oc get iis  -n <cpd-instance-namespace>
+    oc patch iis <iis-cr-name>  -n <cpd-instance-namespace> -p '{"metadata":{"finalizers":[]}}' --type=merge
+    oc delete iis -n <cpd-instance-namespace> --all
+
+    # Get wKC CR, delete finalizers and delete CR
+    oc get wkc -n <cpd-instance-namespace>
+    oc patch wkc <wkc-cr-name>  -n <cpd-instance-namespace> -p '{"metadata":{"finalizers":[]}}' --type=merge
+    oc delete wkc -n <cpd-instance-namespace> --all
+
+    # Get UG CR, delete finalizers and delete CR
+    oc get ug ug-cr -n <cpd-instance-namespace>
+    oc patch ug ug-cr -n <cpd-instance-namespace>  -p '{"metadata":{"finalizers":[]}}' --type=merge
+    oc delete ug -n <cpd-instance-namespace> --all
+
+    # Get Db2assservice CR, delete finalizers and delete CR
+    oc get Db2aaserviceService -n wkc
+    oc patch  Db2aaserviceService <db2asservice-cr-name> -n <cpd-instance-namespace> -p '{"metadata":{"finalizers":[]}}' --type=merge
+    oc delete Db2aaserviceService  -n <cpd-instance-namespace> --all
     ```
 
 3.  Delete finalizers from Zen-Service Operand Request in CPD-Instance Namespace(s)
@@ -698,7 +1036,7 @@ Note: Do not force delete the namespace.
     ```
 
 7.  Remove CPD-Instance Namespace(s) from cpd-operators NamespaceScope CR in CPD-Operators Namespace
-    (Only applicable for Custom/Specialized Install - Bedrock and CPD Operators are deployed in separate Namespaces)
+    (Only applicable for Custom/Specialized Install - Foundational Services and CPD Operators are deployed in separate Namespaces)
     ```
     oc edit namespacescope cpd-operators -n <cpd-operators-namespace>
     # Remove <cpd-instance-namespace> Namespace from namespaceMembers field
@@ -724,7 +1062,7 @@ Note: Do not force delete the namespace.
 ## Restoring CPD Instance Namespace to Same Cluster
 
 1.  Add CPD-Instance Namespace(s) to cpd-operators NamespaceScope CR in CPD-Operators Namespace<br>
-    (Only applicable for Custom/Specialized Install - Bedrock and CPD Operators are deployed in separate Namespaces)
+    (Only applicable for Custom/Specialized Install - Foundational Services and CPD Operators are deployed in separate Namespaces)
     ```
     oc edit namespacescope cpd-operators -n <cpd-operators-namespace>
     # Add <cpd-instance-namespace> to the namespaceMembers field
@@ -756,25 +1094,40 @@ spec:
 ## Checking Logs for Errors
 
 ### cpdbr-oadp/cpd-cli log
-The CPD-CLI\*.log can be found in cpd-cli-workspace/logs.
+The CPD-CLI\*.log can be found in cpd-cli-workspace/logs.  Errors during prehooks and posthooks are captured in this log.
 
 For additional tracing, run commands using --log-level=debug --verbose.
 
-### Velero log
+### Velero backup and restore log
+
+Check "cpd-cli oadp backup logs \<backup-name\>" or "cpd-cli oadp restore logs \<restore-name\>" for errors.  
+Errors during Velero backup/restore are captured in these logs.
+
+### Velero pod log
 In the oadp-operator namespace, check the log of the velero pod for errors.
 
 ## General OADP Installation Troubleshooting Tips
 
 1.  Check that the MinIO pods in the “velero” namespace are up and running.  Run “oc describe po” and “oc logs” on any pods that are failing for diagnostic information.
 2.  Check that the velero and restic pods in the “oadp-operator” namespace are up and running.  Run “oc describe po” and “oc logs” on any pods that are failing for diagnostic information.
+3.  Check the logs of the velero pod in the "oadp-operator" namespace for errors.
+4.  Check that the Velero CR used to create the Velero instance is correctly indented.
+5.  Check that the contents of the oadp-repo-secret is correct.
 
 ## Uninstalling OADP and Velero
+
+#### Network-Connected Installation
 1.  Uninstall the Velero instance in the OADP operator using the OpenShift Console
 2.  Uninstall the OADP operator using the OpenShift Console
 3.  Run
     ```
     oc delete crd $(oc get crds | grep velero.io | awk -F ' ' '{print $1}')
     ```
-
-
-
+#### Air-gapped Installation
+Uninstall the Velero instance and OADP
+```
+oc delete -f deploy/crds/konveyor.openshift.io_v1alpha1_velero_cr.yaml -n oadp-operator
+oc delete -f deploy/crds/konveyor.openshift.io_veleros_crd.yaml -n oadp-operator
+oc delete -f deploy/non-olm -n oadp-operator
+oc delete crd $(oc get crds | grep velero.io | awk -F ' ' '{print $1}')
+```
