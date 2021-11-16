@@ -6,16 +6,24 @@ The Cloud Pak for Data Operations directory is an adhoc collection of scripts an
 - [Backup and Restore IAM MongoDB](./README-MONGO.md)
 
 ## Download
-The latest Cloud Pak for Data operations scripts and files are available for download individually in the **cpdops/files** subdirectory.  Additionally, all of the files are packaged together in the **cpdops.tgz** tar file available for download by release and platform: 
+The latest Cloud Pak for Data operations scripts and yaml files are available for download individually in the **cpdops/files** subdirectory.  Additionally, all of the files are packaged together in the **cpdops.tgz** tar file available for download by release and platform.  To download the individual script, yaml or tar file(s), execute the corresponding **wget** command:
 ````
 cpdops
     |__ files
+    |       |__ wget -O cpd-operators.sh https://raw.githubusercontent.com/IBM/cpd-cli/master/cpdops/files/cpd-operators.sh
+    |       |__ wget -O mongo-backup-job.yaml https://raw.githubusercontent.com/IBM/cpd-cli/master/cpdops/files/mongo-backup-job.yaml
+    |       |__ wget -O mongo-backup.sh https://raw.githubusercontent.com/IBM/cpd-cli/master/cpdops/files/mongo-backup.sh
+    |       |__ wget -O mongo-job-rbac.yaml https://raw.githubusercontent.com/IBM/cpd-cli/master/cpdops/files/mongo-job-rbac.yaml
+    |       |__ wget -O mongo-restore-job.yaml https://raw.githubusercontent.com/IBM/cpd-cli/master/cpdops/files/mongo-restore-job.yaml
+    |       |__ wget -O mongo-restore.sh https://raw.githubusercontent.com/IBM/cpd-cli/master/cpdops/files/mongo-restore.sh
+    |       |__ wget -O set_access.js https://raw.githubusercontent.com/IBM/cpd-cli/master/cpdops/files/set_access.js
+    |
     |__ 4.0.0
         |__ ppc64le 
-        |       |__ cpdops.tgz
+        |       |__ wget -O cpdops.tgz https://raw.githubusercontent.com/IBM/cpd-cli/master/cpdops/4.0.0/ppc64le/cpdops.tgz
         |
         |__ x86_64
-                |__ cpdops.tgz
+                |__ wget -O cpdops.tgz https://raw.githubusercontent.com/IBM/cpd-cli/master/cpdops/4.0.0/x86_64/cpdops.tgz
 ````
 
 ## Backup and Restore CPD Operators
