@@ -60,15 +60,15 @@ Client
 
 ## Prerequisites
 
-Cluster
-- podman is installed on the cluster. It is needed to install the cpdbr-velero-plugin.
-
 Client
 - The OpenShift client "oc" is included in the PATH and has access to the cluster.
+- podman is installed on the client system with access to the cluster. It is needed to install the cpdbr-velero-plugin.
 
 Object storage
 - Access to object storage is required. It is used by OADP/Velero to store docker images,
 Kubernetes resource definitions, and restic backups.
+- A bucket must be created in object storage.  The name of bucket is specified in the Velero custom resource 
+when instantiating a Velero instance.
 
 
 ## Security and Roles
@@ -309,6 +309,10 @@ open-source object store.
     podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
     ```
 
+    If there is no route in the "openshift-image-registry" namespace, try enabling the internal registry default route:<br>
+    https://docs.openshift.com/container-platform/4.6/registry/configuring-registry-operator.html#registry-operator-default-crd_configuring-registry-operator
+
+
 ### Install OADP 
 
 Note: At the time of this writing, OADP is at version 0.2.6 (using velero v1.6.0 RC1)
@@ -348,17 +352,21 @@ Note: At the time of this writing, OADP is at version 0.2.6 (using velero v1.6.0
     <https://github.com/openshift/oadp-operator/tree/oadp-0.2.6/#creating-velero-cr>
 
     The following is an example of a custom resource for a Velero
-    instance. Note that the CSI plugin is enabled, which allows snapshots
-    of CSI-backed volumes. Restic is enabled via enable_restic: true
-
-    The cpdbr-velero-plugin is specified under the custom_velero_plugins
-    property.
-
+    instance.
+    
     Replace the "s_3__url" in the backup storage location with the URL
     of the object store obtained above.
 
     Note: If the s3 url needs to changed after Velero is installed, uninstall Velero and OADP, and reinstall.
     See [Uninstalling OADP and Velero](#uninstalling-oadp-and-velero).
+
+    A bucket must first be created in the object store.  Specify the same bucket name in the "bucket" field.
+
+    The CSI plugin is enabled, which allows snapshots
+    of CSI-backed volumes. Restic is enabled via enable_restic: true
+
+    The cpdbr-velero-plugin is specified under the custom_velero_plugins
+    property.
 
 ```
 apiVersion: konveyor.openshift.io/v1alpha1
@@ -1103,8 +1111,11 @@ For additional tracing, run commands using --log-level=debug --verbose.
 Check "cpd-cli oadp backup logs \<backup-name\>" or "cpd-cli oadp restore logs \<restore-name\>" for errors.  
 Errors during Velero backup/restore are captured in these logs.
 
+### Restic pod logs
+Check the logs of the restic pods in oadp-operator namespace for restic errors.
+
 ### Velero pod log
-In the oadp-operator namespace, check the log of the velero pod for errors.
+In the oadp-operator namespace, check the log of the velero pod for velero server errors.
 
 ## General OADP Installation Troubleshooting Tips
 
