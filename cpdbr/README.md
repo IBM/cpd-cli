@@ -359,7 +359,7 @@ cpd-cli backup-restore version
 
 The quiesce command suspends write operations in application workloads so that backups or other maintenance activities can be performed.  The backup-restore utility may scale down application Kubernetes resources, or call hooks provided by CPD services to perform the quiesce.  Quiesce hooks provided by CPD services may offer optimizations or other enhancements compared to scaling down all resources in the namespace.  Micro-services can be quiesced in a certain order, or services can be suspended without having to bring down pods.
 
-Quiesce (with default options) and volume-backup (with --skip-quiesce) can be used when the application storage provider doesn't enforce ReadWriteOnce volume access, such as on NFS.  For storage providers that enforce RWO such as Portworx, quiesce should be called with the --ignore-hooks, which scales down resources so the backup pod can mount volumes to perform file copying.
+Quiesce (with default options) and volume-backup (with --skip-quiesce) can be used when the application storage provider doesn't enforce ReadWriteOnce volume access, such as on NFS.  For storage providers that enforce RWO such as Portworx, quiesce should be called with the --force, which scales down resources so the backup pod can mount volumes to perform file copying.
 
 ##### Quiesce and volume-backup on NFS
 
