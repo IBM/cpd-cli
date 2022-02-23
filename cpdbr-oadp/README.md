@@ -49,8 +49,11 @@ should not be used for disaster recovery purposes.
 ## System Requirements
 
 Cluster
-- OADP is available for OCP 4.6+ on linux x86_64. It is not available for ppc64le and s390x.
-- The cpdbr-velero-plugin is available only for linux x86_64.
+- OADP is available for OCP 4.6+.<br>
+  The OADP 0.5.x Community Operator / OADP 1.0 GA Operator is available for linux x86_64 and ppc64le.<br>
+  The OADP 0.2.6 Community Operator is available for linux x86_64. (OADP 0.2.6 is deprecated.  Documentation for 0.2.6 will be removed in a future release.)<br>
+  Community operators are upstream development projects that have no official support. Users will typically install the OADP Operator that is supported by Red Hat.
+- The cpdbr-velero-plugin is available for linux x86_64 and ppc64le.
 - Ceph CSI snapshots is available for OCS 4.6+
 - If CPD is installed on NFS, NFS storage must be configured with no_root_squash for OADP restic backups.
 
@@ -315,7 +318,173 @@ open-source object store.
 
 ### Install OADP 
 
-Note: At the time of this writing, OADP is at version 0.2.6 (using velero v1.6.0 RC1)
+#### Installing OADP 0.5.x Community Operator / OADP 1.0 GA Operator in OperatorHub (velero v1.7.0)
+
+The OADP 0.5.6 community operator is the same as the official GA release of the OADP 1.0 Operator.
+
+Community operators are upstream development projects that have no official support.  Users will typically 
+install the OADP Operator that is supported by Red Hat.
+
+1. Annotate the OADP operator namespace so that restic pods can be scheduled on all nodes.
+   ```
+   oc annotate namespace oadp-operator openshift.io/node-selector=""
+   ```
+
+2.  OADP can be installed from the OperatorHub in the Openshift Console
+
+    Reference:
+
+    <https://github.com/openshift/oadp-operator/blob/apiv1/docs/install_olm.md>
+
+    Notes:
+    1.  For OADP 0.5.x Community / 1.0 GA Operator, select the "stable" Update Channel in <br>
+        OperatorHub -> OADP Operator -> Install -> Install Operator (Update Channel)
+    2.  The default namespace for OADP in 0.5.x / 1.0 GA is "openshift-adp".  To be consistent with previous CPD documentation, the examples shown here
+        assume the OADP namespace is "oadp-operator".  In "Installed Namespace", select "Pick an existing namespace", and choose 
+        "oadp-operator".
+
+
+3.  Create a secret in the "oadp-operator" namespace with the object store credentials
+
+    1.  Create a file "credentials-velero" containing the credentials for the object store<br>
+        vi credentials-velero
+
+        ```
+        [default]
+        aws_access_key_id=minio
+        aws_secret_access_key=minio123
+        ```
+
+
+    2.  For OADP 0.5.x, the secret name must be "cloud-credentials".
+
+        ```oc create secret generic cloud-credentials --namespace oadp-operator --from-file cloud=./credentials-velero```
+
+
+4.  Create a DataProtectionApplication (Velero) instance (OADP 0.5.x)
+
+    Reference:
+
+    <https://github.com/openshift/oadp-operator/blob/apiv1/docs/install_olm.md#create-the-dataprotectionapplication-custom-resource>
+
+    The following is an example of a custom resource for a DataProtectionApplication (Velero) instance.
+    
+    Notes:
+    1.  Replace the "s3Url" in the backup storage location with the URL of the object store.
+        For Amazon S3, the s3ForcePathStyle and s3Url can be omitted.
+    2.  A bucket must first be created in the object store.  Specify the same bucket name in the "bucket" field.
+    3.  Breaking change - OADP 0.5.x requires a prefix name to be set, so backup files are stored under bucket/prefix.
+        <br>Because of this, previous backups using the OADP 0.2.6 Community Operator might no longer be visible.  
+        The prefix was optional, resulting in backups being stored in a different path.
+    4.  The name of the credential secret must be "cloud-credentials".
+    5.  The cpdbr-velero-plugin is specified under the customPlugins property.  Ensure the image prefix is correct.
+      - For x86, use image name 'cpdbr-velero-plugin:4.0.0-beta1-1-x86_64'.
+      - For ppc64le, use image name 'cpdbr-velero-plugin:4.0.0-beta1-1-ppc64le'.
+
+```
+apiVersion: oadp.openshift.io/v1alpha1
+kind: DataProtectionApplication
+metadata:
+  name: dpa-sample
+spec:
+  configuration:
+    velero:
+      customPlugins:
+      - image: image-registry.openshift-image-registry.svc:5000/oadp-operator/cpdbr-velero-plugin:4.0.0-beta1-1-x86_64
+        name: cpdbr-velero-plugin
+      defaultPlugins:
+      - aws
+      - openshift
+      - csi
+      podConfig:
+        resourceAllocations:
+          limits:
+            cpu: "1"
+            memory: 512Mi
+          requests:
+            cpu: 500m
+            memory: 256Mi
+    restic:
+      enable: true
+      podConfig:
+        resourceAllocations:
+          limits:
+            cpu: "1"
+            memory: 4Gi
+          requests:
+            cpu: 500m
+            memory: 256Mi
+  backupImages: false            
+  backupLocations:
+    - velero:
+        provider: aws
+        default: true
+        objectStorage:
+          bucket: velero
+          prefix: cpdbackup
+        config:
+          region: minio
+          s3ForcePathStyle: "true"
+          s3Url: http://minio-velero.apps.mycluster.cp.fyre.ibm.com
+        credential:
+          name: cloud-credentials
+          key: cloud
+```
+
+5.  Check that the velero pods are running in the "oadp-operator" namespace.  
+    The restic daemonset should create one restic pod for each worker node.
+    ```
+    oc get po -n oadp-operator
+
+    NAME                                                READY   STATUS    RESTARTS   AGE
+    oadp-dpa-sample-1-aws-registry-77cc484cbd-c7p4z     1/1     Running   0          49m
+    openshift-adp-controller-manager-678f6998bf-fnv8p   2/2     Running   0          55m
+    restic-f846j                                        1/1     Running   0          49m
+    restic-fk6vl                                        1/1     Running   0          49m
+    restic-mdcnp                                        1/1     Running   0          49m
+    velero-7d847d5bb7-zm6vd                             1/1     Running   0          49m
+    ```
+
+#### OADP 0.5.x Community Operator / OADP 1.0 GA Operator Air-gapped Installation
+
+1.  For the OADP operator, there is a generic procedure using oc tooling for mirroring Red Hat operators.  See:
+
+    https://docs.openshift.com/container-platform/4.8/operators/admin/olm-restricted-networks.html#olm-mirror-catalog_olm-restricted-networks
+
+2.  Additionally for cpdbr-oadp, push the UBI image to the OpenShift internal registry.
+
+    1. On a cluster with network access, pull images and save them as files.
+        ```
+        # Login to registry.redhat.io.  Create a Red Hat account if needed.
+        podman login registry.redhat.io
+
+        # Pull images
+        podman pull registry.redhat.io/ubi8/ubi-minimal:latest
+        podman save registry.redhat.io/ubi8/ubi-minimal:latest > ubi-minimal-img-latest.tar
+        ```
+
+    2. Transfer image tar files to the air-gapped cluster.
+
+    3. On the air-gapped cluster, create the "oadp-operator" namespace if it doesn't exist.
+
+    4. Push the images to the internal registry.
+        ```
+        IMAGE_REGISTRY=`oc get route -n openshift-image-registry | grep image-registry | awk '{print $2}'`
+        echo $IMAGE_REGISTRY
+        NAMESPACE=oadp-operator
+        echo $NAMESPACE
+        
+        # Login to internal registry
+        podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
+
+        # Push images
+        podman load -i ubi-minimal-img-latest.tar
+        podman tag registry.redhat.io/ubi8/ubi-minimal:latest $IMAGE_REGISTRY/$NAMESPACE/ubi-minimal:latest
+        podman push $IMAGE_REGISTRY/$NAMESPACE/ubi-minimal:latest --tls-verify=false
+        ```
+
+
+#### Installing OADP 0.2.6 Community Operator in OperatorHub (Velero v1.6.0 RC1) (Deprecated)
 
 1. Annotate the OADP operator namespace so that restic pods can be scheduled on all nodes.
    ```
@@ -342,31 +511,30 @@ Note: At the time of this writing, OADP is at version 0.2.6 (using velero v1.6.0
         ```
 
 
-    2.  ```oc create secret generic oadp-repo-secret --namespace oadp-operator --from-file cloud=./credentials-velero```
+    2.  For OADP 0.2.6, any valid name can be used for the secret.  The same secret name must be used in the Velero CR.
+
+        ```oc create secret generic oadp-repo-secret --namespace oadp-operator --from-file cloud=./credentials-velero```
 
 
-4.  Create a Velero instance (OADP 0.2.6)
+4.  Create a Velero instance (OADP 0.2.6 Community Operator)
 
     Follow the steps in
 
     <https://github.com/openshift/oadp-operator/tree/oadp-0.2.6/#creating-velero-cr>
 
-    The following is an example of a custom resource for a Velero
-    instance.
+    The following is an example of a custom resource for a Velero instance.
     
-    Replace the "s_3__url" in the backup storage location with the URL
-    of the object store obtained above.
+    Replace the "s_3__url" in the backup storage location with the URL of the object store.
+    For Amazon S3, the s_3__force_path_style and s_3__url can be omitted.
 
     Note: If the s3 url needs to changed after Velero is installed, uninstall Velero and OADP, and reinstall.
     See [Uninstalling OADP and Velero](#uninstalling-oadp-and-velero).
 
     A bucket must first be created in the object store.  Specify the same bucket name in the "bucket" field.
 
-    The CSI plugin is enabled, which allows snapshots
-    of CSI-backed volumes. Restic is enabled via enable_restic: true
+    The CSI plugin is enabled, which allows snapshots of CSI-backed volumes. Restic is enabled via enable_restic: true
 
-    The cpdbr-velero-plugin is specified under the custom_velero_plugins
-    property.
+    The cpdbr-velero-plugin is specified under the custom_velero_plugins property.
 
 ```
 apiVersion: konveyor.openshift.io/v1alpha1
@@ -453,7 +621,7 @@ spec:
 
     5.  Restart the velero or restic pods
 
-### OAPD Air-gapped Installation Example (OADP 0.2.6)
+#### OADP Air-gapped Installation Example (OADP 0.2.6 Community Operator) (Deprecated)
 
 1. On a cluster with network access, pull images and save them as files.
     ```
@@ -506,7 +674,7 @@ spec:
 
 3. Transfer the image tar files and OADP git repo tgz to the air-gapped cluster
 
-4. On the air-gapped cluster, create the "oadp-operator" namespace.
+4. On the air-gapped cluster, create the "oadp-operator" namespace if it doesn't exist.
 
 5. Push the images to the internal registry.
     ```
@@ -578,6 +746,7 @@ spec:
 8.  Modify the Velero CR konveyor.openshift.io_v1alpha1_velero_cr.yaml
 
     Replace the "s_3__url" in the backup storage location with the URL of the object store.
+    For Amazon S3, the s_3__force_path_style and s_3__url can be omitted.
 
     Note that "olm_managed" is false.
 ```
@@ -831,11 +1000,6 @@ Restore to same cluster.  Foundational Services namespace and CPD operators name
 
 
 ## Multiple Namespace Backup/Restore
-
-OADP 0.2.2+ (Velero 1.6+) is needed to support backup/restore of
-multiple namespaces. If you have an existing Velero instance created
-with an older OADP version, ensure OADP 02.2+ is installed, and recreate
-the Velero instance.
 
 Multiple namespaces, separated by commas, can be specified in
 --include-namespaces.
@@ -1123,18 +1287,18 @@ In the oadp-operator namespace, check the log of the velero pod for velero serve
 2.  Check that the velero and restic pods in the “oadp-operator” namespace are up and running.  Run “oc describe po” and “oc logs” on any pods that are failing for diagnostic information.
 3.  Check the logs of the velero pod in the "oadp-operator" namespace for errors.
 4.  Check that the Velero CR used to create the Velero instance is correctly indented.
-5.  Check that the contents of the oadp-repo-secret is correct.
+5.  Check that the contents of the oadp-repo-secret or cloud-credentials secret is correct.
 
 ## Uninstalling OADP and Velero
 
-#### Network-Connected Installation
-1.  Uninstall the Velero instance in the OADP operator using the OpenShift Console
-2.  Uninstall the OADP operator using the OpenShift Console
+#### For Installations using the OperatorHub in the OpenShift Web Console
+1.  Uninstall the Velero instance in the OADP operator using the OpenShift web console
+2.  Uninstall the OADP operator using the OpenShift web console
 3.  Run
     ```
     oc delete crd $(oc get crds | grep velero.io | awk -F ' ' '{print $1}')
     ```
-#### Air-gapped Installation
+#### For Installations using the OADP 0.2.6 source (non-OLM)
 Uninstall the Velero instance and OADP
 ```
 oc delete -f deploy/crds/konveyor.openshift.io_v1alpha1_velero_cr.yaml -n oadp-operator
