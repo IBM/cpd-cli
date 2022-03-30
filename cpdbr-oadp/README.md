@@ -50,15 +50,15 @@ should not be used for disaster recovery purposes.
 
 Cluster
 - OADP is available for OCP 4.6+.<br>
-  The OADP 0.5.x Community Operator / OADP 1.0 GA Operator is available for linux x86_64 and ppc64le.<br>
+  The OADP 0.5.x Community Operator / OADP 1.0 GA Operator is available for linux x86_64.<br>
   The OADP 0.2.6 Community Operator is available for linux x86_64. (OADP 0.2.6 is deprecated.  Documentation for 0.2.6 will be removed in a future release.)<br>
   Community operators are upstream development projects that have no official support. Users will typically install the OADP Operator that is supported by Red Hat.
-- The cpdbr-velero-plugin is available for linux x86_64 and ppc64le.
+- The cpdbr-velero-plugin is available for linux x86_64.
 - Ceph CSI snapshots is available for OCS 4.6+
 - If CPD is installed on NFS, NFS storage must be configured with no_root_squash for OADP restic backups.
 
 Client
-- cpdbr-oadp is available for darwin, linux, windows, and ppc64le.
+- cpdbr-oadp is available for darwin, linux, windows.
 
 
 ## Prerequisites
@@ -378,8 +378,14 @@ install the OADP Operator that is supported by Red Hat.
         The prefix was optional, resulting in backups being stored in a different path.
     4.  The name of the credential secret must be "cloud-credentials".
     5.  The cpdbr-velero-plugin is specified under the customPlugins property.  Ensure the image prefix is correct.
-      - For x86, use image name 'cpdbr-velero-plugin:4.0.0-beta1-1-x86_64'.
-      - For ppc64le, use image name 'cpdbr-velero-plugin:4.0.0-beta1-1-ppc64le'.
+        - For x86, use image name 'cpdbr-velero-plugin:4.0.0-beta1-1-x86_64'.
+        - For ppc64le, use image name 'cpdbr-velero-plugin:4.0.0-beta1-1-ppc64le'.
+    6.  For object stores with a self-signed certificate, specify either:
+        - The base64 encoded certificate string as a value for backupLocations.velero.objectStorage.caCert, or
+        - "true" for backupLocations.velero.config.insecureSkipTLSVerify, for insecure connections.
+        
+        Reference:<br>
+        https://github.com/openshift/oadp-operator/blob/oadp-1.0/docs/config/self_signed_certs.md
 
 ```
 apiVersion: oadp.openshift.io/v1alpha1
@@ -451,14 +457,22 @@ spec:
 
     https://docs.openshift.com/container-platform/4.8/operators/admin/olm-restricted-networks.html#olm-mirror-catalog_olm-restricted-networks
 
-2.  Additionally for cpdbr-oadp, push the UBI image to the OpenShift internal registry.
+2.  Additionally for cpdbr-oadp, push the UBI and cpdbr-velero-plugin images to the OpenShift internal registry.
 
-    1. On a cluster with network access, pull images and save them as files.
+    1. On a cluster with network access, pull images and save them as files.  Requires access to docker.io and registry.redhat.io.
         ```
+        CPU_ARCH=`uname -m`
+        echo $CPU_ARCH
+        BUILD_NUM=1
+        echo $BUILD_NUM
+
         # Login to registry.redhat.io.  Create a Red Hat account if needed.
         podman login registry.redhat.io
 
         # Pull images
+        podman pull docker.io/ibmcom/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}
+        podman save docker.io/ibmcom/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH} > cpdbr-velero-plugin-img-4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}.tar
+
         podman pull registry.redhat.io/ubi8/ubi-minimal:latest
         podman save registry.redhat.io/ubi8/ubi-minimal:latest > ubi-minimal-img-latest.tar
         ```
@@ -473,11 +487,19 @@ spec:
         echo $IMAGE_REGISTRY
         NAMESPACE=oadp-operator
         echo $NAMESPACE
-        
+        CPU_ARCH=`uname -m`
+        echo $CPU_ARCH
+        BUILD_NUM=1
+        echo $BUILD_NUM
+
         # Login to internal registry
         podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
 
         # Push images
+        podman load -i cpdbr-velero-plugin-img-4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}.tar
+        podman tag docker.io/ibmcom/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}
+        podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
+
         podman load -i ubi-minimal-img-latest.tar
         podman tag registry.redhat.io/ubi8/ubi-minimal:latest $IMAGE_REGISTRY/$NAMESPACE/ubi-minimal:latest
         podman push $IMAGE_REGISTRY/$NAMESPACE/ubi-minimal:latest --tls-verify=false
