@@ -83,9 +83,8 @@ cpdbr-oadp requires cluster admin or similar roles.
 
 ### Set up Object Storage
 
-Velero requires S3-compatible object storage to store backups of
-Kubernetes objects. OADP stores images in object storage. For restic
-backups, volume data is also stored in object storage.
+Velero requires certain S3-compatible object storage to store backups of
+Kubernetes objects. For restic backups, volume data is also stored in object storage.
 
 ### Sample Object Store using MinIO
 
@@ -380,9 +379,8 @@ install the OADP Operator that is supported by Red Hat.
     5.  The cpdbr-velero-plugin is specified under the customPlugins property.  Ensure the image prefix is correct.
         - For x86, use image name 'cpdbr-velero-plugin:4.0.0-beta1-1-x86_64'.
         - For ppc64le, use image name 'cpdbr-velero-plugin:4.0.0-beta1-1-ppc64le'.
-    6.  For object stores with a self-signed certificate, specify either:
-        - The base64 encoded certificate string as a value for backupLocations.velero.objectStorage.caCert, or
-        - "true" for backupLocations.velero.config.insecureSkipTLSVerify, for insecure connections.
+    6.  For object stores with a self-signed certificate, specify:
+        - The base64 encoded certificate string as a value for backupLocations.velero.objectStorage.caCert
         
         Reference:<br>
         https://github.com/openshift/oadp-operator/blob/oadp-1.0/docs/config/self_signed_certs.md
@@ -677,8 +675,8 @@ spec:
     podman pull quay.io/konveyor/velero-plugin-for-aws:konveyor-oadp
     podman save quay.io/konveyor/velero-plugin-for-aws:konveyor-oadp > velero-plugin-for-aws-img-konveyor-oadp.tar
 
-    podman pull docker.io/velero/velero-plugin-for-csi:main
-    podman save docker.io/velero/velero-plugin-for-csi:main > velero-plugin-for-csi-img-main.tar
+    podman pull docker.io/velero/velero-plugin-for-csi:v0.2.0
+    podman save docker.io/velero/velero-plugin-for-csi:v0.2.0 > velero-plugin-for-csi-img-v0.2.0.tar
 
     podman pull docker.io/velero/velero-restic-restore-helper:latest
     podman save docker.io/velero/velero-restic-restore-helper:latest > velero-restic-restore-helper-img-latest.tar
@@ -736,9 +734,9 @@ spec:
     podman tag quay.io/konveyor/velero-plugin-for-aws:konveyor-oadp $IMAGE_REGISTRY/$NAMESPACE/velero-plugin-for-aws:konveyor-oadp
     podman push $IMAGE_REGISTRY/$NAMESPACE/velero-plugin-for-aws:konveyor-oadp --tls-verify=false
 
-    podman load -i velero-plugin-for-csi-img-main.tar
-    podman tag docker.io/velero/velero-plugin-for-csi:main $IMAGE_REGISTRY/$NAMESPACE/velero-plugin-for-csi:main
-    podman push $IMAGE_REGISTRY/$NAMESPACE/velero-plugin-for-csi:main --tls-verify=false
+    podman load -i velero-plugin-for-csi-img-v0.2.0.tar
+    podman tag docker.io/velero/velero-plugin-for-csi:v0.2.0 $IMAGE_REGISTRY/$NAMESPACE/velero-plugin-for-csi:v0.2.0
+    podman push $IMAGE_REGISTRY/$NAMESPACE/velero-plugin-for-csi:v0.2.0 --tls-verify=false
 
     podman load -i velero-restic-restore-helper-img-latest.tar
     podman tag docker.io/velero/velero-restic-restore-helper:latest $IMAGE_REGISTRY/$NAMESPACE/velero-restic-restore-helper:latest
@@ -825,7 +823,7 @@ spec:
   velero_openshift_plugin_image: image-registry.openshift-image-registry.svc:5000/oadp-operator/openshift-velero-plugin
   velero_openshift_plugin_version: oadp-dev
   velero_csi_plugin_image: image-registry.openshift-image-registry.svc:5000/oadp-operator/velero-plugin-for-csi
-  velero_csi_plugin_version: main
+  velero_csi_plugin_version: v0.2.0
   velero_registry_image: image-registry.openshift-image-registry.svc:5000/oadp-operator/registry
   velero_registry_tag: oadp-0.2.6
 ```
