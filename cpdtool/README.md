@@ -256,10 +256,13 @@ sample-aux:
   pvc2: testpvc2
 ```
 
-### Zen Core Auxiliary Component
+### Zen Core Auxiliary Component (Deprecated)
+
 The cpdtool framework is responsible for dispatching jobs provided by CPD services to export metadata from one 
 CPD installation to another. Registered export/import modules for each service component contain jobs that perform 
 the actual export and import logic. The zen-core auxiliary module performs export and import for the CPD control plane.
+
+Deprecated - support for zen-core-aux will be removed in a future release
 
 #### Install the zen-core-aux docker image from Docker Hub
 
@@ -275,7 +278,7 @@ NAMESPACE=`oc project -q`
 echo $NAMESPACE
 CPU_ARCH=`uname -m`
 echo $CPU_ARCH
-BUILD_NUM=329
+BUILD_NUM=350
 echo $BUILD_NUM
 
 # Pull zen-core-aux image from Docker Hub
@@ -295,7 +298,7 @@ NAMESPACE=`oc project -q`
 echo $NAMESPACE
 CPU_ARCH=`uname -m`
 echo $CPU_ARCH
-BUILD_NUM=329
+BUILD_NUM=350
 echo $BUILD_NUM
 
 # Pull zen-core-aux image from Docker Hub
