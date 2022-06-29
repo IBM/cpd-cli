@@ -1,6 +1,6 @@
 ## CPD Volume Backup And Restore CLI
 
-cpdbr version 4.0.0, included as a part of cpd-cli.  This README is for cpd-cli version 11.x.  For use with CPD 4.5.x, 4.0.x, 3.5.x, 3.0.x.
+cpdbr version 4.0.0, included as a part of cpd-cli.  This README is for cpd-cli version 10.x.  For use with CPD 4.0.x, 3.5.x, 3.0.x.
 
 The backup-restore CLI is a volume-only backup/restore utility for Cloud Pak For Data (CPD) that may be used as an 
 augmentation or helper utility to the CPD add-on services' backup/restore procedure.
@@ -73,7 +73,7 @@ https://podman.io/getting-started/installation.html
 
 Note your docker image registry may be different than what is documented here, so please adjust those related flags accordingly.
 
-#### Install the cpdbr docker image using docker or podman from IBM Cloud Container Registry
+#### Install the cpdbr docker image using docker or podman from Docker Hub
 
 Note: Use the Build Number from cpd-cli backup-restore version command
                  
@@ -89,11 +89,11 @@ BUILD_NUM=<build-number>
 echo $BUILD_NUM
 
 
-# Pull cpdbr image from IBM Cloud Container Registry
-podman pull icr.io/cpopen/cpd/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
+# Pull cpdbr image from Docker Hub
+podman pull docker.io/ibmcom/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag icr.io/cpopen/cpd/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman tag docker.io/ibmcom/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
 podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 ```
 
@@ -108,11 +108,11 @@ echo $CPU_ARCH
 BUILD_NUM=<build-number>
 echo $BUILD_NUM
 
-# Pull cpdbr image from IBM Cloud Container Registry
-podman pull icr.io/cpopen/cpd/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
+# Pull cpdbr image from Docker Hub
+podman pull docker.io/ibmcom/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u ocadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag icr.io/cpopen/cpd/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman tag docker.io/ibmcom/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
 podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 ```
                  
@@ -124,10 +124,10 @@ echo $CPU_ARCH
 BUILD_NUM=<build-number>
 echo $BUILD_NUM
 
-# Pull cpdbr image from IBM Cloud Container Registry
-podman pull icr.io/cpopen/cpd/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
+# Pull cpdbr image from Docker Hub
+podman pull docker.io/ibmcom/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
 # Save image to file
-podman save icr.io/cpopen/cpd/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} > cpdbr-img-4.0.0-${BUILD_NUM}-${CPU_ARCH}.tar
+podman save docker.io/ibmcom/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} > cpdbr-img-4.0.0-${BUILD_NUM}-${CPU_ARCH}.tar
 
 # Transfer file to air-gapped cluster
 
@@ -144,7 +144,7 @@ echo $BUILD_NUM
 
 podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
 podman load -i cpdbr-img-4.0.0-${BUILD_NUM}-${CPU_ARCH}.tar
-podman tag icr.io/cpopen/cpd/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman tag docker.io/ibmcom/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
 podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 ```
 
