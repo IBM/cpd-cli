@@ -1,6 +1,6 @@
 ## CPD Export And Import CLI
 
-cpdtool version 4.0.0, included as a part of cpd-cli.  This README is for cpd-cli version 11.x.  For use with CPD 4.5.x, 4.0.x, 3.5.x, 3.0.x.
+cpdtool version 4.0.0, included as a part of cpd-cli.  This README is for cpd-cli version 10.x.  For use with CPD 4.0.x, 3.5.x, 3.0.x.
 
 
 The export-import CLI a command line interface (CLI) utility for CloudPak for Data (CPD) that can perform 
@@ -63,11 +63,11 @@ echo $CPU_ARCH
 BUILD_NUM=<build-number>
 echo $BUILD_NUM
 
-# Pull cpdtool image from IBM Cloud Container Registry
-podman pull icr.io/cpopen/cpd/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH}
+# Pull cpdtool image from Docker Hub
+podman pull docker.io/ibmcom/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag icr.io/cpopen/cpd/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman tag docker.io/ibmcom/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH}
 podman push $IMAGE_REGISTRY/$NAMESPACE/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 ```
 
@@ -84,11 +84,11 @@ BUILD_NUM=<build-number>
 echo $BUILD_NUM
 
 
-# Pull cpdtool image from IBM Cloud Container Registry
-podman pull icr.io/cpopen/cpd/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH}
+# Pull cpdtool image from Docker Hub
+podman pull docker.io/ibmcom/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u ocadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag icr.io/cpopen/cpd/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman tag docker.io/ibmcom/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH}
 podman push $IMAGE_REGISTRY/$NAMESPACE/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 ```
 
@@ -257,7 +257,7 @@ sample-aux:
   pvc2: testpvc2
 ```
 
-### Zen Core Auxiliary Component (Unsupported in CPD 4.5+)
+### Zen Core Auxiliary Component (Deprecated)
 
 The cpdtool framework is responsible for dispatching jobs provided by CPD services to export metadata from one 
 CPD installation to another. Registered export/import modules for each service component contain jobs that perform 
@@ -279,14 +279,14 @@ NAMESPACE=`oc project -q`
 echo $NAMESPACE
 CPU_ARCH=`uname -m`
 echo $CPU_ARCH
-BUILD_NUM=355
+BUILD_NUM=350
 echo $BUILD_NUM
 
-# Pull zen-core-aux image from IBM Cloud Container Registry
-podman pull icr.io/cpopen/cpd/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH}
+# Pull zen-core-aux image from Docker Hub
+podman pull docker.io/ibmcom/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag icr.io/cpopen/cpd/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman tag docker.io/ibmcom/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH}
 podman push $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 ```
 
@@ -299,22 +299,22 @@ NAMESPACE=`oc project -q`
 echo $NAMESPACE
 CPU_ARCH=`uname -m`
 echo $CPU_ARCH
-BUILD_NUM=355
+BUILD_NUM=350
 echo $BUILD_NUM
 
-# Pull zen-core-aux image from IBM Cloud Container Registry
-podman pull icr.io/cpopen/cpd/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH}
+# Pull zen-core-aux image from Docker Hub
+podman pull docker.io/ibmcom/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH}
 # Push image to internal registry
 podman login -u ocadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag icr.io/cpopen/cpd/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman tag docker.io/ibmcom/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH}
 podman push $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 ```
 
 #### Install the zen-core-aux helm chart
 
 Download the zen-core-aux helm chart (zen-core-aux-4.0.0.tgz):
- * For x86_64: https://github.com/IBM/cpd-cli/raw/master/cpdtool/4.0.0_1/x86_64/zen-core-aux-4.0.0.tgz
- * For ppc64le: https://github.com/IBM/cpd-cli/raw/master/cpdtool/4.0.0_1/ppc64le/zen-core-aux-4.0.0.tgz
+ * For x86_64: https://github.com/IBM/cpd-cli/raw/master/cpdtool/4.0.0/x86_64/zen-core-aux-4.0.0.tgz
+ * For ppc64le: https://github.com/IBM/cpd-cli/raw/master/cpdtool/4.0.0/ppc64le/zen-core-aux-4.0.0.tgz
 
 Delete any existing zen-core-aux-exim configmaps
 ```
