@@ -1,83 +1,13 @@
 # CPD OADP Backup And Restore CLI
 
-cpdbr version 4.5.0, included as a part of cpd-cli.  This README is for cpd-cli version 11.x.  For use with CPD 4.5.x, 4.0.2 and above fixpacks.
-
-- [CPD OADP Backup And Restore CLI](#cpd-oadp-backup-and-restore-cli)
-  - [Overview](#overview)
-  - [Backup/Restore Scenarios](#backuprestore-scenarios)
-  - [System Requirements](#system-requirements)
-  - [Prerequisites](#prerequisites)
-  - [Security and Roles](#security-and-roles)
-- [Installation and Configuration](#installation-and-configuration)
-  - [Set up Object Storage](#set-up-object-storage)
-  - [Sample Object Store using MinIO](#sample-object-store-using-minio)
-    - [Creating PVCs for MinIO](#creating-pvcs-for-minio)
-  - [Sample Object Store using MinIO (Air-Gapped Installation)](#sample-object-store-using-minio-air-gapped-installation)
-  - [Install the cpdbr-velero-plugin](#install-the-cpdbr-velero-plugin)
-  - [Install OADP](#install-oadp)
-    - [Installing OADP 1.x GA Operator in OperatorHub (velero v1.7.0)](#installing-oadp-1x-ga-operator-in-operatorhub-velero-v170)
-    - [OADP 1.x GA Operator Air-gapped Installation](#oadp-1x-ga-operator-air-gapped-installation)
-  - [Configure cpdbr-oadp](#configure-cpdbr-oadp)
-  - [Create Two Volume Snapshot Classes (For Ceph CSI Snapshots, OCS 4.6+)](#create-two-volume-snapshot-classes-for-ceph-csi-snapshots-ocs-46)
-  - [Create Volume Snapshot Class (For Spectrum Scale CSI Snapshots, 5.1.3.x+)](#create-volume-snapshot-class-for-spectrum-scale-csi-snapshots-513x)
-- [Offline (Disruptive) Backup and Restore](#offline-disruptive-backup-and-restore)
-  - [Example Steps for Backup using restic](#example-steps-for-backup-using-restic)
-    - [Prerequistes](#prerequistes)
-    - [Configure cpdbr-oadp client](#configure-cpdbr-oadp-client)
-    - [Restic Backup of CPD instance namespace](#restic-backup-of-cpd-instance-namespace)
-    - [Restic Restore of CPD instance namespace](#restic-restore-of-cpd-instance-namespace)
-    - [Additional Commands for Troubleshooting](#additional-commands-for-troubleshooting)
-  - [Multiple Namespace Backup/Restore](#multiple-namespace-backuprestore)
-    - [Backup](#backup)
-    - [Restore](#restore)
-  - [Example Steps for Backup using CSI Snapshots](#example-steps-for-backup-using-csi-snapshots)
-    - [Prerequistes](#prerequistes-1)
-    - [Storage Requirements](#storage-requirements)
-    - [Limitations](#limitations)
-    - [Backup of CPD instance namespace using CSI snapshots](#backup-of-cpd-instance-namespace-using-csi-snapshots)
-    - [Restore of CPD instance namespace using CSI snapshots](#restore-of-cpd-instance-namespace-using-csi-snapshots)
-  - [Deleting CPD Instance Namespace](#deleting-cpd-instance-namespace)
-  - [Restoring CPD Instance Namespace to Same Cluster](#restoring-cpd-instance-namespace-to-same-cluster)
-- [Online (Non-Disruptive) Backup](#online-non-disruptive-backup)
-  - [Example Steps for Backup using CSI Snapshots](#example-steps-for-backup-using-csi-snapshots-1)
-    - [Prerequistes](#prerequistes-2)
-    - [Storage Requirements](#storage-requirements-1)
-    - [Limitations](#limitations-1)
-    - [Configure cpdbr-oadp client](#configure-cpdbr-oadp-client-1)
-    - [Backup of CPD instance namespace using CSI snapshots](#backup-of-cpd-instance-namespace-using-csi-snapshots-1)
-    - [Restore of CPD instance namespace using CSI snapshots](#restore-of-cpd-instance-namespace-using-csi-snapshots-1)
-    - [Additional Commands for Troubleshooting](#additional-commands-for-troubleshooting-1)
-- [Backup/Restore Troubleshooting](#backuprestore-troubleshooting)
-  - [Errors running cpd-cli and CPD hooks](#errors-running-cpd-cli-and-cpd-hooks)
-  - [Errors during Velero backup](#errors-during-velero-backup)
-  - [Errors during Velero restore](#errors-during-velero-restore)
-  - [Logs for OADP/Velero troubleshooting](#logs-for-oadpvelero-troubleshooting)
-- [OADP Troubleshooting](#oadp-troubleshooting)
-  - [General OADP Installation Troubleshooting Tips](#general-oadp-installation-troubleshooting-tips)
-  - [OADP Backup using restic on Spectrum Scale Storage](#oadp-backup-using-restic-on-spectrum-scale-storage)
-- [Uninstalling OADP and Velero](#uninstalling-oadp-and-velero)
-  - [For Installations using the OperatorHub in the OpenShift Web Console](#for-installations-using-the-operatorhub-in-the-openshift-web-console)
-- [cpdbr-oadp Backup REST service](#cpdbr-oadp-backup-rest-service)
-  - [Overview](#overview-1)
-  - [Prerequisites](#prerequisites-1)
-  - [Setup (REST mode)](#setup-rest-mode)
-    - [Install the cpdbr-api image](#install-the-cpdbr-api-image)
-    - [Set the OADP operator namespace and CPD (control-plane) namespace](#set-the-oadp-operator-namespace-and-cpd-control-plane-namespace)
-    - [Installing the REST server](#installing-the-rest-server)
-    - [Custom TLS certificate for HTTPS connections to the cpdbr-api REST server (Optional)](#custom-tls-certificate-for-https-connections-to-the-cpdbr-api-rest-server-optional)
-    - [Configuring the REST client](#configuring-the-rest-client)
-    - [Additional REST client configuration if using self-signed certificate (Optional)](#additional-rest-client-configuration-if-using-self-signed-certificate-optional)
-  - [Checking Logs for Errors](#checking-logs-for-errors)
-  - [Setting the cpd-cli oadp CLI back to the default Kubernetes mode](#setting-the-cpd-cli-oadp-cli-back-to-the-default-kubernetes-mode)
-  - [Uninstalling the cpdbr-api REST server](#uninstalling-the-cpdbr-api-rest-server)
+cpdbr version 4.0.0, included as a part of cpd-cli.  This README is for cpd-cli version 10.x.  For use with 4.0.2 and above fixpacks.
 
 ## Overview
 
-This README shows example usage of cpd-cli oadp, a backup utility for Cloud Pak for Data.
-It calls OpenShift APIs for Data Protection (OADP) for CPD instance, namespace-level backups.
-
+This README shows example usage of cpdbr-oadp, a backup utility for Cloud Pak for Data.
+Steps are shown to perform offline backup and restore of an CPD instance namespace on the same cluster.
 The backup utility requires the following components:
-- OADP/Velero (OpenShift APIs for Data Protection Operator) and its default plugins
+- OADP/Velero (OpenShift API for Data Protection) and its default plugins
 - A custom Velero plugin *cpdbr-velero-plugin*
 - The *cpd-cli oadp* CLI, also referred to as *cpdbr-oadp*.  The cpdbr-oadp CLI is included as a part of the cpd-cli utility.
 
@@ -85,55 +15,45 @@ OADP, Velero, and the default *openshift-velero-plugin* are open source
 projects used to back up Kubernetes resources and data volumes on
 OpenShift. The custom *cpdbr-velero-plugin* implements additional Velero
 backup and restore actions for OpenShift-specific resource handling.
-*cpdbr-oadp* is a CLI that performs backup and restore operations by
+*cpdbr-oadp* is a CLI command to perform backup/restore operations by
 calling Velero client APIs, similar to the *velero* CLI. In addition,
-*cpdbr-oadp* invokes custom pre-backup, post-backup, and post-restore hooks
-implemented CPD service teams to ensure that backups are consistent and
-services can recover from restore.
+*cpdbr-oadp* invokes backup/restore hooks to quiesce and unquiesce services.
 
-To provide data consistency, *cpdbr-oadp* invokes pre-backup hooks
-defined by CPD services via CPD backup/restore configmaps to to do pre-processing
-steps before a backup. After the backup is completed, the post-backup
-hooks are invoked to do post-processing steps.
+To provide data consistency, *cpdbr-oadp* invokes the pre-backup hooks
+defined by CPD services via CPD backup/restore ConfigMaps to quiesce before
+performing a backup. After the backup is completed, the post-backup
+hooks are invoked to unquiesce. Exec hooks can be also defined via
+Velero annotations. If no hooks are specified, the cpdbr-oadp default
+handler performs pod scale down/up on the "unmanaged" K8s workloads.
 
-For offline backups, if no hooks are specified, the cpdbr-oadp default
-handler performs pod scale down/up on unmanaged K8s workloads.
+There are two types of backups, Velero restic and Ceph CSI snapshots on
+OCS.
 
-There are two types of backups, Velero restic and CSI snapshots.  In both cases, Kubernetes resources
-are backed up by Velero.  For volume data, backups are done using restic or CSI snapshots.
-- Restic backups can be used for CPD supported storage classes such as NFS (configured with no_root_squash), Portworx, and OCS/ODF.
+Restic backups can be used for NFS (configured with no_root_squash), Portworx and OCS Ceph volumes.
 Restic is an open source utility to perform volume backups via file
 copying, and includes features such as encryption and deduplication.
-Using restic, a backup can be restored to a different cluster.
-- Backups using CSI snapshots can be used for CPD
-installed on CSI volumes such as OCS 4.6+. Snapshots are typically much
+
+Backups using OADP/Velero Ceph CSI snapshots can be used for CPD
+installed on Ceph CSI volumes (OCS 4.6+). Snapshots are typically much
 faster than file copying, using copy-on-write techniques to save changes
-instead of performing a full copy. However, snapshots are typically stored locally in the cluster.
-Currently, cpdbr-oadp cannot move data from snapshots to another cluster, and thus cpdbr-oadp backups using snapshots
-cannot be used for disaster recovery purposes.
+instead of performing a full copy. However, there is currently no method
+to move data from Ceph snapshots to another cluster, and thus snapshots
+should not be used for disaster recovery purposes.
 
-## Backup/Restore Scenarios
-
-This README contains example usage of cpdbr-oadp. Steps are shown to perform:
-- Offline (disruptive) backup and restore of a CPD instance namespace on the same cluster using restic or CSI snapshots (CPD 4.0.2+.  CSI snapshots currently not supported on OCP 4.10)
-- Online (non-disruptive) backup and restore a CPD instance namespace on the same cluster using CSI snapshots (CPD 4.5+.  Currently not supported on OCP 4.10)
-
-cpdbr-oadp also supports backup and restore of a Cloud Pak for Data deployment (Foundational Services/CPD operators namespace, CPD instance namespace) on a different cluster using offline, restic backup.
-Refer to the IBM Cloud Pak for Data documentation.
-
-Using cpdbr-oadp, restoring Cloud Pak for Data on a different cluster using online backup is currently not supported.
-
-Additional notes:
-- For backup and restore on the same cluster, the Foundational Services namespace and CPD operators namespace must still exist.
-- Not all CPD services support backups with OADP.  Refer to the IBM Cloud Pak for Data documentation.
+## Backup/Restore Scenario
+- This README contains example usage of cpdbr-oadp.  Steps are shown to backup and restore a CPD instance namespace on
+  the same cluster, for CPD services that support backups with OADP.<br>
+  The Foundational Services namespace and CPD operators namespace must still exist.
+- For backing up and restoring Cloud Pak for Data on a new cluster, refer to the IBM Cloud Pak for Data documentation.
 
 ## System Requirements
 
 Cluster
-- OADP 1.x Operator is available for OCP 4.6+, on linux x86_64 and ppc64le.<br>
+- OADP 1.x Operator is available for OCP 4.6+.<br>
+  OADP 1.x Operator is available for linux x86_64 and ppc64le.<br>
   Note: Community operators are upstream development projects that have no official support. Users will typically install the OADP Operator that is supported by Red Hat.
 - The cpdbr-velero-plugin is available for linux x86_64 and ppc64le.
-- Ceph CSI snapshots is available for OCS 4.6+.  Currently not supported on OCP 4.10.
+- Ceph CSI snapshots is available for OCS 4.6+
 - If CPD is installed on NFS, NFS storage must be configured with no_root_squash for OADP restic backups.
 
 Client
@@ -147,7 +67,8 @@ Client
 - podman is installed on the client system with access to the cluster. It is needed to install the cpdbr-velero-plugin.
 
 Object storage
-- Access to object storage is required. It is used by OADP/Velero to store Kubernetes resource definitions and restic backups.
+- Access to object storage is required. It is used by OADP/Velero to store docker images,
+Kubernetes resource definitions, and restic backups.
 - A bucket must be created in object storage.  The name of bucket is specified in the Velero custom resource 
 when instantiating a Velero instance.
 
@@ -157,14 +78,14 @@ when instantiating a Velero instance.
 cpdbr-oadp requires cluster admin or similar roles.
 
 
-# Installation and Configuration
+## Installation and Configuration
 
-## Set up Object Storage
+### Set up Object Storage
 
 Velero requires certain S3-compatible object storage to store backups of
 Kubernetes objects. For restic backups, volume data is also stored in object storage.
 
-## Sample Object Store using MinIO
+### Sample Object Store using MinIO
 
 For testing purposes, steps are shown to install a local MinIO server, which is an
 open-source object store.
@@ -206,7 +127,7 @@ Example using NFS storage class:
    oc set image deployment/minio minio=minio/minio:RELEASE.2021-06-17T00-10-46Z -n velero
    ```
 
-### Creating PVCs for MinIO
+#### Creating PVCs for MinIO
 5.  Create two persistent volumes and update the deployment. Change the
     storage class and size as needed.
 
@@ -286,7 +207,7 @@ Example using NFS storage class:
 
 10.  Go to the MinIO web UI and create a bucket called "velero"
 
-## Sample Object Store using MinIO (Air-Gapped Installation)
+### Sample Object Store using MinIO (Air-Gapped Installation)
 
 For testing purposes, steps are shown to install a local MinIO server, which is an
 open-source object store.
@@ -314,7 +235,7 @@ open-source object store.
 
 4. On the air-gapped cluster, create the "velero" namespace.
 
-5. Push the images to the OpenShift internal registry.
+5. Push the images to the internal registry.
     ```
     IMAGE_REGISTRY=`oc get route -n openshift-image-registry | grep image-registry | awk '{print $2}'`
     echo $IMAGE_REGISTRY
@@ -363,11 +284,11 @@ open-source object store.
    See [Creating PVCs for MinIO](#creating-pvcs-for-minio)
 
 
-## Install the cpdbr-velero-plugin
+### Install the cpdbr-velero-plugin
 
 1. Create the "oadp-operator" namespace
 
-2. Install the cpdbr-velero-plugin docker image from IBM Cloud Container Registry using podman
+2. Install the cpdbr-velero-plugin docker image from Docker Hub using podman
 
     OpenShift 4.x example:
     ```
@@ -381,11 +302,11 @@ open-source object store.
     echo $BUILD_NUM
 
 
-    # Pull cpdbr-velero-plugin image from IBM Cloud Container Registry
-    podman pull icr.io/cpopen/cpd/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}
+    # Pull cpdbr-velero-plugin image from Docker Hub
+    podman pull docker.io/ibmcom/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}
     # Push image to internal registry
     podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-    podman tag icr.io/cpopen/cpd/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}
+    podman tag docker.io/ibmcom/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}
     podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
     ```
 
@@ -393,9 +314,9 @@ open-source object store.
     https://docs.openshift.com/container-platform/4.6/registry/configuring-registry-operator.html#registry-operator-default-crd_configuring-registry-operator
 
 
-## Install OADP 
+### Install OADP 
 
-### Installing OADP 1.x GA Operator in OperatorHub (velero v1.7.0)
+#### Installing OADP 1.x GA Operator in OperatorHub (velero v1.7.0)
 
 Note: Community operators are upstream development projects that have no official support.  Users will typically 
 install the OADP Operator that is supported by Red Hat.
@@ -409,7 +330,7 @@ install the OADP Operator that is supported by Red Hat.
 
     Reference:
 
-    <https://github.com/openshift/oadp-operator/blob/oadp-1.0.1/docs/install_olm.md>
+    <https://github.com/openshift/oadp-operator/blob/apiv1/docs/install_olm.md>
 
     Notes:
     1.  For OADP 1.x GA Operator, select the "stable" Update Channel in <br>
@@ -440,7 +361,7 @@ install the OADP Operator that is supported by Red Hat.
 
     Reference:
 
-    <https://github.com/openshift/oadp-operator/blob/oadp-1.0.1/docs/install_olm.md#create-the-dataprotectionapplication-custom-resource>
+    <https://github.com/openshift/oadp-operator/blob/apiv1/docs/install_olm.md#create-the-dataprotectionapplication-custom-resource>
 
     The following is an example of a custom resource for a DataProtectionApplication (Velero) instance.
     
@@ -455,9 +376,7 @@ install the OADP Operator that is supported by Red Hat.
     5.  The cpdbr-velero-plugin is specified under the customPlugins property.  Ensure the image prefix is correct.
         - For x86, use image name 'cpdbr-velero-plugin:4.0.0-beta1-1-x86_64'.
         - For ppc64le, use image name 'cpdbr-velero-plugin:4.0.0-beta1-1-ppc64le'.
-    6.  The example uses a restic timeout of 2 hours. The default is 1 hour.  <br>
-        If restic backup or restore fails with pod volume timeout errors in the Velero log, consider increasing the timeout by changing spec.configuration.restic.timeout.
-    1.  For object stores with a self-signed certificate, specify:
+    6.  For object stores with a self-signed certificate, specify:
         - The base64 encoded certificate string as a value for backupLocations.velero.objectStorage.caCert
         
         Reference:<br>
@@ -482,13 +401,12 @@ spec:
         resourceAllocations:
           limits:
             cpu: "1"
-            memory: 1Gi
+            memory: 512Mi
           requests:
             cpu: 500m
             memory: 256Mi
     restic:
       enable: true
-      timeout: 2h
       podConfig:
         resourceAllocations:
           limits:
@@ -527,7 +445,7 @@ spec:
     velero-7d847d5bb7-zm6vd                             1/1     Running   0          49m
     ```
 
-### OADP 1.x GA Operator Air-gapped Installation
+#### OADP 1.x GA Operator Air-gapped Installation
 
 1.  For the OADP operator, there is a generic procedure using oc tooling for mirroring Red Hat operators.  See:
 
@@ -535,7 +453,7 @@ spec:
 
 2.  Additionally for cpdbr-oadp, push the UBI and cpdbr-velero-plugin images to the OpenShift internal registry.
 
-    1. On a cluster with network access, pull images and save them as files.  Requires access to icr.io and registry.redhat.io.
+    1. On a cluster with network access, pull images and save them as files.  Requires access to docker.io and registry.redhat.io.
         ```
         CPU_ARCH=`uname -m`
         echo $CPU_ARCH
@@ -546,8 +464,8 @@ spec:
         podman login registry.redhat.io
 
         # Pull images
-        podman pull icr.io/cpopen/cpd/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}
-        podman save icr.io/cpopen/cpd/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH} > cpdbr-velero-plugin-img-4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}.tar
+        podman pull docker.io/ibmcom/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}
+        podman save docker.io/ibmcom/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH} > cpdbr-velero-plugin-img-4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}.tar
 
         podman pull registry.redhat.io/ubi8/ubi-minimal:latest
         podman save registry.redhat.io/ubi8/ubi-minimal:latest > ubi-minimal-img-latest.tar
@@ -573,7 +491,7 @@ spec:
 
         # Push images
         podman load -i cpdbr-velero-plugin-img-4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}.tar
-        podman tag icr.io/cpopen/cpd/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}
+        podman tag docker.io/ibmcom/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}
         podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
 
         podman load -i ubi-minimal-img-latest.tar
@@ -582,16 +500,14 @@ spec:
         ```
 
 
-## Configure cpdbr-oadp
+### Configure cpdbr-oadp
 
-Configure the client to set the OADP operator namespace and CPD (control-plane) namespace respectively.  For example:
-
+Set the namespace where the OADP/velero instance is installed, e.g.:
 ```
 cpd-cli oadp client config set namespace=oadp-operator
-cpd-cli oadp client config set cpd-namespace=zen
-```
+```   
 
-## Create Two Volume Snapshot Classes (For Ceph CSI Snapshots, OCS 4.6+)
+### Create Two Volume Snapshot Classes (For Ceph CSI Snapshots, OCS 4.6+)
 
 DeletionPolicy is Retain, with label "velero.io/csi-volumesnapshot-class" 
 
@@ -629,39 +545,20 @@ parameters:
   csi.storage.k8s.io/snapshotter-secret-namespace: openshift-storage
 ```
 
-## Create Volume Snapshot Class (For Spectrum Scale CSI Snapshots, 5.1.3.x+)
 
-1.  ```oc apply -f spectrum-scale-snapclass-velero.yaml```
-
-```
-apiVersion: snapshot.storage.k8s.io/v1
-deletionPolicy: Retain
-driver: spectrumscale.csi.ibm.com
-kind: VolumeSnapshotClass
-metadata:
-  name: ibm-spectrum-scale-snapshot-class
-  labels:
-    velero.io/csi-volumesnapshot-class: "true"
-```
-
-
-# Offline (Disruptive) Backup and Restore
-
-## Example Steps for Backup using restic
+## Example Steps for Restic Backup
 
 ### Prerequistes
-  - Requires CPD 4.0.2 and above
+    
   - Check IBM Cloud Pak for Data documentation to see which services support OADP backup.
   - Check IBM Cloud Pak for Data documentation for additional backup prerequisite tasks that are service specific.
 
 
 ### Configure cpdbr-oadp client
 
-   Configure the client to set the OADP operator namespace and CPD (control-plane) namespace respectively.  For example:
-  
+   Configure cpdbr-oadp client config to point to the namespace where the velero instance is installed, e.g.:
    ```
    cpd-cli oadp client config set namespace=oadp-operator
-   cpd-cli oadp client config set cpd-namespace=zen
    ```
 
 ### Restic Backup of CPD instance namespace
@@ -771,22 +668,6 @@ Restore to same cluster.  Foundational Services namespace and CPD operators name
     cpd-cli oadp restore delete <restore-name>
     ```
 
-### Additional Commands for Troubleshooting
-
-1.  Run backup pre-hooks only
-```
-cpd-cli oadp backup prehooks --include-namespaces zen --log-level=debug --verbose
-```
-
-2.  Run backup post-hooks only
-```
-cpd-cli oadp backup posthooks --include-namespaces zen --log-level=debug --verbose
-```
-
-3.  Run restore post-hooks only
-```
-cpd-cli oadp restore posthooks --include-namespaces zen --log-level=debug --verbose
-```
 
 ## Multiple Namespace Backup/Restore
 
@@ -819,24 +700,19 @@ cpd-cli oadp backup create --include-namespaces=zen1,zen2 --exclude-resources='E
     ```
 
 
-## Example Steps for Backup using CSI Snapshots
+## Example Steps for Ceph CSI Backup
 
 ### Prerequistes
-  - Requires CPD 4.0.2 and above
+    
   - Check IBM Cloud Pak for Data documentation to see which services support OADP backup.
   - Check IBM Cloud Pak for Data documentation for additional backup prerequisite tasks that are service specific.
 
 ### Storage Requirements
 
-- OpenShift Container Storage 4.6+ / OpenShift Data Foundation 4.9+
+- OpenShift Container Storage 4.6 
 - Cloud Pak for Data installed using OCS storage classes 
 
-### Limitations
-  - Currently not supported on OCP 4.10
-  - Only for CPD installed on CSI volumes such as OCS
-  - Cannot be used to restore to a different cluster
-
-### Backup of CPD instance namespace using CSI snapshots
+### Backup of CPD instance namespace using Ceph CSI
 
 1.  Create a backup of the entire CPD instance namespace, e.g.:
     ```
@@ -877,7 +753,7 @@ velero-user-home-pvc-kbsn5               true                     velero-velero-
     cpd-cli oadp backup delete <backup-name>
     ```
 
-### Restore of CPD instance namespace using CSI snapshots
+### Restore of CPD instance namespace using Ceph CSI
 
 1.  Follow the steps delete the CPD instance namespace
 
@@ -1057,211 +933,23 @@ spec:
 
 2.  Restore CPD-Instance Namespace(s) using cpdbr-oadp.
 
-# Online (Non-Disruptive) Backup
+## Checking Logs for Errors
 
-## Example Steps for Backup using CSI Snapshots
+### cpdbr-oadp/cpd-cli log
+The CPD-CLI\*.log can be found in cpd-cli-workspace/logs.  Errors during prehooks and posthooks are captured in this log.
 
-### Prerequistes
-  - Requires CPD 4.5 and above
-  - Check IBM Cloud Pak for Data documentation to see which services support OADP backup.
-  - Check IBM Cloud Pak for Data documentation for additional backup prerequisite tasks that are service specific.
-
-### Storage Requirements
-
-- OpenShift Container Storage 4.6+ / OpenShift Data Foundation 4.9+
-- Cloud Pak for Data installed using OCS storage classes 
-  
-### Limitations
-  - Currently not supported on OCP 4.10
-  - Only for CPD installed on CSI volumes such as OCS
-  - Cannot be used to restore to a different cluster
-
-### Configure cpdbr-oadp client
-
-   Configure the client to set the OADP operator namespace and CPD (control-plane) namespace respectively.  For example:
-  
-   ```
-   cpd-cli oadp client config set namespace=oadp-operator
-   cpd-cli oadp client config set cpd-namespace=zen
-   ```
-   
-### Backup of CPD instance namespace using CSI snapshots
-
-1.  Create a checkpoint
-    ```
-    cpd-cli oadp checkpoint create --include-namespaces zen --log-level=debug --verbose
-    ```
-
-2.  Run checkpoint backup.  Consists of two backup steps.
-
-    1.  Backup 1 - Back up volumes
-        ```
-        cpd-cli oadp backup create <ckpt-backup-id1> --include-namespaces zen --hook-kind=checkpoint --include-resources='ns,pvc,pv,volumesnapshot,volumesnapshotcontent' --selector='icpdsupport/empty-on-nd-backup notin (true),icpdsupport/ignore-on-nd-backup notin (true)' --snapshot-volumes --log-level=debug --verbose
-        ```
-    2.  Backup 2 - Back up Kubernetes resources
-        ```
-        cpd-cli oadp backup create <ckpt-backup-id2> --include-namespaces zen --hook-kind=checkpoint --exclude-resources='pod,event,event.events.k8s.io' --selector='icpdsupport/ignore-on-nd-backup notin (true)' --snapshot-volumes=false --skip-hooks=true --log-level=debug --verbose
-        ```
-
-3.  Check the status of the backup, e.g.:
-    ```
-    cpd-cli oadp backup status --details <ckpt-backup-id1>
-    cpd-cli oadp backup status --details <ckpt-backup-id2>
-    ```        
-
-    When the backup is complete, check that snapshots are created and READYTOUSE is true.
-
-```
-oc get volumesnapshots -n zen 
-
-NAME                                     READYTOUSE   SOURCEPVC   SOURCESNAPSHOTCONTENT                                 RESTORESIZE   SNAPSHOTCLASS                                      SNAPSHOTCONTENT                                       CREATIONTIME   AGE 
-velero-cpd-install-operator-pvc-rbcqf    true                     velero-velero-cpd-install-operator-pvc-rbcqf-8hm5c    0             ocs-storagecluster-cephfsplugin-snapclass-velero   velero-velero-cpd-install-operator-pvc-rbcqf-8hm5c    2d3h           2d3h 
-velero-cpd-install-shared-pvc-hkh2g      true                     velero-velero-cpd-install-shared-pvc-hkh2g-bfq4g      0             ocs-storagecluster-cephfsplugin-snapclass-velero   velero-velero-cpd-install-shared-pvc-hkh2g-bfq4g      2d3h           2d3h 
-velero-datadir-zen-metastoredb-0-qhhkb   true                     velero-velero-datadir-zen-metastoredb-0-qhhkb-h7nt5   0             ocs-storagecluster-rbdplugin-snapclass-velero      velero-velero-datadir-zen-metastoredb-0-qhhkb-h7nt5   2d3h           2d3h 
-velero-datadir-zen-metastoredb-1-gvxrw   true                     velero-velero-datadir-zen-metastoredb-1-gvxrw-klfgf   0             ocs-storagecluster-rbdplugin-snapclass-velero      velero-velero-datadir-zen-metastoredb-1-gvxrw-klfgf   2d3h           2d3h 
-velero-datadir-zen-metastoredb-2-9gsvk   true                     velero-velero-datadir-zen-metastoredb-2-9gsvk-ggtfn   0             ocs-storagecluster-rbdplugin-snapclass-velero      velero-velero-datadir-zen-metastoredb-2-9gsvk-ggtfn   2d3h           2d3h 
-velero-influxdb-pvc-5x8zh                true                     velero-velero-influxdb-pvc-5x8zh-twt2q                0             ocs-storagecluster-cephfsplugin-snapclass-velero   velero-velero-influxdb-pvc-5x8zh-twt2q                2d3h           2d3h 
-velero-user-home-pvc-kbsn5               true                     velero-velero-user-home-pvc-kbsn5-m7g55               0             ocs-storagecluster-cephfsplugin-snapclass-velero   velero-velero-user-home-pvc-kbsn5-m7g55               2d3h           2d3h
-```
-
-3.  List backups, e.g.:
-    ```
-    cpd-cli oadp backup ls
-    ```
-
-4.  View backup logs, e.g.:
-    ```
-    cpd-cli oadp backup logs <backup-name>
-    ```
-5.  Delete backup (for cleanup purposes only):
-    ```
-    cpd-cli oadp backup delete <backup-name>
-    ```
-
-### Restore of CPD instance namespace using CSI snapshots
-
-1.  Follow the steps delete the CPD instance namespace
-
-    See [Deleting CPD Instance Namespace](#deleting-cpd-instance-namespace)
-
-2.  Check that the backup is available and completed with no errors before restore      
-    ```
-    cpd-cli oadp backup ls
-
-    NAME           	STATUS         	ERRORS	WARNINGS	CREATED                      	EXPIRES	STORAGE LOCATION	SELECTOR
-    ckpt-backup-id1	Completed      	0     	0       	2021-02-25 17:45:44 -0800 PST	358d   	default         	<none>
-    ckpt-backup-id2	Completed      	0     	0       	2021-02-25 17:55:44 -0800 PST	358d   	default         	<none> 
-    ```
-
-3.  Restore from backup
-
-    Notes:
-    * As a general rule, do not restore over an existing namespace.
-
-    1.  See steps in [Restoring CPD Instance Namespace to Same Cluster](#restoring-cpd-instance-namespace-to-same-cluster)
-
-    2.  Run checkpoint restore on the same cluster.  Consists of four restore steps.
-
-        1.  Restore 1 - restore volumes
-            ```
-            cpd-cli oadp restore create --from-backup=<ckpt-backup-id1> <chkpt-restore-id1> --skip-hooks --log-level=debug --verbose
-            ```
-        2.  Restore 2 - restore resources except pod generating resources and operandrequests
-            ```
-            cpd-cli oadp restore create --from-backup=<ckpt-backup-id2> --exclude-resources='clients,ImageTag,deploy,rs,dc,rc,sts,ds,cj,jobs,controllerrevisions,po,opreq' <chkpt-restore-id2> --include-cluster-resources=true --skip-hooks --log-level=debug --verbose
-            ```
-
-        3.  Restore 3 - restore pod generating resources
-            ```
-            cpd-cli oadp restore create --from-backup=<ckpt-backup-id2> --include-resources='deploy,rs,dc,rc,sts,ds,cj,jobs,controllerrevisions' <chkpt-restore-id3> --preworkloadhooks=true --posthooks=true --log-level=debug --verbose
-            ```
-
-        4.  Restore 4 - restore operandrequests
-            ```
-            cpd-cli oadp restore create --from-backup=<ckpt-backup-id2> --include-resources='opreq' <chkpt-restore-id4> --skip-hooks --log-level=debug --verbose
-            ```
-   
-4.  List restores
-    ```
-    cpd-cli oadp restore ls
-    ```
-5.  Check status of the restore
-    ```
-    cpd-cli oadp restore status --details <restore-name>
-    ```
-6.  View restore logs
-    ```
-    cpd-cli oadp restore logs <restore-name>
-    ```
-7.  Delete restore (for cleanup purposes only)
-    ```
-    cpd-cli oadp restore delete <restore-name>
-    ```
-
-### Additional Commands for Troubleshooting
-
-1.  Run checkpoint backup pre-hooks only
-```
-cpd-cli oadp backup prehooks --include-namespaces zen --hook-kind=checkpoint --log-level=debug --verbose
-```
-
-2.  Run checkpoint backup post-hooks only
-```
-cpd-cli oadp backup posthooks --include-namespaces zen --hook-kind=checkpoint --log-level=debug --verbose
-```
-
-3. Run checkpoint restore pre-workload hooks only
-```
-cpd-cli oadp restore preworkloadhooks --include-namespaces zen --hook-kind=checkpoint --log-level=debug --verbose
-```
-
-4.  Run checkpoint restore post-hooks only
-```
-cpd-cli oadp restore posthooks --include-namespaces zen --hook-kind=checkpoint --log-level=debug --verbose
-```
-
-5.  If cpdbr-oadp was abnormally terminated, run checkpoint reset command to release/cleanup resources
-```
-cpd-cli oadp checkpoint reset --log-level=debug --verbose
-```
-
-# Backup/Restore Troubleshooting
-
-## Errors running cpd-cli and CPD hooks
-CPD hooks are called during checkpoint create, the pre-backup phase, post-backup phase, and post-restore phase.<br>
-Check the cpdbr-oadp/cpd-cli log for errors (search for level=error).<br>
-The CPD-CLI\*.log can be found in cpd-cli-workspace/logs.  Errors during prehooks and posthooks are captured in this log.<br>
 For additional tracing, run commands using --log-level=debug --verbose.
 
-## Errors during Velero backup
-1.  Check the status of the backup
-    ```  
-    cpd-cli oadp backup status --details <backup-name>
-    ```
-2.  Check the Velero backup log for errors
-    ``` 
-    cpd-cli oadp backup logs <backup-name>
-    ```
-3.  When using restic backups, check the logs of the restic pods in oadp-operator namespace for restic errors.
+### Velero backup and restore log
 
-## Errors during Velero restore
-1.  Check the status of the restore
-    ```
-    cpd-cli oadp restore status --details <restore-name>
-    ```
-2.  Check the Velero restore log for errors
-    ```
-    cpd-cli oadp restore logs <restore-name>
-    ```
-3.  When using restic backups, check the logs of the restic pods in oadp-operator namespace for restic errors.
+Check "cpd-cli oadp backup logs \<backup-name\>" or "cpd-cli oadp restore logs \<restore-name\>" for errors.  
+Errors during Velero backup/restore are captured in these logs.
 
-## Logs for OADP/Velero troubleshooting
+### Restic pod logs
+Check the logs of the restic pods in oadp-operator namespace for restic errors.
+
+### Velero pod log
 In the oadp-operator namespace, check the log of the velero pod for velero server errors.
-```
-oc logs -n <oadp_project_name> deployment/velero
-```
-
-# OADP Troubleshooting
 
 ## General OADP Installation Troubleshooting Tips
 
@@ -1271,222 +959,12 @@ oc logs -n <oadp_project_name> deployment/velero
 4.  Check that the Velero CR used to create the Velero instance is correctly indented.
 5.  Check that the contents of the oadp-repo-secret or cloud-credentials secret is correct.
 
-## OADP Backup using restic on Spectrum Scale Storage
+## Uninstalling OADP and Velero
 
-OADP backup using restic on Spectrum Scale may fail without additional configuration.  In the velero backup log, there are errors such as
-```
-level=error msg="Error backing up item" backup=oadp-operator/mybackupid error="pod volume backup failed: error running restic backup, stderr=: chdir /host_pods/4f32d5e7-687e-44f4-9060-f1def7cef83c/volumes/kubernetes.io~csi/pvc-cfb6775e-c9ce-4d5d-b260-7157a2f9ad42/mount: no such file or directory"
-```
-
-Velero’s restic integration backs up a pod's volume data by accessing the node's filesystem on which the pod is running.<br>
-Restic pods in the OADP namespace uses a hostPath that mounts "/var/lib/kubelet/pods" on the host system to "/host_pods" in the restic pod.<br>
-On Spectrum Scale, /var/lib/kubelet/pods/\<pod-uid\>/volumes/kubernetes.io~csi/\<pvc-uid\>/mount may be a symbolic link that points to a different location on the host system such as "/mnt".  Because "/mnt" on the host system is not mounted on the restic pod, restic is not able to find the files to copy.
-
-As a workaround, change the restic daemonset to include an additional mount.
-1.  In the oadp-operator namespace, scale down the OADP operator so that the restic daemonset changes don't get reverted back to orignal values.
-    ```
-    oc scale deploy openshift-adp-controller-manager --replicas=0
-    ```
-2.  Edit the restic daemonset to include an additional mount.
-    ```
-    oc edit ds restic
-
-    a.  Add the following to "volumeMounts"
-        - mountPath: /mnt
-          mountPropagation: HostToContainer
-          name: host-mnt
-
-      For example:
-        volumeMounts:
-        - mountPath: /host_pods
-          mountPropagation: HostToContainer
-          name: host-pods
-        - mountPath: /mnt
-          mountPropagation: HostToContainer
-          name: host-mnt
-
-    b. Add the following to "volumes"
-      - hostPath:
-          path: /mnt
-          type: ""
-        name: host-mnt
-
-      For example:
-      volumes:
-      - hostPath:
-          path: /var/lib/kubelet/pods
-          type: ""
-        name: host-pods
-      - hostPath:
-          path: /mnt
-          type: ""
-        name: host-mnt
-
-    ```
-
-3.  Save daemonset changes
-
-4.  Wait for all the restic pods to get restarted for the daemonset changes to take effect.
-
-# Uninstalling OADP and Velero
-
-## For Installations using the OperatorHub in the OpenShift Web Console
+#### For Installations using the OperatorHub in the OpenShift Web Console
 1.  Uninstall the Velero instance in the OADP operator using the OpenShift web console
 2.  Uninstall the OADP operator using the OpenShift web console
 3.  Run
     ```
     oc delete crd $(oc get crds | grep velero.io | awk -F ' ' '{print $1}')
     ```
-
-# cpdbr-oadp Backup REST service
-
-## Overview
-
-The cpd-cli oadp CLI, otherwise known as cpdbr-oadp, is a backup/restore utility for Cloud Pak For Data (CPD).  It calls OADP/Velero for CPD instance, namespace-level backups.
-By default, the CLI requires oc login and Kubernetes cluster admin privileges to perform the supported tasks.  This is known as Kubernetes mode.
-
-Alternatively, the cpd-cli oadp CLI can run in REST mode, as a REST client talking to a REST server.
-In this mode, cpd-cli oadp does not require oc login.
-A CPD administrator is allowed to perform backup and checkpoint operations by running cpd-cli oadp commands that internally use REST APIs.
-
-In REST mode:
-- The REST server, cpdbr-api, should only be installed and deployed on an operational CPD control plane.
-- Only backup and checkpoint operations are available.  For restore operations, it must be performed in Kubernetes mode by cluster admin.
-- Only CPD project administrator can perform backup and checkpoint operations for their own CPD instance, based on the specified CPD control plane and any tethered namespaces.
-
-This is available on CPD v4.5.0+
-
-
-## Prerequisites
-
-- Similar to cpdbr-oadp, OADP must be installed and configured.
-- The backup REST service authenticates with the CPD control plane, so the CPD control plane must be up and running.
-
-## Setup (REST mode)
-
-### Install the cpdbr-api image
-
-Install the cpdbr-api docker image using podman
-
-OpenShift 4.x example:
-
-```
-IMAGE_REGISTRY=`oc get route -n openshift-image-registry | grep image-registry | awk '{print $2}'`
-echo $IMAGE_REGISTRY
-NAMESPACE=`oc project -q`
-echo $NAMESPACE
-CPU_ARCH=`uname -m`
-echo $CPU_ARCH
-# build-number currently is set to 1
-BUILD_NUM=1
-echo $BUILD_NUM
-
-# Pull cpdbr-api image from IBM Cloud Container Registry
-podman pull icr.io/cpopen/cpd/cpdbr-api:4.5.0-${BUILD_NUM}-${CPU_ARCH}
-
-# Push image to OpenShift internal registry
-podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag icr.io/cpopen/cpd/cpdbr-api:4.5.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr-api:4.5.0-${BUILD_NUM}-${CPU_ARCH}
-podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr-api:4.5.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
-```
-
-### Set the OADP operator namespace and CPD (control-plane) namespace
-```
-cpd-cli oadp client config set namespace=oadp-operator
-cpd-cli oadp client config set cpd-namespace=zen
-```
-
-### Installing the REST server
-Requires oc login, cluster admin role
-```
-cpd-cli oadp install --image-prefix="image-registry.openshift-image-registry.svc:5000/$NAMESPACE" --log-level=debug
-```
-
-### Custom TLS certificate for HTTPS connections to the cpdbr-api REST server (Optional)
-
-The cpdbr-api REST service includes a self-signed TLS certificate that can be used to enable HTTPS connections. By default, 
-this certificate is untrusted by all HTTPS clients. However, you can replace the default certificate with your own TLS certificate.
-
-To complete this task, you must have your own certificate and private key file that meet the following requirements:
-
-- Both files are in PEM format.
-- The certificate is named cert.crt.
-- The certificate can be a bundle that contains your server, intermediates, and root certificates concatenated (in the proper order) into one file. The necessary certificates must be enabled as trusted certificates on the clients that connect to the cluster.
-- The private key is named cert.key.
-
-Create a secret named cpdbr-api-custom-tls-secrets in CPD control plane namespace
-
-```
-oc create secret generic -n $NAMESPACE cpdbr-api-custom-tls-secrets --from-file=cert.crt=./cert.crt --from-file=cert.key=./cert.key --dry-run -o yaml | oc apply -f -
-```
-
-After the secret is successfully created then reinstall cpdbr-api:
-
-```
-cpd-cli oadp uninstall --no-prompt
-cpd-cli oadp install --image-prefix="image-registry.openshift-image-registry.svc:5000/$NAMESPACE" --log-level=debug
-```
-
-### Configuring the REST client
-
-Obtain the values of CPD_URL, CPDBR_API_URL, and CPD_API_KEY
-```
-# On the cluster
-NAMESPACE=`oc project -q`
-echo $NAMESPACE
-CPD_URL=`oc get route -n $NAMESPACE | grep ibm-nginx-svc | awk '{print $2}'`
-echo "cpd control plane url: $CPD_URL"
-
-# The cpdbr-api (the backup REST service) has its own OpenShift route.
-# It can be retrieved from the CPD control-plane namespace
-CPDBR_API_URL=`oc get route -n $NAMESPACE | grep cpdbr-api | awk '{print $2}'`
-echo "cpdbr-api url: $CPDBR_API_URL"
-```
-
-```
-# the CPD admin API key (retrieve from CPD console's user profile page)
-CPD_API_KEY=xxxxxxxx
-```
-
-Set the configuration values on the REST client.  Replace the values for CPD_API_KEY, CPD_URL, CPDBR_API_URL.
-```
-# On the client
-cpd-cli oadp client config set runtime-mode=rest-client
-cpd-cli oadp client config set userid=admin
-cpd-cli oadp client config set apikey=$CPD_API_KEY
-cpd-cli oadp client config set cpd-route=$CPD_URL
-cpd-cli oadp client config set cpd-insecure-skip-tls-verify=true
-cpd-cli oadp client config set cpdbr-api-route=$CPDBR_API_URL
-cpd-cli oadp client config set cpdbr-api-insecure-skip-tls-verify=true
-```
-
-Once the REST client and server are configured, cpd-cli oadp backup and checkpoint commands will use REST APIs internally.  For example,
-```
-cpd-cli oadp backup list --log-level=debug
-```
-
-### Additional REST client configuration if using self-signed certificate (Optional)
-```
-cpd-cli oadp client config set cpd-tls-ca-file=<cacert file>
-cpd-cli oadp client config set cpd-insecure-skip-tls-verify=false
-cpd-cli oadp client config set cpdbr-api-tls-ca-file=<cacert file>
-cpd-cli oadp client config set cpdbr-api-insecure-skip-tls-verify=false
-```
-
-## Checking Logs for Errors
-
-For the REST client, check the cpdbr-oadp/cpd-cli log.  The CPD-CLI\*.log can be found in cpd-cli-workspace/logs.
-For additional tracing, run commands using --log-level=debug --verbose.
-
-For the REST server, check the log from "oc logs deploy/cpdbr-api -n \<control-plane-namespace\>"
-
-## Setting the cpd-cli oadp CLI back to the default Kubernetes mode
-Run
-```
-cpd-cli oadp client config set runtime-mode=
-```
-
-## Uninstalling the cpdbr-api REST server
-```
-cpd-cli oadp uninstall --no-prompt
-```
