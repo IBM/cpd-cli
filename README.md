@@ -1,31 +1,73 @@
 # IBM Cloud Pak for Data command-line interface
 
-The way that you use the IBM Cloud Pak for Data command-line interface depends on the version of Cloud Pak for Data that you are using.
-
-- In 4.0, the command-line interface is used to complete [administrative tasks](https://www.ibm.com/docs/SSQNUZ_4.0/cpd/admin/cpd-cli.html)
-- In 3.0 and 3.5, the command-line interface is used to install the Cloud Pak for Data [control plane](https://www.ibm.com/docs/SSQNUZ_3.5.0/cpd/plan/architecture.html#architecture__control-plane) and [services](https://www.ibm.com/docs/SSQNUZ_3.5.0/svc-nav/head/services.html) on your Red Hat OpenShift cluster.
+The way that you use the IBM Cloud Pak for Data command-line interface (`cpd-cli`)
+depends on the version of Cloud Pak for Data that you are using:
 
 
-## Version 4.0 users
+| Release   | Installation | Upgrade   | Administration | CLI Version |
+| ------    | ------       | ------    | -----------    | ------      |
+| 4.5       | &#10004;     | &#10004;  | &#10004;       | 11.0.x      |
+| 4.0       |              |           | &#10004;       | 10.0.x      |
+| 3.5       | &#10004;     | &#10004;  | &#10004;       | 3.5.x       |
+| 3.0.1     | &#10004;     | &#10004;  | &#10004;       | 3.0.1       |
+
+
+## Cloud Pak for Data Version 4.5
+
+**Remember:** Use `cpd-cli` Version 11.0.x with Cloud Pak for Data Version 4.5
+
+You can install Cloud Pak for Data from a client workstation that can connect to
+your cluster. You must run the installation from a Linux, Mac, or Windows machine.
+For details, see [Installing IBM Cloud Pak for Data](https://www.ibm.com/docs/SSQNUZ_4.5.x/cpd/install/install.html)
+
+Download the package that corresponds to the license that you purchased and the operating system where you will run the CLI. Dowload EE for Cloud Pak for Data Enterprise Edition. Download SE for Cloud Pak for Data Standard Edition.
+
+| Operating system | CLI               |  Notes      |           
+| :--              | :--               | :--         |
+| Linux            | cpd-cli-linux-*   |             |
+| Mac OS           | cpd-cli-darwin-*  |             |
+| Windows          | cpd-cli-linux-*   | Requires Windows Subsystem for Linux.
+| POWER (ppc64le)  | cpd-cli-ppc64le-* | Cannot be used to install or upgrade. Supported only for administrative tasks. |
+| Z (s390x)        | cpd-cli-s390x-*   | Cannot be used to install or upgrade. Supported only for administrative tasks. |
+
+For more information on using `cpd-cli`, see [Cloud Pak for Data command-line interface (cpd-cli)](https://www.ibm.com/docs/SSQNUZ_4.5.x/cpd-cli/cpd-cli-intro.html).
+
+
+---
+## Cloud Pak for Data Version 4.0
+
+**Remember:** Use `cpd-cli` Version 10.0.x with Cloud Pak for Data Version 4.0
+
 For information on using the command-line interface, see the [cpd-cli command reference](https://www.ibm.com/docs/SSQNUZ_4.0/cpd/admin/cpd-cli.html) in the product documentation.
 
 For information on installing IBM Cloud Pak for Data, see [Installing IBM Cloud Pak for Data](https://www.ibm.com/docs/SSQNUZ_4.0/cpd/install/install.html) in the product documentation.
-<br/>
-<br/>
 
-## Version 3.5 users
+| Operating system              | CLI |
+| :--                           | :--       |
+| Linux                         | cpd-cli-linux-* |
+| Mac OS                        | cpd-cli-darwin-* |
+| POWER (ppc64le)               | cpd-cli-ppc64le-* |
+| Z(s390x)                      | cpd-cli-s390x-* |
+
+
+---
+## Cloud Pak for Data Version 3.5
+
+
+**Remember:** Use `cpd-cli` Version 3.5.x with Cloud Pak for Data Version 3.5
+
 You can install Cloud Pak for Data from a remote system that can connect to your cluster.
 
 Download the Enterprise Edition (EE) package or the Standard Edition (EE) package. The package includes the appropriate licenses and installer files.
 
 Ensure that you use the installer that corresponds to the operating system where you will run the installation.
 
-| Operating system              | Installer |
+| Operating system              | CLI |
 | :--                           | :--       |
-| Linux on x86-64               | cpd-cli-linux-* |
+| Linux                         | cpd-cli-linux-* |
 | Mac OS                        | cpd-cli-darwin-* |
-| POWER                         | cpd-cli-ppc64le-* |
-| Linux on Z(s390x)             | cpd-cli-s390x-* |
+| POWER (ppc64le)               | cpd-cli-ppc64le-* |
+| Z(s390x)                      | cpd-cli-s390x-* |
 
 
 
@@ -49,18 +91,21 @@ To install Cloud Pak for Data:
 
 1. [Install the Cloud Pak for Data control plane](https://www.ibm.com/docs/SSQNUZ_3.5.0/cpd/install/rhos-install.html).
 
-1. [Install the relevant services](https://www.ibm.com/docs/SSQNUZ_3.5.0/svc-nav/head/services.html) on your cluster.  
+1. [Install the relevant services](https://www.ibm.com/docs/SSQNUZ_3.5.0/svc-nav/head/services.html) on your cluster.
 
 
-## Version 3.0 users
+---
+## Cloud Pak for Data Version 3.0.1
+
+**Remember:** Use `cpd-cli` Version 3.0.1 with Cloud Pak for Data Version 3.0.1
+
 You can install Cloud Pak for Data from a remote system that can connect to your cluster.
 
 Download the Enterprise Edition (EE) package or the Standard Edition (EE) package. The package includes the appropriate licenses and installer files.
 
 Ensure that you use the installer that corresponds to the operating system where you will run the installation.
 
-
-| Operating system | Installer |
+| Operating system | CLI |
 | :--              | :--       |
 | Linux            | cpd-linux |
 | Mac OS           | cpd-darwin |
@@ -69,7 +114,6 @@ Ensure that you use the installer that corresponds to the operating system where
 
 #### Downloading the installer
 Download the appropriate version of the installer from the [releases](https://github.com/IBM/cpd-cli/releases) page.
-
 
 #### Prerequisites
 
