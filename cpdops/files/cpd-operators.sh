@@ -988,18 +988,17 @@ function checkCreateOperandRegistry() {
 		local GET_RESOURCE=`echo $GET_RESOURCES | jq ".${RESOURCE_KEY}"`
 		## Check for given OperandRegistry Key
 		if [ "$GET_RESOURCE" == null ]; then
-			echo "OperandRegistry: ${RESOURCE_ID}: ${RESOURCE_JSON}"
-			echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
-			RESOURCE_FILE="${RESOURCE_ID}.yaml"
-			echo "OperandRegistry: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
+			echo "OperandRegistry: ${RESOURCE_ID} - Not Found, Creating"
 		else
-			echo "OperandRegistry: ${RESOURCE_ID} - Already Exists"
+			echo "OperandRegistry: ${RESOURCE_ID} - Already Exists, Overwriting"
 		fi
 	else
-		echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
-		RESOURCE_FILE="${RESOURCE_ID}.yaml"
-		echo "OperandRegistry: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
+		echo "OperandRegistry: ${RESOURCE_ID} - No OperandRegistries Found, Creating"
 	fi
+	echo "OperandRegistry: ${RESOURCE_ID}: ${RESOURCE_JSON}"
+	echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
+	RESOURCE_FILE="${RESOURCE_ID}.yaml"
+	echo "OperandRegistry: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
 
 	## Create/Apply OperandRegistry from yaml file and wait until OperandRequest is Ready
 	if [ "$RESOURCE_FILE" != "" ]; then
