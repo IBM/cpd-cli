@@ -166,11 +166,11 @@ function getSubscriptionsByNamespace() {
 	if [ "$CHECK_RC" != 0 ]; then
 		echo "oc get subscription -n ${NAMESPACE_NAME} FAILED with ${CHECK_RC}"
 	else
-		CHECK_RESOURCES=`oc get subscription -n "$NAMESPACE_NAME" 2>&1 | egrep "^No resources*"`
+		CHECK_RESOURCES=`oc get subscription -l operator.ibm.com/opreq-control!=true -n "$NAMESPACE_NAME" 2>&1 | egrep "^No resources*"`
 		if [ "${CHECK_RESOURCES}" == "" ]; then
 			## Retrieve Subscription sort by .metadata.name and filter JSON for only select keys 
 			## Collect/Add to List of Subscription
-			local SUBS=`oc get subscription -n "$NAMESPACE_NAME" -o jsonpath="{range .items[*]}{'\"'}{.spec.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\"}, \"spec\": '}{.spec}{'}\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
+			local SUBS=`oc get subscription -l operator.ibm.com/opreq-control!=true -n "$NAMESPACE_NAME" -o jsonpath="{range .items[*]}{'\"'}{.spec.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\", \"labels\": '}{.metadata.labels}{'}, \"spec\": '}{.spec}{'}\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
 
 			if [ "${BACKUP_SUBS}" == "" ]; then
 				BACKUP_SUBS="${SUBS}"
@@ -178,10 +178,22 @@ function getSubscriptionsByNamespace() {
 				BACKUP_SUBS=`echo "${BACKUP_SUBS},${SUBS}"`
 			fi
 		fi
+		CHECK_RESOURCES=`oc get subscription -l operator.ibm.com/opreq-control=true -n "$NAMESPACE_NAME" 2>&1 | egrep "^No resources*"`
+		if [ "${CHECK_RESOURCES}" == "" ]; then
+			## Retrieve Subscription sort by .metadata.name and filter JSON for only select keys 
+			## Collect/Add to List of Subscription
+			local ODLM_SUBS=`oc get subscription -l operator.ibm.com/opreq-control=true -n "$NAMESPACE_NAME" -o jsonpath="{range .items[*]}{'\"'}{.spec.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\", \"labels\": '}{.metadata.labels}{'}, \"spec\": '}{.spec}{'}\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
+
+			if [ "${BACKUP_ODLM_SUBS}" == "" ]; then
+				BACKUP_ODLM_SUBS="${ODLM_SUBS}"
+			else
+				BACKUP_ODLM_SUBS=`echo "${BACKUP_ODLM_SUBS},${ODLM_SUBS}"`
+			fi
+		fi
 	fi
 }
 
-## Leveraged by cpd-operator-backup to retrieve Subscription from the given Namespace/Name and accumulate to BACKUP_SUBS
+## Leveraged by cpd-operator-backup to retrieve Subscription from the given Namespace/Name and accumulate to BACKUP_SUBS and BACKUP_ODLM_SUBS
 function getSubscriptionByName() {
 	local NAMESPACE_NAME=$1
 	local RESOURCE_KEY=$2
@@ -313,6 +325,37 @@ function getOperandRequestsByNamespace() {
 	fi
 }
 
+## Leveraged by cpd-operator-backup to retrieve Namespace by given Namespace name and accumulate to BACKUP_CPD_INSTANCE_NAMESPACES
+function getNamespaceByName() {
+	local NAMESPACE_NAME=$1
+	
+	## Validate the Namespace exists with the given Namespace name
+	local CHECK_RC="$?"
+	local CHECK_RESOURCES=`oc get project "$NAMESPACE_NAME" 2>&1 `
+	CHECK_RC="$?"
+	if [ "$CHECK_RC" != 0 ]; then
+		echo "oc get project $NAMESPACE_NAME - FAILED with: ${CHECK_RC}"
+	    echo ""
+	fi
+	CHECK_RESOURCES=`oc get project "$NAMESPACE_NAME" 2>&1 | egrep "^Error*"`
+	if [ "$CHECK_RESOURCES" != "" ]; then
+		echo "oc get project $NAMESPACE_NAME - FAILED with: ${CHECK_RESOURCES}"
+	    echo ""
+	else
+		##  required annotations
+		##    openshift.io/sa.scc.mcs: s0:c26,c0
+		##    openshift.io/sa.scc.supplemental-groups: 1000650000/10000
+		##    openshift.io/sa.scc.uid-range: 1000650000/10000
+
+		local NAMESPACE_PROJECT=`oc get project ${NAMESPACE_NAME} -o jsonpath="{'\"cpst-zen-demo}\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"spec\": '}{.spec}{', \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"annotations\": {\"openshift.io/sa.scc.mcs\": \"'}{.metadata.annotations.openshift\.io/sa\.scc\.mcs}{'\", \"openshift.io/sa.scc.supplemental-groups\": \"'}{.metadata.annotations.openshift\.io/sa\.scc\.supplemental-groups}{'\", \"openshift.io/sa.scc.uid-range\": \"'}{.metadata.annotations.openshift\.io/sa\.scc\.uid-range}{'\"}, \"labels\": '}{.metadata.labels}{'}}'}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
+		if [ "${BACKUP_CPD_INSTANCE_NAMESPACES}" == "" ]; then
+			BACKUP_CPD_INSTANCE_NAMESPACES="${NAMESPACE_PROJECT}"
+		else
+			BACKUP_CPD_INSTANCE_NAMESPACES=`echo "${BACKUP_CPD_INSTANCE_NAMESPACES},${NAMESPACE_PROJECT}"`
+		fi
+	fi
+}
+
 ## Main backup script to be run against Bedrock Namespace and CPD Operators Namespace before cpdbr backup of the CPD Operator Namespace
 ## Captures Bedrock and CPD Operators and relevant configuration into cpd-operators ConfigMap
 function cpd-operators-backup () {
@@ -334,12 +377,16 @@ function cpd-operators-backup () {
 	## Retrieve Subscriptions sort by .spec.name and filter JSON for only select keys 
 # 	BACKUP_SUBS=`oc get subscriptions -n "$OPERATORS_NAMESPACE" -o jsonpath="{range .items[*]}{'\"'}{.spec.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\"}, \"spec\": '}{.spec}{'}\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
 	BACKUP_SUBS=""
+	BACKUP_ODLM_SUBS=""
 	getSubscriptionsByNamespace $OPERATORS_NAMESPACE
 	if [ "$OPERATORS_NAMESPACE" != "$BEDROCK_NAMESPACE" ]; then
 		getSubscriptionByName $BEDROCK_NAMESPACE "\"ibm-cpd-scheduling-operator\"" 
 	fi
 	echo "Subscriptions: ${BACKUP_SUBS}"
 	echo "--------------------------------------------------"
+	echo "Subscriptions from ODLM: ${BACKUP_ODLM_SUBS}"
+	echo "--------------------------------------------------"
+
 
 	## Retrieve OperandConfigs sort by .metadata.name and filter JSON for only select keys 
 	BACKUP_OP_CFGS=""
@@ -362,14 +409,18 @@ function cpd-operators-backup () {
 	## Retrieve Watched Namespaces .data.namespacee from NamespaceScope ConfigMap 
 	local NSS_NAMESPACES=(`oc get configmap namespace-scope -n $OPERATORS_NAMESPACE -o jsonpath="{.data.namespaces}" | tr ',' ' '`)
 
-	## Iterate through Watched Namespace and collect OperandRequests
+	## Iterate through Watched Namespace and collect CPD Instance Namespaces and OperandRequests
+	BACKUP_CPD_INSTANCE_NAMESPACES=""
 	BACKUP_OP_REQS=""
 	for NSS_NAMESPACE in "${NSS_NAMESPACES[@]}"
 	do
 		echo "Watched Namespace: ${NSS_NAMESPACE}"
 		echo "--------------------------------------------------"
+		getNamespaceByName $NSS_NAMESPACE
 		getOperandRequestsByNamespace $NSS_NAMESPACE
 	done
+	echo "CPD Instance Namespaces: ${BACKUP_CPD_INSTANCE_NAMESPACES}"
+	echo "--------------------------------------------------"
 	echo "OperandRequests: ${BACKUP_OP_REQS}"
 	echo "--------------------------------------------------"
 
@@ -393,7 +444,7 @@ function cpd-operators-backup () {
 	# echo "IAM Identity Providers: ${BACKUP_IAM_PROVIDERS}"
 
 	## Create ConfigMap cpd-operators.yaml file with Subscriptions, OperandRegistries, OperandConfigs and OperandRequests in .data
-	local CONFIGMAP_DATA=$(printf '{ "apiVersion" : "v1", "kind" : "ConfigMap", "metadata": { "name" : "cpd-operators", "namespace" : "%s", "labels" : {"app": "cpd-operators-backup"} }, "data": { "catalogsources" : "{ %s }",  "clusterserviceversions" : "{ %s }",  "subscriptions" : "{ %s }",  "operandregistries" : "{ %s }",  "operandconfigs" : "{ %s }", "operandrequests": "{ %s }", "cacertificatesecret": "{ %s }", "cacertificate": "{ %s }", "selfsignedissuer": "{ %s }" } }' "$OPERATORS_NAMESPACE" "$(echo ${BACKUP_CAT_SRCS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_CLUSTER_SVS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_SUBS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_OP_REGS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_OP_CFGS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_OP_REQS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_CA_CERT_SECRET} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_CA_CERT} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_SS_ISSUER} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')")
+	local CONFIGMAP_DATA=$(printf '{ "apiVersion" : "v1", "kind" : "ConfigMap", "metadata": { "name" : "cpd-operators", "namespace" : "%s", "labels" : {"app": "cpd-operators-backup"} }, "data": { "catalogsources" : "{ %s }",  "clusterserviceversions" : "{ %s }",  "subscriptions" : "{ %s }",  "odlmsubscriptions" : "{ %s }",  "operandregistries" : "{ %s }",  "operandconfigs" : "{ %s }", "operandrequests": "{ %s }", "cacertificatesecret": "{ %s }", "cacertificate": "{ %s }", "selfsignedissuer": "{ %s }", "instancenamespaces": "{ %s }" } }' "$OPERATORS_NAMESPACE" "$(echo ${BACKUP_CAT_SRCS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_CLUSTER_SVS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_SUBS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_ODLM_SUBS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_OP_REGS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_OP_CFGS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_OP_REQS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_CA_CERT_SECRET} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_CA_CERT} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_SS_ISSUER} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_CPD_INSTANCE_NAMESPACES} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')")
 	echo ${CONFIGMAP_DATA} > cpd-operators-configmap.yaml
 	## Create ConfigMap from cpd-operator.yaml file
 	oc apply -f cpd-operators-configmap.yaml
@@ -638,7 +689,7 @@ function checkCreateCatalogSource() {
 	fi
 		
 	local RESOURCE_PUBLISHER=`echo $RESOURCE_JSON | jq ".spec.publisher" | sed -e 's|"||g'`
-	if [ "$RESOURCE_PUBLISHER" == "IBM" ] || [ "$RESOURCE_PUBLISHER" == "CloudpakOpen" ]; then
+	if [ "$RESOURCE_PUBLISHER" == "IBM" ] || [ "$RESOURCE_PUBLISHER" == "CloudpakOpen" ] || [ "$RESOURCE_PUBLISHER" == "MANTA Software" ]; then
 		## Retrieve all CatalogSources in the Resource Namespace and check for given CatalogSource by Key
 		CHECK_RESOURCES=`oc get catalogsource -n "$RESOURCE_NAMESPACE" 2>&1 | egrep "^No resources*"`
 		if [ "$CHECK_RESOURCES" == "" ]; then
@@ -1198,6 +1249,35 @@ function checkCreateOperandRequest() {
 	echo "--------------------------------------------------"
 }
 
+function checkCreateNamespace() {
+	local RESOURCE_KEY=$1
+	local RESOURCE_ID=`echo $RESOURCE_KEY | sed -e 's|"||g'`
+	local RESOURCE_JSON=`echo $BACKEDUP_CPD_INSTANCE_NAMESPACES | jq ".${RESOURCE_KEY}"`
+	local RESOURCE_FILE=""
+
+	local CHECK_RESOURCES=`oc get project "$RESOURCE_ID" 2>&1 | egrep "^Error*"`
+	local CHECK_RC="$?"
+	if [ "$CHECK_RC" == 0 ] && [ "$CHECK_RESOURCES" == "" ]; then
+		echo "Project: ${RESOURCE_ID} - Already Exists"
+	else
+		echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
+		RESOURCE_FILE="${RESOURCE_ID}.yaml"
+		echo "Project: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
+	fi
+
+	## Create/Apply Namespace from yaml file
+	if [ "$RESOURCE_FILE" != "" ]; then
+		local RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
+		local RESOURCE_RC="$?"
+		if [ "$RESOURCE_RC" != 0 ]; then
+			echo "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_RC}"
+		else
+			echo "Project: ${RESOURCE_ID} - Created"
+		fi
+	fi
+	echo "--------------------------------------------------"
+}
+
 ## Leveraged by cpd-operator-backup to retrieve IAM Identity Providers to BACKUP_IAM_PROVIDERS
 function addIAMIdentityProviders() {
 	local IDP_USERNAME=$(oc get secrets platform-auth-idp-credentials -n ${BEDROCK_NAMESPACE} -o jsonpath={.data.admin_username} | $_base64_command)
@@ -1253,6 +1333,17 @@ function cpd-operators-restore () {
 	## Create NamespaceScope next
 	checkCreateSubscription "\"ibm-namespace-scope-operator\""
 	
+	# Iterate through remaining BACKEDUP_SUB_KEYS and process each Subscription
+	local BACKEDUP_SUB_KEYS=(`echo $BACKEDUP_SUBS | jq keys[]`)
+
+	# Iterate through BACKEDUP_SUB_KEYS and process each SUBSCRIPTION
+	for BACKEDUP_SUB_KEY in "${BACKEDUP_SUB_KEYS[@]}"
+	do
+		if [ "${BACKEDUP_SUB_KEY}" != "\"cpd-platform-operator\"" ] && [ "${BACKEDUP_SUB_KEY}" != "\"ibm-common-service-operator\"" ] && [ "${BACKEDUP_SUB_KEY}" != "\"ibm-namespace-scope-operator\"" ]; then
+			checkCreateSubscription "${BACKEDUP_SUB_KEY}"
+		fi
+	done
+
 	checkOperandCRDs
 	checkClusterServiceVersion ${BEDROCK_NAMESPACE} operand-deployment-lifecycle-manager
 
@@ -1291,17 +1382,8 @@ function cpd-operators-restore () {
 	do
 		checkCreateOperandRequest "${BACKEDUP_OP_REQ_KEY}"
 	done
-
-	# Iterate through remaining BACKEDUP_SUB_KEYS and process each Subscription
-	local BACKEDUP_SUB_KEYS=(`echo $BACKEDUP_SUBS | jq keys[]`)
-
-	# Iterate through BACKEDUP_SUB_KEYS and process each SUBSCRIPTION
-	for BACKEDUP_SUB_KEY in "${BACKEDUP_SUB_KEYS[@]}"
-	do
-		if [ "${BACKEDUP_SUB_KEY}" != "\"cpd-platform-operator\"" ] && [ "${BACKEDUP_SUB_KEY}" != "\"ibm-common-service-operator\"" ] && [ "${BACKEDUP_SUB_KEY}" != "\"ibm-namespace-scope-operator\"" ]; then
-			checkCreateSubscription "${BACKEDUP_SUB_KEY}"
-		fi
-	done
+	
+	## At this point all ODLM Subscriptions "odlmsubscriptions" should already be created via OperandRquests 
 
 	# Iterate ClusterServiceVersions that have hot fixes
 	BACKEDUP_CLUSTER_SVS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.clusterserviceversions}"`
@@ -1351,6 +1433,19 @@ function cpd-operators-restore () {
 		checkCreateCertificate "${BACKEDUP_CA_CERT_KEY}"
 	done
 	
+	if [ $RESTORE_INSTANCE_NAMESPACES -eq 1 ]; then
+		## Retrieve CPD Instance Namespaces from cpd-operators ConfigMap 
+		BACKEDUP_CPD_INSTANCE_NAMESPACES=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.instancenamespaces}"`
+		local BACKEDUP_CPD_INSTANCE_NAMESPACE_KEYS=(`echo $BACKEDUP_CPD_INSTANCE_NAMESPACES | jq keys[]`)
+		echo "Projects: ${BACKEDUP_CPD_INSTANCE_NAMESPACES}"
+		echo "--------------------------------------------------"
+
+		# Iterate through BACKEDUP_CPD_INSTANCE_NAMESPACE_KEYS and process each BACKEDUP_CPD_INSTANCE_NAMESPACES - will create Namespace for each that does not already exist
+		for BACKEDUP_CPD_INSTANCE_NAMESPACE_KEY in "${BACKEDUP_CPD_INSTANCE_NAMESPACE_KEYS[@]}"
+		do
+			checkCreateNamespace "${BACKEDUP_CPD_INSTANCE_NAMESPACE_KEY}"
+		done
+	fi
 }
 
 
@@ -1361,6 +1456,8 @@ function cpd-operators-restore () {
 # Target Namespaces
 BEDROCK_NAMESPACE=""
 OPERATORS_NAMESPACE=""
+RESTORE_INSTANCE_NAMESPACES=0
+RESTORE_INSTANCE_NAMESPACES_ONLY=0
 
 # Retry constants: 10 intervals of 60 seconds
 RETRY_LIMIT=10
@@ -1409,6 +1506,14 @@ while (( $# )); do
 				help
 				exit 1
 			fi
+			;;
+		--restore-instance-namespaces-only)
+			RESTORE_INSTANCE_NAMESPACES_ONLY=1
+			shift 1
+			;;
+		--restore-instance-namespaces)
+			RESTORE_INSTANCE_NAMESPACES=1
+			shift 1
 			;;
 		-h|--h) # help
 			help
@@ -1469,7 +1574,7 @@ echo "CPD Operators namespace: $OPERATORS_NAMESPACE"
 CHECK_RESOURCES=`oc get project "$OPERATORS_NAMESPACE" 2>&1 `
 CHECK_RC="$?"
 if [ "$CHECK_RC" != 0 ]; then
-	echo "oc get project $OPERATORS_NAMESPACE - FAILED with: ${CHECK_RC}"
+		echo "oc get project $OPERATORS_NAMESPACE - FAILED with: ${CHECK_RC}"
     echo ""
 	exit 1
 fi
@@ -1503,5 +1608,19 @@ fi
 
 if [ $RESTORE -eq 1 ]; then
 	echo "--------------------------------------------------"
-	cpd-operators-restore $BEDROCK_NAMESPACE $OPERATORS_NAMESPACE
+	if [ $RESTORE_INSTANCE_NAMESPACES_ONLY -eq 1 ]; then
+		## Retrieve CPD Instance Namespaces from cpd-operators ConfigMap 
+		BACKEDUP_CPD_INSTANCE_NAMESPACES=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.instancenamespaces}"`
+		CPD_INSTANCE_NAMESPACE_KEYS=(`echo $BACKEDUP_CPD_INSTANCE_NAMESPACES | jq keys[]`)
+		echo "Projects: ${BACKEDUP_CPD_INSTANCE_NAMESPACES}"
+		echo "--------------------------------------------------"
+
+		# Iterate through CPD_INSTANCE_NAMESPACE_KEYS and process each CPD_INSTANCE_NAMESPACES - will create Namespace for each that does not already exist
+		for CPD_INSTANCE_NAMESPACE_KEY in "${CPD_INSTANCE_NAMESPACE_KEYS[@]}"
+		do
+			checkCreateNamespace "${CPD_INSTANCE_NAMESPACE_KEY}"
+		done
+	else
+		cpd-operators-restore $BEDROCK_NAMESPACE $OPERATORS_NAMESPACE
+	fi
 fi 
