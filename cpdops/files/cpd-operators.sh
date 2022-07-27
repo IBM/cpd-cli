@@ -347,7 +347,7 @@ function getNamespaceByName() {
 		##    openshift.io/sa.scc.supplemental-groups: 1000650000/10000
 		##    openshift.io/sa.scc.uid-range: 1000650000/10000
 
-		local NAMESPACE_PROJECT=`oc get project ${NAMESPACE_NAME} -o jsonpath="{'\"cpst-zen-demo}\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"spec\": '}{.spec}{', \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"annotations\": {\"openshift.io/sa.scc.mcs\": \"'}{.metadata.annotations.openshift\.io/sa\.scc\.mcs}{'\", \"openshift.io/sa.scc.supplemental-groups\": \"'}{.metadata.annotations.openshift\.io/sa\.scc\.supplemental-groups}{'\", \"openshift.io/sa.scc.uid-range\": \"'}{.metadata.annotations.openshift\.io/sa\.scc\.uid-range}{'\"}, \"labels\": '}{.metadata.labels}{'}}'}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
+		local NAMESPACE_PROJECT=`oc get project ${NAMESPACE_NAME} -o jsonpath="{'\"'}{.metadata.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"spec\": '}{.spec}{', \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"annotations\": {\"openshift.io/sa.scc.mcs\": \"'}{.metadata.annotations.openshift\.io/sa\.scc\.mcs}{'\", \"openshift.io/sa.scc.supplemental-groups\": \"'}{.metadata.annotations.openshift\.io/sa\.scc\.supplemental-groups}{'\", \"openshift.io/sa.scc.uid-range\": \"'}{.metadata.annotations.openshift\.io/sa\.scc\.uid-range}{'\"}, \"labels\": '}{.metadata.labels}{'}}'}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
 		if [ "${BACKUP_CPD_INSTANCE_NAMESPACES}" == "" ]; then
 			BACKUP_CPD_INSTANCE_NAMESPACES="${NAMESPACE_PROJECT}"
 		else
