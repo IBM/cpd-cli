@@ -161,7 +161,7 @@ cpdbr-oadp requires cluster admin or similar roles.
 
 ## Set up Object Storage
 
-Velero requires certain S3-compatible object storage to store backups of
+Velero requires certain S3-compatible object storage using Signature Version 4 to store backups of
 Kubernetes objects. For restic backups, volume data is also stored in object storage.
 
 ## Sample Object Store using MinIO
@@ -203,7 +203,7 @@ Example using NFS storage class:
     5.  Restart the minio pods
 4. Update the image used by the minio pod
    ```
-   oc set image deployment/minio minio=minio/minio:RELEASE.2021-06-17T00-10-46Z -n velero
+   oc set image deployment/minio minio=minio/minio:RELEASE.2021-04-22T15-44-28Z -n velero
    ```
 
 ### Creating PVCs for MinIO
@@ -298,8 +298,8 @@ open-source object store.
     # Login to docker.io to avoid pull rate limit errors.  Create a Docker account if needed.
     podman login docker.io
 
-    podman pull docker.io/minio/minio:RELEASE.2021-06-17T00-10-46Z
-    podman save docker.io/minio/minio:RELEASE.2021-06-17T00-10-46Z > minio-img-RELEASE.2021-06-17T00-10-46Z.tar
+    podman pull docker.io/minio/minio:RELEASE.2021-04-22T15-44-28Z
+    podman save docker.io/minio/minio:RELEASE.2021-04-22T15-44-28Z > minio-img-RELEASE.2021-04-22T15-44-28Z.tar
 
     podman pull docker.io/minio/mc:latest
     podman save docker.io/minio/mc:latest > mc-img-latest.tar
@@ -324,9 +324,9 @@ open-source object store.
     # Login to internal registry
     podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
 
-    podman load -i minio-img-RELEASE.2021-06-17T00-10-46Z.tar
-    podman tag docker.io/minio/minio:RELEASE.2021-06-17T00-10-46Z $IMAGE_REGISTRY/$NAMESPACE/minio:RELEASE.2021-06-17T00-10-46Z
-    podman push $IMAGE_REGISTRY/$NAMESPACE/minio:RELEASE.2021-06-17T00-10-46Z --tls-verify=false
+    podman load -i minio-img-RELEASE.2021-04-22T15-44-28Z.tar
+    podman tag docker.io/minio/minio:RELEASE.2021-04-22T15-44-28Z $IMAGE_REGISTRY/$NAMESPACE/minio:RELEASE.2021-04-22T15-44-28Z
+    podman push $IMAGE_REGISTRY/$NAMESPACE/minio:RELEASE.2021-04-22T15-44-28Z --tls-verify=false
 
     podman load -i mc-img-latest.tar
     podman tag docker.io/minio/mc:latest $IMAGE_REGISTRY/$NAMESPACE/mc:latest
@@ -345,7 +345,7 @@ open-source object store.
     a. Change
     image: minio/minio:latest
     to 
-    image: image-registry.openshift-image-registry.svc:5000/velero/minio:RELEASE.2021-06-17T00-10-46Z
+    image: image-registry.openshift-image-registry.svc:5000/velero/minio:RELEASE.2021-04-22T15-44-28Z
 
     b. Change
     image: minio/mc:latest
