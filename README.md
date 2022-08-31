@@ -6,7 +6,7 @@ depends on the version of Cloud Pak for Data that you are using:
 
 | Release   | Installation | Upgrade   | Administration | CLI Version |
 | ------    | ------       | ------    | -----------    | ------      |
-| 4.5       | &#10004;     | &#10004;  | &#10004;       | 11.1.x      |
+| 4.5       | &#10004;     | &#10004;  | &#10004;       | 11.x      |
 | 4.0       |              |           | &#10004;       | 10.0.x      |
 | 3.5       | &#10004;     | &#10004;  | &#10004;       | 3.5.x       |
 | 3.0.1     | &#10004;     | &#10004;  | &#10004;       | 3.0.1       |
@@ -14,7 +14,7 @@ depends on the version of Cloud Pak for Data that you are using:
 
 ## Cloud Pak for Data Version 4.5
 
-**Remember:** Use `cpd-cli` Version 11.1.x with Cloud Pak for Data Version 4.5
+**Remember:** Use `cpd-cli` Version 11.x with Cloud Pak for Data Version 4.5
 
 You can install Cloud Pak for Data from a client workstation that can connect to
 your cluster. You must run the installation from a Linux, Mac, or Windows machine.
