@@ -49,12 +49,12 @@ function getCACertSecretInNamespace() {
 	local CHECK_RESOURCES=`oc get secret -n "$NAMESPACE_NAME" 2>&1`
 	local CHECK_RC="$?"
 	if [ "$CHECK_RC" != 0 ]; then
-		echo "oc get secret -n ${NAMESPACE_NAME} FAILED with ${CHECK_RC}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get secret -n ${NAMESPACE_NAME} FAILED with ${CHECK_RC}"
 	else
 		local RESOURCE_JSON=`oc get secret "$RESOURCE_NAME" -n "$NAMESPACE_NAME" -o json`
 		local RESOURCE_RC="$?"
 		if [ "$RESOURCE_RC" != 0 ]; then
-			echo "oc get secret ${RESOURCE_NAME} -n ${NAMESPACE_NAME} - FAILED with:  ${RESOURCE_RC}"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get secret ${RESOURCE_NAME} -n ${NAMESPACE_NAME} - FAILED with:  ${RESOURCE_RC}"
 		else
 			local SECRET_LABELS=`oc get secret $RESOURCE_NAME -n "$NAMESPACE_NAME" -o jsonpath="{.metadata.labels}"`
 			if [ "$SECRET_LABELS" == "" ]; then
@@ -75,12 +75,12 @@ function getCACertInNamespace() {
 	local CHECK_RESOURCES=`oc get certificate.v1alpha1.certmanager.k8s.io -n "$NAMESPACE_NAME" 2>&1`
 	local CHECK_RC="$?"
 	if [ "$CHECK_RC" != 0 ]; then
-		echo "oc get certificate.v1alpha1.certmanager.k8s.io -n ${NAMESPACE_NAME} FAILED with ${CHECK_RC}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get certificate.v1alpha1.certmanager.k8s.io -n ${NAMESPACE_NAME} FAILED with ${CHECK_RC}"
 	else
 		local RESOURCE_JSON=`oc get certificate.v1alpha1.certmanager.k8s.io "$RESOURCE_NAME" -n "$NAMESPACE_NAME" -o json`
 		local RESOURCE_RC="$?"
 		if [ "$RESOURCE_RC" != 0 ]; then
-			echo "oc get certificate.v1alpha1.certmanager.k8s.io ${RESOURCE_NAME} -n ${NAMESPACE_NAME} - FAILED with:  ${RESOURCE_RC}"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get certificate.v1alpha1.certmanager.k8s.io ${RESOURCE_NAME} -n ${NAMESPACE_NAME} - FAILED with:  ${RESOURCE_RC}"
 		else
 			BACKUP_CA_CERT=`oc get certificate.v1alpha1.certmanager.k8s.io ${RESOURCE_NAME} -n "$NAMESPACE_NAME" -o jsonpath="{'\"${RESOURCE_NAME}\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"spec\": '}{.spec}{', \"status\": '}{.status}{', \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\", \"annotations\": '}{.metadata.annotations}{', \"labels\": '}{.metadata.labels}{'}}'}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
 		fi
@@ -96,12 +96,12 @@ function getSSIssuerInNamespace() {
 	local CHECK_RESOURCES=`oc get issuer.v1alpha1.certmanager.k8s.io -n "$NAMESPACE_NAME" 2>&1`
 	local CHECK_RC="$?"
 	if [ "$CHECK_RC" != 0 ]; then
-		echo "oc get issuer.v1alpha1.certmanager.k8s.io -n ${NAMESPACE_NAME} FAILED with ${CHECK_RC}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get issuer.v1alpha1.certmanager.k8s.io -n ${NAMESPACE_NAME} FAILED with ${CHECK_RC}"
 	else
 		local RESOURCE_JSON=`oc get issuer.v1alpha1.certmanager.k8s.io "$RESOURCE_NAME" -n "$NAMESPACE_NAME" -o json`
 		local RESOURCE_RC="$?"
 		if [ "$RESOURCE_RC" != 0 ]; then
-			echo "oc get issuer.v1alpha1.certmanager.k8s.io ${RESOURCE_NAME} -n ${NAMESPACE_NAME} - FAILED with:  ${RESOURCE_RC}"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get issuer.v1alpha1.certmanager.k8s.io ${RESOURCE_NAME} -n ${NAMESPACE_NAME} - FAILED with:  ${RESOURCE_RC}"
 		else
 			BACKUP_SS_ISSUER=`oc get issuer.v1alpha1.certmanager.k8s.io ${RESOURCE_NAME} -n "$NAMESPACE_NAME" -o jsonpath="{'\"${RESOURCE_NAME}\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"spec\": '}{.spec}{', \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\", \"annotations\": '}{.metadata.annotations}{', \"labels\": '}{.metadata.labels}{'}}'}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
 		fi
@@ -116,7 +116,7 @@ function getCatalogSourcesByNamespace() {
 	local CHECK_RESOURCES=`oc get catalogsource -n "$NAMESPACE_NAME" 2>&1`
 	local CHECK_RC="$?"
 	if [ "$CHECK_RC" != 0 ]; then
-		echo "oc get catalogsource -n ${NAMESPACE_NAME} FAILED with ${CHECK_RC}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get catalogsource -n ${NAMESPACE_NAME} FAILED with ${CHECK_RC}"
 	else
 		CHECK_RESOURCES=`oc get catalogsource -n "$NAMESPACE_NAME" 2>&1 | egrep "^No resources*"`
 		if [ "${CHECK_RESOURCES}" == "" ]; then
@@ -140,7 +140,7 @@ function getClusterServiceVersionsByNamespace() {
 	local CHECK_RESOURCES=`oc get clusterserviceversion -n "$NAMESPACE_NAME" 2>&1`
 	local CHECK_RC="$?"
 	if [ "$CHECK_RC" != 0 ]; then
-		echo "oc get clusterserviceversion -n ${NAMESPACE_NAME} FAILED with ${CHECK_RC}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get clusterserviceversion -n ${NAMESPACE_NAME} FAILED with ${CHECK_RC}"
 	else
 		CHECK_RESOURCES=`oc get clusterserviceversion -n "$NAMESPACE_NAME" -l support.operator.ibm.com/hotfix 2>&1 | egrep "^No resources*"`
 		if [ "${CHECK_RESOURCES}" == "" ]; then
@@ -164,13 +164,13 @@ function getSubscriptionsByNamespace() {
 	local CHECK_RESOURCES=`oc get subscription -n "$NAMESPACE_NAME" 2>&1`
 	local CHECK_RC="$?"
 	if [ "$CHECK_RC" != 0 ]; then
-		echo "oc get subscription -n ${NAMESPACE_NAME} FAILED with ${CHECK_RC}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get subscription -n ${NAMESPACE_NAME} FAILED with ${CHECK_RC}"
 	else
 		CHECK_RESOURCES=`oc get subscription -l operator.ibm.com/opreq-control!=true -n "$NAMESPACE_NAME" 2>&1 | egrep "^No resources*"`
 		if [ "${CHECK_RESOURCES}" == "" ]; then
 			## Retrieve Subscription sort by .metadata.name and filter JSON for only select keys 
 			## Collect/Add to List of Subscription
-			local SUBS=`oc get subscription -l operator.ibm.com/opreq-control!=true -n "$NAMESPACE_NAME" -o jsonpath="{range .items[*]}{'\"'}{.spec.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\", \"labels\": '}{.metadata.labels}{'}, \"spec\": '}{.spec}{'}\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
+			local SUBS=`oc get subscription -l operator.ibm.com/opreq-control!=true -n "$NAMESPACE_NAME" -o jsonpath="{range .items[*]}{'\"'}{.metadata.namespace}{'-'}{.spec.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\", \"labels\": '}{.metadata.labels}{'}, \"spec\": '}{.spec}{'}\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
 
 			if [ "${BACKUP_SUBS}" == "" ]; then
 				BACKUP_SUBS="${SUBS}"
@@ -182,7 +182,7 @@ function getSubscriptionsByNamespace() {
 		if [ "${CHECK_RESOURCES}" == "" ]; then
 			## Retrieve Subscription sort by .metadata.name and filter JSON for only select keys 
 			## Collect/Add to List of Subscription
-			local ODLM_SUBS=`oc get subscription -l operator.ibm.com/opreq-control=true -n "$NAMESPACE_NAME" -o jsonpath="{range .items[*]}{'\"'}{.spec.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\", \"labels\": '}{.metadata.labels}{'}, \"spec\": '}{.spec}{'}\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
+			local ODLM_SUBS=`oc get subscription -l operator.ibm.com/opreq-control=true -n "$NAMESPACE_NAME" -o jsonpath="{range .items[*]}{'\"'}{.metadata.namespace}{'-'}{.spec.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\", \"labels\": '}{.metadata.labels}{'}, \"spec\": '}{.spec}{'}\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
 
 			if [ "${BACKUP_ODLM_SUBS}" == "" ]; then
 				BACKUP_ODLM_SUBS="${ODLM_SUBS}"
@@ -202,21 +202,21 @@ function getSubscriptionByName() {
 	local CHECK_RESOURCES=`oc get subscription -n "$NAMESPACE_NAME" 2>&1`
 	local CHECK_RC="$?"
 	if [ "$CHECK_RC" != 0 ]; then
-		echo "oc get subscription -n ${NAMESPACE_NAME} FAILED with ${CHECK_RC}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get subscription -n ${NAMESPACE_NAME} FAILED with ${CHECK_RC}"
 	else
 		CHECK_RESOURCES=`oc get subscription -n "$NAMESPACE_NAME" 2>&1 | egrep "^No resources*"`
 		if [ "${CHECK_RESOURCES}" == "" ]; then
 			## Retrieve Subscriptions sort by .spec.name and filter JSON for only select keys 	
-			local GET_RESOURCES=`oc get subscription -n "$NAMESPACE_NAME" -o jsonpath="{'{'}{range .items[*]}{'\"'}{.spec.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\"}, \"spec\": '}{.spec}{'}\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$|}|" -e 's|\\"|"|g'`
+			local GET_RESOURCES=`oc get subscription -n "$NAMESPACE_NAME" -o jsonpath="{'{'}{range .items[*]}{'\"'}{.metadata.namespace}{'-'}{.spec.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\"}, \"spec\": '}{.spec}{'}\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$|}|" -e 's|\\"|"|g'`
 			local GET_RESOURCE=`echo $GET_RESOURCES | jq ".${RESOURCE_KEY}"`
 			## Check for given Subscription Key
 			if [ "$GET_RESOURCE" == null ]; then
-				echo "Subscription: ${RESOURCE_KEY} in Namespace: ${NAMESPACE_NAME} Not Found"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Subscription: ${RESOURCE_KEY} in Namespace: ${NAMESPACE_NAME} Not Found"
 			else
 				RESOURCE_NAME=`echo $GET_RESOURCE | jq ".metadata.name" | sed -e 's|"||g'`
 				## Retrieve Subscription sort by .metadata.name and filter JSON for only select keys 
 				## Collect/Add to List of Subscription
-				local SUBS=`oc get subscription -n "$NAMESPACE_NAME" ${RESOURCE_NAME} -o jsonpath="{'\"'}{.spec.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\"}, \"spec\": '}{.spec}{'}'}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
+				local SUBS=`oc get subscription -n "$NAMESPACE_NAME" ${RESOURCE_NAME} -o jsonpath="{'\"'}{.metadata.namespace}{'-'}{.spec.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\"}, \"spec\": '}{.spec}{'}'}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
 
 				if [ "${BACKUP_SUBS}" == "" ]; then
 					BACKUP_SUBS="${SUBS}"
@@ -236,7 +236,7 @@ function getOperandConfigsByNamespace() {
 	local CHECK_RESOURCES=`oc get CAT_SRC -n "$NAMESPACE_NAME" 2>&1`
 	local CHECK_RC="$?"
 	if [ "$CHECK_RC" != 0 ]; then
-		echo "oc get operandconfig -n ${NAMESPACE_NAME} FAILED with ${CHECK_RC}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get operandconfig -n ${NAMESPACE_NAME} FAILED with ${CHECK_RC}"
 	else
 		CHECK_RESOURCES=`oc get operandconfig -n "$NAMESPACE_NAME" 2>&1 | egrep "^No resources*"`
 		if [ "${CHECK_RESOURCES}" == "" ]; then
@@ -260,7 +260,7 @@ function getOperandRegistriesByNamespace() {
 	local CHECK_RESOURCES=`oc get operandregistry -n "$NAMESPACE_NAME" 2>&1`
 	local CHECK_RC="$?"
 	if [ "$CHECK_RC" != 0 ]; then
-		echo "oc get operandregistry -n ${NAMESPACE_NAME} FAILED with ${CHECK_RC}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get operandregistry -n ${NAMESPACE_NAME} FAILED with ${CHECK_RC}"
 	else
 		CHECK_RESOURCES=`oc get operandregistry -n "$NAMESPACE_NAME" 2>&1 | egrep "^No resources*"`
 		if [ "${CHECK_RESOURCES}" == "" ]; then
@@ -284,7 +284,7 @@ function getOperandRequestsByNamespace() {
 	local CHECK_RESOURCES=`oc get operandrequest -n "$NAMESPACE_NAME" 2>&1`
 	local CHECK_RC="$?"
 	if [ "$CHECK_RC" != 0 ]; then
-		echo "oc get operandrequest -n ${NAMESPACE_NAME} FAILED with ${CHECK_RC}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get operandrequest -n ${NAMESPACE_NAME} FAILED with ${CHECK_RC}"
 	else
 		CHECK_RESOURCES=`oc get operandrequest -n "$NAMESPACE_NAME" 2>&1 | egrep "^No resources*"`
 		if [ "${CHECK_RESOURCES}" == "" ]; then
@@ -293,7 +293,7 @@ function getOperandRequestsByNamespace() {
 			local RESOURCES=`oc get operandrequest -n "$NAMESPACE_NAME" -o jsonpath="{range .items[*]}{'\"'}{.metadata.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\"}}\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
 			RESOURCE_RC="$?"
 			if [ "$RESOURCE_RC" != 0 ]; then
-				echo "oc get operandrequest -n ${NAMESPACE_NAME} - FAILED with:  ${RESOURCE_RC}"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get operandrequest -n ${NAMESPACE_NAME} - FAILED with:  ${RESOURCE_RC}"
 				return 1
 			fi
 	
@@ -306,7 +306,7 @@ function getOperandRequestsByNamespace() {
 				RESOURCE_JSON=`oc get operandrequest "$RESOURCE_NAME" -n "$NAMESPACE_NAME" -o json`
 				RESOURCE_RC="$?"
 				if [ "$RESOURCE_RC" != 0 ]; then
-					echo "oc get operandrequest ${RESOURCE_NAME} -n ${NAMESPACE_NAME} - FAILED with:  ${RESOURCE_RC}"
+					echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get operandrequest ${RESOURCE_NAME} -n ${NAMESPACE_NAME} - FAILED with:  ${RESOURCE_RC}"
 				else
 					local RESOURCE_SPEC=`echo $RESOURCE_JSON | jq ".spec"`
 					if [ "$RESOURCE_SPEC" == "" ] || [ "$RESOURCE_SPEC" == null ]; then
@@ -334,12 +334,12 @@ function getNamespaceByName() {
 	local CHECK_RESOURCES=`oc get project "$NAMESPACE_NAME" 2>&1 `
 	CHECK_RC="$?"
 	if [ "$CHECK_RC" != 0 ]; then
-		echo "oc get project $NAMESPACE_NAME - FAILED with: ${CHECK_RC}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get project $NAMESPACE_NAME - FAILED with: ${CHECK_RC}"
 	    echo ""
 	fi
 	CHECK_RESOURCES=`oc get project "$NAMESPACE_NAME" 2>&1 | egrep "^Error*"`
 	if [ "$CHECK_RESOURCES" != "" ]; then
-		echo "oc get project $NAMESPACE_NAME - FAILED with: ${CHECK_RESOURCES}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get project $NAMESPACE_NAME - FAILED with: ${CHECK_RESOURCES}"
 	    echo ""
 	else
 		##  required annotations
@@ -356,13 +356,112 @@ function getNamespaceByName() {
 	fi
 }
 
+## Leveraged by cpd-operator-backup to dump IAM MongoDB Data a Volume in Foundation Namespace
+function backupIAMData() {
+	local NAMESPACE_NAME=$1
+	local CHECK_RESOURCES=`oc get pvc mongodbdir-icp-mongodb-0 -n $NAMESPACE_NAME 2>&1 | egrep "^Error*"`
+	if [ "$CHECK_RESOURCES" == "" ]; then
+		# Cleanup any previous job and volumes
+		local RESOURCE_DELETE=`oc delete job mongodb-backup --ignore-not-found -n $NAMESPACE_NAME`
+		local RESOURCE_RC="$?"
+		if [ "$RESOURCE_RC" != 0 ]; then
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc delete job mongodb-backup --ignore-not-found -n ${NAMESPACE_NAME} - FAILED with:  ${RESOURCE_DELETE}"
+		fi
+		local CHECK_RESOURCES=`oc get pvc cs-mongodump -n $NAMESPACE_NAME 2>&1 | egrep "^Error*"`
+		if [ "$CHECK_RESOURCES" == "" ]; then
+			local MONGO_DUMP_VOLUME=$(oc get pvc cs-mongodump -n $NAMESPACE_NAME --no-headers=true 2>/dev/null | awk '{print $3 }')
+			if [[ -n $MONGO_DUMP_VOLUME ]]
+			then
+				RESOURCE_DELETE=`oc delete pvc cs-mongodump --ignore-not-found -n $NAMESPACE_NAME`
+				RESOURCE_RC="$?"
+				if [ "$RESOURCE_RC" != 0 ]; then
+					echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc delete pvc cs-mongodump --ignore-not-found -n ${NAMESPACE_NAME} - FAILED with:  ${RESOURCE_DELETE}"
+				fi
+				RESOURCE_DELETE=`oc delete pv $MONGO_DUMP_VOLUME --ignore-not-found`
+				RESOURCE_RC="$?"
+				if [ "$RESOURCE_RC" != 0 ]; then
+					echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc delete pv ${MONGO_DUMP_VOLUME} --ignore-not-found - FAILED with:  ${RESOURCE_DELETE}"
+				fi
+			fi
+		fi
+		
+		# Backup MongoDB
+		# Create PVC
+		STGCLASS=$(oc get pvc --no-headers=true mongodbdir-icp-mongodb-0 -n $NAMESPACE_NAME | awk '{ print $6 }')
+		cat <<EOF | oc apply -f -
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cs-mongodump
+  namespace: $NAMESPACE_NAME
+  labels:
+    app: icp-bedrock-backup
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: $STGCLASS
+EOF
+
+		local RESOURCE_APPLY=`oc apply -f mongo-backup-job.yaml`
+		RESOURCE_RC="$?"
+		if [ "$RESOURCE_RC" != 0 ]; then
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc apply -f mongo-backup-job.yaml - FAILED with:  ${RESOURCE_RC}"
+			sleep 20s
+		fi
+
+		local RESOURCE_STATUS="pending"
+		local RETRY_COUNT=0
+		until [ "${RESOURCE_STATUS}" == "succeeded" ] || [ "${RESOURCE_STATUS}" == "failed" ] || [ "${RETRY_COUNT}" -gt "${RETRY_LIMIT}" ]; do
+			RESOURCE_JSON=`oc get job mongodb-backup -n "$NAMESPACE_NAME" -o json`
+			RESOURCE_RC="$?"
+			if [ "$RESOURCE_RC" != 0 ]; then
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get job mongodb-backup -n ${NAMESPACE_NAME} - FAILED with:  ${RESOURCE_RC}"
+				RESOURCE_STATUS="failed"
+			else
+				# ".status.active" 1
+				# ".status.failed" 5
+				# ".status.succeeded" 1
+				local STATUS_SUCCEEDED=`echo $RESOURCE_JSON | jq ".status.succeeded"`
+				local STATUS_FAILED=`echo $RESOURCE_JSON | jq ".status.failed"`
+				local STATUS_ACTIVE=`echo $RESOURCE_JSON | jq ".status.active"`
+				if [ "${STATUS_SUCCEEDED}" != "" ] && [ "${STATUS_SUCCEEDED}" != null ]; then
+					if [ "${STATUS_SUCCEEDED}" -ge 1 ]; then
+						RESOURCE_STATUS="succeeded"
+						IAM_DATA="true"
+					fi
+				else 
+					if [ "${STATUS_ACTIVE}" != "" ] && [ "${STATUS_ACTIVE}" != null ]; then
+						if [ "${STATUS_ACTIVE}" -ge 1 ]; then
+							RESOURCE_STATUS="active"
+						fi
+					else 
+						if [ "${STATUS_FAILED}" != "" ] && [ "${STATUS_FAILED}" != null ]; then
+							if [ "${STATUS_FAILED}" -ge 5 ]; then
+								RESOURCE_STATUS="failed"
+							fi
+						fi
+					fi
+				fi
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Job mongodb-backup status: ${RESOURCE_STATUS}"
+			fi
+			if [ "${RESOURCE_STATUS}" != "succeeded" ] && [ "${RESOURCE_STATUS}" != "failed" ] && [ "${RETRY_COUNT}" -le "${RETRY_LIMIT}" ]; then
+				sleep ${RETRY_INTERVAL}
+				((RETRY_COUNT+=1))
+			fi
+		done
+	fi
+}
+
 ## Main backup script to be run against Bedrock Namespace and CPD Operators Namespace before cpdbr backup of the CPD Operator Namespace
 ## Captures Bedrock and CPD Operators and relevant configuration into cpd-operators ConfigMap
 function cpd-operators-backup () {
 	## Retrieve CatalogSources sort by .metadata.name and filter JSON for only select keys 
 	BACKUP_CAT_SRCS=""
 	getCatalogSourcesByNamespace openshift-marketplace
-	echo "CatalogSources: ${BACKUP_CAT_SRCS}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - CatalogSources: ${BACKUP_CAT_SRCS}"
 	echo "--------------------------------------------------"
 
 	## Retrieve ClusterServiceVersions sort by .metadata.name and filter JSON for only select keys 
@@ -371,20 +470,21 @@ function cpd-operators-backup () {
 	if [ "$OPERATORS_NAMESPACE" != "$BEDROCK_NAMESPACE" ]; then
 		getClusterServiceVersionsByNamespace $BEDROCK_NAMESPACE
 	fi
-	echo "ClusterServiceVersions: ${BACKUP_CLUSTER_SVS}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - ClusterServiceVersions: ${BACKUP_CLUSTER_SVS}"
 	echo "--------------------------------------------------"
 
 	## Retrieve Subscriptions sort by .spec.name and filter JSON for only select keys 
-# 	BACKUP_SUBS=`oc get subscriptions -n "$OPERATORS_NAMESPACE" -o jsonpath="{range .items[*]}{'\"'}{.spec.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\"}, \"spec\": '}{.spec}{'}\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
+# 	BACKUP_SUBS=`oc get subscriptions -n "$OPERATORS_NAMESPACE" -o jsonpath="{range .items[*]}{'\"'}{.metadata.namespace}{'-'}{.spec.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\"}, \"spec\": '}{.spec}{'}\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
 	BACKUP_SUBS=""
 	BACKUP_ODLM_SUBS=""
 	getSubscriptionsByNamespace $OPERATORS_NAMESPACE
 	if [ "$OPERATORS_NAMESPACE" != "$BEDROCK_NAMESPACE" ]; then
-		getSubscriptionByName $BEDROCK_NAMESPACE "\"ibm-cpd-scheduling-operator\"" 
+#		getSubscriptionByName $BEDROCK_NAMESPACE "\"ibm-cpd-scheduling-operator\"" 
+		getSubscriptionsByNamespace $BEDROCK_NAMESPACE  
 	fi
-	echo "Subscriptions: ${BACKUP_SUBS}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Subscriptions: ${BACKUP_SUBS}"
 	echo "--------------------------------------------------"
-	echo "Subscriptions from ODLM: ${BACKUP_ODLM_SUBS}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Subscriptions from ODLM: ${BACKUP_ODLM_SUBS}"
 	echo "--------------------------------------------------"
 
 
@@ -394,7 +494,7 @@ function cpd-operators-backup () {
 	if [ "$OPERATORS_NAMESPACE" != "$BEDROCK_NAMESPACE" ]; then
 		getOperandConfigsByNamespace $BEDROCK_NAMESPACE
 	fi
-	echo "OperandConfigs: ${BACKUP_OP_CFGS}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandConfigs: ${BACKUP_OP_CFGS}"
 	echo "--------------------------------------------------"
 
 	## Retrieve OperandRegistries sort by .metadata.name and filter JSON for only select keys 
@@ -403,7 +503,7 @@ function cpd-operators-backup () {
 	if [ "$OPERATORS_NAMESPACE" != "$BEDROCK_NAMESPACE" ]; then
 		getOperandRegistriesByNamespace $BEDROCK_NAMESPACE
 	fi
-	echo "OperandRegistries: ${BACKUP_OP_REGS}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRegistries: ${BACKUP_OP_REGS}"
 	echo "--------------------------------------------------"
 
 	## Retrieve Watched Namespaces .data.namespacee from NamespaceScope ConfigMap 
@@ -414,14 +514,14 @@ function cpd-operators-backup () {
 	BACKUP_OP_REQS=""
 	for NSS_NAMESPACE in "${NSS_NAMESPACES[@]}"
 	do
-		echo "Watched Namespace: ${NSS_NAMESPACE}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Watched Namespace: ${NSS_NAMESPACE}"
 		echo "--------------------------------------------------"
 		getNamespaceByName $NSS_NAMESPACE
 		getOperandRequestsByNamespace $NSS_NAMESPACE
 	done
-	echo "CPD Instance Namespaces: ${BACKUP_CPD_INSTANCE_NAMESPACES}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - CPD Instance Namespaces: ${BACKUP_CPD_INSTANCE_NAMESPACES}"
 	echo "--------------------------------------------------"
-	echo "OperandRequests: ${BACKUP_OP_REQS}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRequests: ${BACKUP_OP_REQS}"
 	echo "--------------------------------------------------"
 
 	## Capture CA Certificate Secret, Certificate and Self Signed Issuer from Bedrock Namespace
@@ -429,22 +529,25 @@ function cpd-operators-backup () {
 	BACKUP_CA_CERT=""
 	BACKUP_SS_ISSUER=""
 	getCACertSecretInNamespace $BEDROCK_NAMESPACE zen-ca-cert-secret
-	echo "CA Certificate Secret: ${BACKUP_CA_CERT_SECRET}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - CA Certificate Secret: ${BACKUP_CA_CERT_SECRET}"
 	echo "--------------------------------------------------"
 	getCACertInNamespace $BEDROCK_NAMESPACE zen-ca-certificate # cs-ca-certificate    
-	echo "CA Certificate: ${BACKUP_CA_CERT}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - CA Certificate: ${BACKUP_CA_CERT}"
 	echo "--------------------------------------------------"
 	getSSIssuerInNamespace $BEDROCK_NAMESPACE zen-ss-issuer # cs-ss-issuer
-	echo "SS Issuer: ${BACKUP_SS_ISSUER}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - SS Issuer: ${BACKUP_SS_ISSUER}"
 	echo "--------------------------------------------------"
 
-	## Retrieve IAM Identity Providers
-	# BACKUP_IAM_PROVIDERS=""
-	# getIAMIdentityProviders
-	# echo "IAM Identity Providers: ${BACKUP_IAM_PROVIDERS}"
+	## Optionally Backup IAM/Mongo Data to Volume if IAM deployed
+	if [ $BACKUP_IAM_DATA -eq 1 ]; then
+		backupIAMData $BEDROCK_NAMESPACE
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - IAM MongoDB found in ${BEDROCK_NAMESPACE}: ${IAM_DATA}"
+	   	echo ""
+		echo "--------------------------------------------------"
+	fi
 
 	## Create ConfigMap cpd-operators.yaml file with Subscriptions, OperandRegistries, OperandConfigs and OperandRequests in .data
-	local CONFIGMAP_DATA=$(printf '{ "apiVersion" : "v1", "kind" : "ConfigMap", "metadata": { "name" : "cpd-operators", "namespace" : "%s", "labels" : {"app": "cpd-operators-backup"} }, "data": { "catalogsources" : "{ %s }",  "clusterserviceversions" : "{ %s }",  "subscriptions" : "{ %s }",  "odlmsubscriptions" : "{ %s }",  "operandregistries" : "{ %s }",  "operandconfigs" : "{ %s }", "operandrequests": "{ %s }", "cacertificatesecret": "{ %s }", "cacertificate": "{ %s }", "selfsignedissuer": "{ %s }", "instancenamespaces": "{ %s }" } }' "$OPERATORS_NAMESPACE" "$(echo ${BACKUP_CAT_SRCS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_CLUSTER_SVS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_SUBS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_ODLM_SUBS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_OP_REGS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_OP_CFGS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_OP_REQS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_CA_CERT_SECRET} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_CA_CERT} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_SS_ISSUER} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_CPD_INSTANCE_NAMESPACES} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')")
+	local CONFIGMAP_DATA=$(printf '{ "apiVersion" : "v1", "kind" : "ConfigMap", "metadata": { "name" : "cpd-operators", "namespace" : "%s", "labels" : {"app": "cpd-operators-backup", "icpdsupport/addOnId": "cpdbr", "icpdsupport/app": "br-service"} }, "data": { "iamdata" : "%s", "catalogsources" : "{ %s }",  "clusterserviceversions" : "{ %s }",  "subscriptions" : "{ %s }",  "odlmsubscriptions" : "{ %s }",  "operandregistries" : "{ %s }",  "operandconfigs" : "{ %s }", "operandrequests": "{ %s }", "cacertificatesecret": "{ %s }", "cacertificate": "{ %s }", "selfsignedissuer": "{ %s }", "instancenamespaces": "{ %s }" } }' "$OPERATORS_NAMESPACE" ${IAM_DATA} "$(echo ${BACKUP_CAT_SRCS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_CLUSTER_SVS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_SUBS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_ODLM_SUBS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_OP_REGS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_OP_CFGS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_OP_REQS} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_CA_CERT_SECRET} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_CA_CERT} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_SS_ISSUER} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo ${BACKUP_CPD_INSTANCE_NAMESPACES} | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')")
 	echo ${CONFIGMAP_DATA} > cpd-operators-configmap.yaml
 	## Create ConfigMap from cpd-operator.yaml file
 	oc apply -f cpd-operators-configmap.yaml
@@ -458,7 +561,7 @@ function checkCreateSecret() {
 	local RESOURCE_FILE=""
 
 	if [ "$RESOURCE_JSON" == null ]; then
-		echo "Secret: ${RESOURCE_ID} - Not Found"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Secret: ${RESOURCE_ID} - Not Found"
 		return 1
 	else
 		local RESOURCE_NAME=`echo $RESOURCE_JSON | jq ".metadata.name" | sed -e 's|"||g'`
@@ -468,7 +571,7 @@ function checkCreateSecret() {
 		local CHECK_RESOURCES=`oc get secret -n "$RESOURCE_NAMESPACE" 2>&1 | egrep "^error:*"`
 		local CHECK_RC="$?"
 		if [ "$CHECK_RC" != 0 ] || [ "$CHECK_RESOURCES" != "" ]; then
-			echo "oc get secret -n "$RESOURCE_NAMESPACE" - FAILED with:  ${CHECK_RESOURCES}"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get secret -n "$RESOURCE_NAMESPACE" - FAILED with:  ${CHECK_RESOURCES}"
 			return 1
 		fi
 
@@ -483,14 +586,14 @@ function checkCreateSecret() {
 			if [ "$GET_RESOURCE" == null ]; then
 				echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
 				RESOURCE_FILE="${RESOURCE_ID}.yaml"
-				echo "Secret: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Secret: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
 			else
-				echo "Secret: ${RESOURCE_ID} - Already Exists"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Secret: ${RESOURCE_ID} - Already Exists"
 			fi
 		else
 			echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
 			RESOURCE_FILE="${RESOURCE_ID}.yaml"
-			echo "Secret: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Secret: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
 		fi
 
 		## Create/Apply Secret from yaml file and wait until Secret is Ready
@@ -498,7 +601,7 @@ function checkCreateSecret() {
 			local RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
 			local RESOURCE_RC="$?"
 			if [ "$RESOURCE_RC" != 0 ]; then
-				echo "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_RC}"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_RC}"
 			else
 				local RESOURCE_READY="false"
 				local RETRY_COUNT=0
@@ -507,10 +610,10 @@ function checkCreateSecret() {
 					RESOURCE_JSON=`oc get secret "$RESOURCE_NAME" -n "$RESOURCE_NAMESPACE" -o json`
 					RESOURCE_RC="$?"
 					if [ "$RESOURCE_RC" != 0 ]; then
-						echo "oc get secret ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
+						echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get secret ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
 					else
 						RESOURCE_READY="true"
-						echo "Secret: ${RESOURCE_NAME} - Created"
+						echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Secret: ${RESOURCE_NAME} - Created"
 					fi
 					if [ "${RESOURCE_READY}" != "true" ] && [ "${RETRY_COUNT}" -le "${RETRY_LIMIT}" ]; then
 						sleep ${RETRY_INTERVAL}
@@ -531,7 +634,7 @@ function checkCreateCertificate() {
 	local RESOURCE_FILE=""
 
 	if [ "$RESOURCE_JSON" == null ]; then
-		echo "Certificate: ${RESOURCE_ID} - Not Found"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Certificate: ${RESOURCE_ID} - Not Found"
 		return 1
 	else
 		local RESOURCE_NAME=`echo $RESOURCE_JSON | jq ".metadata.name" | sed -e 's|"||g'`
@@ -541,7 +644,7 @@ function checkCreateCertificate() {
 		local CHECK_RESOURCES=`oc get certificate.v1alpha1.certmanager.k8s.io -n "$RESOURCE_NAMESPACE" 2>&1 | egrep "^error:*"`
 		local CHECK_RC="$?"
 		if [ "$CHECK_RC" != 0 ] || [ "$CHECK_RESOURCES" != "" ]; then
-			echo "oc get certificate.v1alpha1.certmanager.k8s.io -n "$RESOURCE_NAMESPACE" - FAILED with:  ${CHECK_RESOURCES}"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get certificate.v1alpha1.certmanager.k8s.io -n "$RESOURCE_NAMESPACE" - FAILED with:  ${CHECK_RESOURCES}"
 			return 1
 		fi
 
@@ -554,17 +657,17 @@ function checkCreateCertificate() {
 			local GET_RESOURCE=`echo $GET_RESOURCES | jq ".${RESOURCE_KEY}"`
 			## Check for given Certificate Key
 			if [ "$GET_RESOURCE" == null ]; then
-				echo "Certificate: ${RESOURCE_ID}: ${RESOURCE_JSON}"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Certificate: ${RESOURCE_ID}: ${RESOURCE_JSON}"
 				echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
 				RESOURCE_FILE="${RESOURCE_ID}.yaml"
-				echo "Certificate: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Certificate: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
 			else
-				echo "Certificate: ${RESOURCE_ID} - Already Exists"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Certificate: ${RESOURCE_ID} - Already Exists"
 			fi
 		else
 			echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
 			RESOURCE_FILE="${RESOURCE_ID}.yaml"
-			echo "Certificate: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Certificate: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
 		fi
 
 		## Create/Apply Certificate from yaml file and wait until Certificate is Ready
@@ -572,7 +675,7 @@ function checkCreateCertificate() {
 			local RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
 			local RESOURCE_RC="$?"
 			if [ "$RESOURCE_RC" != 0 ]; then
-				echo "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_RC}"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_RC}"
 			else
 				local RESOURCE_READY="false"
 				local RETRY_COUNT=0
@@ -581,10 +684,10 @@ function checkCreateCertificate() {
 					RESOURCE_JSON=`oc get certificate.v1alpha1.certmanager.k8s.io "$RESOURCE_NAME" -n "$RESOURCE_NAMESPACE" -o json`
 					RESOURCE_RC="$?"
 					if [ "$RESOURCE_RC" != 0 ]; then
-						echo "oc get certificate.v1alpha1.certmanager.k8s.io ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
+						echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get certificate.v1alpha1.certmanager.k8s.io ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
 					else
 						RESOURCE_READY="true"
-						echo "Certificate: ${RESOURCE_NAME} - Created"
+						echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Certificate: ${RESOURCE_NAME} - Created"
 					fi
 					if [ "${RESOURCE_READY}" != "true" ] && [ "${RETRY_COUNT}" -le "${RETRY_LIMIT}" ]; then
 						sleep ${RETRY_INTERVAL}
@@ -605,7 +708,7 @@ function checkCreateIssuer() {
 	local RESOURCE_FILE=""
 
 	if [ "$RESOURCE_JSON" == null ]; then
-		echo "Issuer: ${RESOURCE_ID} - Not Found"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Issuer: ${RESOURCE_ID} - Not Found"
 		return 1
 	else
 		local RESOURCE_NAME=`echo $RESOURCE_JSON | jq ".metadata.name" | sed -e 's|"||g'`
@@ -615,7 +718,7 @@ function checkCreateIssuer() {
 		local CHECK_RESOURCES=`oc get issuer.v1alpha1.certmanager.k8s.io -n "$RESOURCE_NAMESPACE" 2>&1 | egrep "^error:*"`
 		local CHECK_RC="$?"
 		if [ "$CHECK_RC" != 0 ] || [ "$CHECK_RESOURCES" != "" ]; then
-			echo "oc get issuer.v1alpha1.certmanager.k8s.io -n "$RESOURCE_NAMESPACE" - FAILED with:  ${CHECK_RESOURCES}"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get issuer.v1alpha1.certmanager.k8s.io -n "$RESOURCE_NAMESPACE" - FAILED with:  ${CHECK_RESOURCES}"
 			return 1
 		fi
 
@@ -628,17 +731,17 @@ function checkCreateIssuer() {
 			local GET_RESOURCE=`echo $GET_RESOURCES | jq ".${RESOURCE_KEY}"`
 			## Check for given Issuer Key
 			if [ "$GET_RESOURCE" == null ]; then
-				echo "Issuer: ${RESOURCE_ID}: ${RESOURCE_JSON}"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Issuer: ${RESOURCE_ID}: ${RESOURCE_JSON}"
 				echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
 				RESOURCE_FILE="${RESOURCE_ID}.yaml"
-				echo "Issuer: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Issuer: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
 			else
-				echo "Issuer: ${RESOURCE_ID} - Already Exists"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Issuer: ${RESOURCE_ID} - Already Exists"
 			fi
 		else
 			echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
 			RESOURCE_FILE="${RESOURCE_ID}.yaml"
-			echo "Issuer: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Issuer: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
 		fi
 
 		## Create/Apply Issuer from yaml file and wait until Issuer is Ready
@@ -646,7 +749,7 @@ function checkCreateIssuer() {
 			local RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
 			local RESOURCE_RC="$?"
 			if [ "$RESOURCE_RC" != 0 ]; then
-				echo "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_RC}"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_RC}"
 			else
 				local RESOURCE_READY="false"
 				local RETRY_COUNT=0
@@ -655,10 +758,10 @@ function checkCreateIssuer() {
 					RESOURCE_JSON=`oc get issuer.v1alpha1.certmanager.k8s.io "$RESOURCE_NAME" -n "$RESOURCE_NAMESPACE" -o json`
 					RESOURCE_RC="$?"
 					if [ "$RESOURCE_RC" != 0 ]; then
-						echo "oc get issuer.v1alpha1.certmanager.k8s.io ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
+						echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get issuer.v1alpha1.certmanager.k8s.io ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
 					else
 						RESOURCE_READY="true"
-						echo "Issuer: ${RESOURCE_NAME} - Created"
+						echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Issuer: ${RESOURCE_NAME} - Created"
 					fi
 					if [ "${RESOURCE_READY}" != "true" ] && [ "${RETRY_COUNT}" -le "${RETRY_LIMIT}" ]; then
 						sleep ${RETRY_INTERVAL}
@@ -684,7 +787,7 @@ function checkCreateCatalogSource() {
 	local CHECK_RESOURCES=`oc get catalogsource -n "$RESOURCE_NAMESPACE" 2>&1 | egrep "^error:*"`
 	local CHECK_RC="$?"
 	if [ "$CHECK_RC" != 0 ] || [ "$CHECK_RESOURCES" != "" ]; then
-		echo "oc get catalogsource -n ${RESOURCE_NAMESPACE} - FAILED with:  ${CHECK_RESOURCES}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get catalogsource -n ${RESOURCE_NAMESPACE} - FAILED with:  ${CHECK_RESOURCES}"
 		return 1
 	fi
 		
@@ -698,12 +801,12 @@ function checkCreateCatalogSource() {
 			local RESOURCE_RC="$?"
 			local GET_RESOURCE=`echo $GET_RESOURCES | jq ".${RESOURCE_KEY}"`
 			if [ "$GET_RESOURCE" == null ]; then
-				echo "CatalogSource: ${RESOURCE_ID}: ${RESOURCE_JSON}"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - CatalogSource: ${RESOURCE_ID}: ${RESOURCE_JSON}"
 				echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
 				RESOURCE_FILE="${RESOURCE_ID}.yaml"
-				echo "CatalogSource: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - CatalogSource: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
 			else
-				echo "CatalogSource: ${RESOURCE_ID} - Already Exists"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - CatalogSource: ${RESOURCE_ID} - Already Exists"
 				# TODO Check CatalogSource/wait until ready
 				local RESOURCE_READY="false"
 				local RETRY_COUNT=0
@@ -711,14 +814,14 @@ function checkCreateCatalogSource() {
 					RESOURCE_JSON=`oc get catalogsource "$RESOURCE_NAME" -n "$RESOURCE_NAMESPACE" -o json`
 					RESOURCE_RC="$?"
 					if [ "$RESOURCE_RC" != 0 ]; then
-						echo "oc get catalogsource ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
+						echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get catalogsource ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
 						RETRY_COUNT=${RETRY_LIMIT}
 					else
 						local RESOURCE_STATUS=`echo $RESOURCE_JSON | jq ".status.connectionState.lastObservedState" | sed -e 's|"||g'`
 						if [ "$RESOURCE_STATUS" == "READY" ]; then
 							RESOURCE_READY="true"
 						fi
-						echo "CatalogSource: ${RESOURCE_NAME} - connectionState: ${RESOURCE_STATUS}"
+						echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - CatalogSource: ${RESOURCE_NAME} - connectionState: ${RESOURCE_STATUS}"
 					fi
 					if [ "${RESOURCE_READY}" != "true" ] && [ "${RETRY_COUNT}" -le "${RETRY_LIMIT}" ]; then
 						sleep ${RETRY_INTERVAL}
@@ -729,10 +832,10 @@ function checkCreateCatalogSource() {
 		else
 			echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
 			RESOURCE_FILE="${RESOURCE_ID}.yaml"
-			echo "CatalogSource: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - CatalogSource: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
 		fi
 	else
-		echo "CatalogSource: ${RESOURCE_ID} - Published by: ${RESOURCE_PUBLISHER}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - CatalogSource: ${RESOURCE_ID} - Published by: ${RESOURCE_PUBLISHER}"
 	fi
 
 	## Create/Apply CatalogSource from yaml file and wait until CatalogSource is Ready
@@ -740,7 +843,7 @@ function checkCreateCatalogSource() {
 		local RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
 		local RESOURCE_RC="$?"
 		if [ "$RESOURCE_RC" != 0 ]; then
-			echo "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_RC}"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_RC}"
 		else
 			local RESOURCE_READY="false"
 			local RETRY_COUNT=0
@@ -749,13 +852,13 @@ function checkCreateCatalogSource() {
 				local RESOURCE_JSON=`oc get catalogsource "$RESOURCE_NAME" -n "$RESOURCE_NAMESPACE" -o json`
 				RESOURCE_RC="$?"
 				if [ "$RESOURCE_RC" != 0 ]; then
-					echo "oc get catalogsource ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
+					echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get catalogsource ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
 				else
 					local RESOURCE_STATUS=`echo $RESOURCE_JSON | jq ".status.connectionState.lastObservedState" | sed -e 's|"||g'`
 					if [ "$RESOURCE_STATUS" == "READY" ]; then
 						RESOURCE_READY="true"
 					fi
-					echo "CatalogSource: ${RESOURCE_NAME} - connectionState: ${RESOURCE_STATUS}"
+					echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - CatalogSource: ${RESOURCE_NAME} - connectionState: ${RESOURCE_STATUS}"
 				fi
 				if [ "${RESOURCE_READY}" != "true" ] && [ "${RETRY_COUNT}" -le "${RETRY_LIMIT}" ]; then
 					sleep ${RETRY_INTERVAL}
@@ -781,12 +884,12 @@ function checkClusterServiceVersion() {
 	local CHECK_RESOURCES=`oc get clusterserviceversion -n "$RESOURCE_NAMESPACE" 2>&1 | egrep "^error:*"`
 	local CHECK_RC="$?"
 	if [ "$CHECK_RC" != 0 ] || [ "$CHECK_RESOURCES" != "" ]; then
-		echo "oc get clusterserviceversion -n $RESOURCE_NAMESPACE - FAILED with:  ${CHECK_RESOURCES}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get clusterserviceversion -n $RESOURCE_NAMESPACE - FAILED with:  ${CHECK_RESOURCES}"
 		return 1
 	fi
 	CHECK_RESOURCES=`oc get clusterserviceversion -n "$RESOURCE_NAMESPACE" 2>&1 | egrep "^No resources found*"`
 	if [ "$CHECK_RESOURCES" != "" ]; then
-		echo "oc get clusterserviceversion -n $RESOURCE_NAMESPACE - No resources found"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get clusterserviceversion -n $RESOURCE_NAMESPACE - No resources found"
 		return 1
 	fi
 	
@@ -807,14 +910,14 @@ function checkClusterServiceVersion() {
 			local RESOURCE_JSON=`oc get clusterserviceversion "$RESOURCE_NAME" -n "$RESOURCE_NAMESPACE" -o json`
 			RESOURCE_RC="$?"
 			if [ "$RESOURCE_RC" != 0 ]; then
-				echo "oc get clusterserviceversion ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get clusterserviceversion ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
 				RETRY_COUNT=${RETRY_LIMIT}
 			else
 				local RESOURCE_STATUS=`echo $RESOURCE_JSON | jq ".status.phase" | sed -e 's|"||g'`
 				if [ "$RESOURCE_STATUS" == "Succeeded" ] ; then
 					RESOURCE_READY="true"
 				fi
-				echo "Cluster Service Version: ${RESOURCE_NAME} - phase: ${RESOURCE_STATUS}"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Cluster Service Version: ${RESOURCE_NAME} - phase: ${RESOURCE_STATUS}"
 			fi
 			if [ "${RESOURCE_READY}" != "true" ] && [ "${RETRY_COUNT}" -le "${RETRY_LIMIT}" ]; then
 				sleep ${RETRY_INTERVAL}
@@ -823,7 +926,7 @@ function checkClusterServiceVersion() {
 		done
 	fi
 	if [ "${RESOURCE_READY}" != "true" ]; then
-		echo "oc get clusterserviceversion -n ${RESOURCE_NAMESPACE} for ${RESOURCE_KEY} - FAILED"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get clusterserviceversion -n ${RESOURCE_NAMESPACE} for ${RESOURCE_KEY} - FAILED"
 		return 1
 	fi
 }
@@ -835,12 +938,12 @@ function patchClusterServiceVersionDeployments() {
 	local RESOURCE_JSON=`echo $BACKEDUP_CLUSTER_SVS | jq ".${RESOURCE_KEY}"`
 	local RESOURCE_FILE=""
 	if [ "$RESOURCE_JSON" == null ]; then
-		echo "clusterserviceversion: ${RESOURCE_ID} - Not Found"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - clusterserviceversion: ${RESOURCE_ID} - Not Found"
 		return 1
 	fi
 	local DEPLOYMENTS_JSON=`echo $RESOURCE_JSON | jq ".spec.install.spec.deployments" | sed -e 's|"|\"|g'`
 	if [ "$DEPLOYMENTS_JSON" == null ]; then
-		echo "clusterserviceversion: ${RESOURCE_ID} - No deployments Found"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - clusterserviceversion: ${RESOURCE_ID} - No deployments Found"
 		return 1
 	fi
 	# echo "DEPLOYMENTS_JSON: ${DEPLOYMENTS_JSON}"
@@ -854,19 +957,19 @@ function patchClusterServiceVersionDeployments() {
 	local CHECK_RESOURCES=`oc get clusterserviceversion -n "$RESOURCE_NAMESPACE" 2>&1 | egrep "^error:*"`
 	local CHECK_RC="$?"
 	if [ "$CHECK_RC" != 0 ] || [ "$CHECK_RESOURCES" != "" ]; then
-		echo "oc get clusterserviceversion -n ${RESOURCE_NAMESPACE} - FAILED with:  ${CHECK_RESOURCES}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get clusterserviceversion -n ${RESOURCE_NAMESPACE} - FAILED with:  ${CHECK_RESOURCES}"
 		return 1
 	fi
 	CHECK_RESOURCES=`oc get clusterserviceversion -n "$RESOURCE_NAMESPACE" 2>&1 | egrep "^No resources found*"`
 	if [ "$CHECK_RESOURCES" != "" ]; then
-		echo "oc get clusterserviceversion -n ${RESOURCE_NAMESPACE} - No resources found"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get clusterserviceversion -n ${RESOURCE_NAMESPACE} - No resources found"
 		return 1
 	fi
 	
 	local CSV_JSON=`oc get clusterserviceversion "$RESOURCE_NAME" -n "$RESOURCE_NAMESPACE" -o json`
 	CSV_RC="$?"
 	if [ "$CSV_RC" != 0 ]; then
-		echo "oc get clusterserviceversion ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - FAILED with:  ${CSV_RC}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get clusterserviceversion ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - FAILED with:  ${CSV_RC}"
 		return 1
 	fi
 
@@ -874,10 +977,10 @@ function patchClusterServiceVersionDeployments() {
 	local PATCH_RESOURCE=`oc patch clusterserviceversion "$RESOURCE_NAME" -n "$RESOURCE_NAMESPACE" -p "$PATCH_JSON" --type=merge`
 	local PATCH_RC="$?"
 	if [ "$PATCH_RC" != 0 ]; then
-		echo "oc patch clusterserviceversion ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - FAILED with:  ${PATCH_RC}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc patch clusterserviceversion ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - FAILED with:  ${PATCH_RC}"
 		return 1
 	else
-		echo "oc patch clusterserviceversion ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - Succeeded with: ${PATCH_RESOURCE}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc patch clusterserviceversion ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - Succeeded with: ${PATCH_RESOURCE}"
 	fi
 	echo "--------------------------------------------------"
 }
@@ -889,7 +992,7 @@ function checkCreateSubscription() {
 	local RESOURCE_ID=`echo $RESOURCE_KEY | sed -e 's|"||g'`
 	local RESOURCE_JSON=`echo $BACKEDUP_SUBS | jq ".${RESOURCE_KEY}"`
 	if [ "$RESOURCE_JSON" == null ]; then
-		echo "Subscription: ${RESOURCE_ID} - Not Found"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Subscription: ${RESOURCE_ID} - Not Found"
 	else
 		local RESOURCE_NAME=`echo $RESOURCE_JSON | jq ".metadata.name" | sed -e 's|"||g'`
 		local RESOURCE_NAMESPACE=`echo $RESOURCE_JSON | jq ".metadata.namespace" | sed -e 's|"||g'`
@@ -898,7 +1001,7 @@ function checkCreateSubscription() {
 		local CHECK_RESOURCES=`oc get subscription -n "$RESOURCE_NAMESPACE" 2>&1`
 		local CHECK_RC="$?"
 		if [ "$CHECK_RC" != 0 ]; then
-			echo "oc get subscription -n ${RESOURCE_NAMESPACE} - FAILED with:  ${CHECK_RC}"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get subscription -n ${RESOURCE_NAMESPACE} - FAILED with:  ${CHECK_RC}"
 			return 1
 		fi
 		
@@ -906,18 +1009,18 @@ function checkCreateSubscription() {
 		CHECK_RESOURCES=`oc get subscriptions -n "$RESOURCE_NAMESPACE" 2>&1 | egrep "^No resources*"`
 		if [ "$CHECK_RESOURCES" == "" ]; then
 			## Retrieve Subscriptions sort by .spec.name and filter JSON for only select keys 	
-			local GET_RESOURCES=`oc get subscription -n "$RESOURCE_NAMESPACE" -o jsonpath="{'{'}{range .items[*]}{'\"'}{.spec.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\"}, \"spec\": '}{.spec}{'}\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$|}|" -e 's|\\"|"|g'`
+			local GET_RESOURCES=`oc get subscription -n "$RESOURCE_NAMESPACE" -o jsonpath="{'{'}{range .items[*]}{'\"'}{.metadata.namespace}{'-'}{.spec.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\"}, \"spec\": '}{.spec}{'}\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$|}|" -e 's|\\"|"|g'`
 			local RESOURCE_RC="$?"
 			local GET_RESOURCE=`echo $GET_RESOURCES | jq ".${RESOURCE_KEY}"`
 			## Check for given Subscription Key
 			if [ "$GET_RESOURCE" == null ]; then
-				echo "Subscription: ${RESOURCE_ID}: ${RESOURCE_JSON}"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Subscription: ${RESOURCE_ID}: ${RESOURCE_JSON}"
 				echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
 				RESOURCE_FILE="${RESOURCE_ID}.yaml"
-				echo "Subscription: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Subscription: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
 			else
 				RESOURCE_NAME=`echo $GET_RESOURCE | jq ".metadata.name" | sed -e 's|"||g'`
-				echo "Subscription: ${RESOURCE_ID} - Already Exists by Name: ${RESOURCE_NAME}"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Subscription: ${RESOURCE_ID} - Already Exists by Name: ${RESOURCE_NAME}"
 				# TODO Check Subscription/wait until ready
 				local RESOURCE_READY="false"
 				local RETRY_COUNT=0
@@ -925,7 +1028,7 @@ function checkCreateSubscription() {
 					RESOURCE_JSON=`oc get subscription "$RESOURCE_NAME" -n "$RESOURCE_NAMESPACE" -o json`
 					RESOURCE_RC="$?"
 					if [ "$RESOURCE_RC" != 0 ]; then
-						echo "oc get subscriptions ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
+						echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get subscriptions ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
 						RETRY_COUNT=${RETRY_LIMIT}
 					else
 						local CURRENT_CSV=`echo $RESOURCE_JSON | jq ".status.currentCSV" | sed -e 's|"||g'`
@@ -933,7 +1036,7 @@ function checkCreateSubscription() {
 						if [ "$INSTALLED_CSV" != "" ] && [ "$INSTALLED_CSV" != null ] && [ "$CURRENT_CSV" == "$INSTALLED_CSV" ]; then
 							RESOURCE_READY="true"
 						fi
-						echo "Subscription: ${RESOURCE_NAME} - currentCSV: ${CURRENT_CSV} - installedCSV: ${INSTALLED_CSV}"
+						echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Subscription: ${RESOURCE_NAME} - currentCSV: ${CURRENT_CSV} - installedCSV: ${INSTALLED_CSV}"
 					fi
 					if [ "${RESOURCE_READY}" != "true" ] && [ "${RETRY_COUNT}" -le "${RETRY_LIMIT}" ]; then
 						sleep ${RETRY_INTERVAL}
@@ -944,7 +1047,7 @@ function checkCreateSubscription() {
 		else
 			echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
 			RESOURCE_FILE="${RESOURCE_ID}.yaml"
-			echo "Subscription: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Subscription: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
 		fi
 	fi
 	
@@ -953,7 +1056,7 @@ function checkCreateSubscription() {
 		local RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
 		local RESOURCE_RC="$?"
 		if [ "$RESOURCE_RC" != 0 ]; then
-			echo "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_RC}"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_RC}"
 		else
 			local RESOURCE_READY="false"
 			local RETRY_COUNT=0
@@ -962,14 +1065,14 @@ function checkCreateSubscription() {
 				RESOURCE_JSON=`oc get subscription "$RESOURCE_NAME" -n "$RESOURCE_NAMESPACE" -o json`
 				RESOURCE_RC="$?"
 				if [ "$RESOURCE_RC" != 0 ]; then
-					echo "oc get subscription ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
+					echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get subscription ${RESOURCE_NAME} -n ${RESOURCE_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
 				else
 					local CURRENT_CSV=`echo $RESOURCE_JSON | jq ".status.currentCSV" | sed -e 's|"||g'`
 					local INSTALLED_CSV=`echo $RESOURCE_JSON | jq ".status.installedCSV" | sed -e 's|"||g'`
 					if [ "$INSTALLED_CSV" != "" ] && [ "$INSTALLED_CSV" != null ] && [ "$CURRENT_CSV" == "$INSTALLED_CSV" ]; then
 						RESOURCE_READY="true"
 					fi
-					echo "Subscription: ${RESOURCE_NAME} - currentCSV: ${CURRENT_CSV} - installedCSV: ${INSTALLED_CSV}"
+					echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Subscription: ${RESOURCE_NAME} - currentCSV: ${CURRENT_CSV} - installedCSV: ${INSTALLED_CSV}"
 				fi
 				if [ "${RESOURCE_READY}" != "true" ] && [ "${RETRY_COUNT}" -le "${RETRY_LIMIT}" ]; then
 					sleep ${RETRY_INTERVAL}
@@ -1009,7 +1112,7 @@ function checkOperandCRDs() {
 		fi
 	done
 	if [ "${RESOURCE_READY}" != "true" ]; then
-		echo "oc get crd operandXXX.operator.ibm.com FAILED with ${RESOURCE_JSON}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get crd operandXXX.operator.ibm.com FAILED with ${RESOURCE_JSON}"
 		return 1
 	fi
 }
@@ -1026,7 +1129,7 @@ function checkCreateOperandRegistry() {
 	local CHECK_RESOURCES=`oc get operandregistry -n "$RESOURCE_NAMESPACE" 2>&1 | egrep "^error:*"`
 	local CHECK_RC="$?"
 	if [ "$CHECK_RC" != 0 ] || [ "$CHECK_RESOURCES" != "" ]; then
-		echo "oc get operandregistry -n "$RESOURCE_NAMESPACE" - FAILED with:  ${CHECK_RESOURCES}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get operandregistry -n "$RESOURCE_NAMESPACE" - FAILED with:  ${CHECK_RESOURCES}"
 		return 1
 	fi
 		
@@ -1039,24 +1142,24 @@ function checkCreateOperandRegistry() {
 		local GET_RESOURCE=`echo $GET_RESOURCES | jq ".${RESOURCE_KEY}"`
 		## Check for given OperandRegistry Key
 		if [ "$GET_RESOURCE" == null ]; then
-			echo "OperandRegistry: ${RESOURCE_ID} - Not Found, Creating"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRegistry: ${RESOURCE_ID} - Not Found, Creating"
 		else
-			echo "OperandRegistry: ${RESOURCE_ID} - Already Exists, Overwriting"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRegistry: ${RESOURCE_ID} - Already Exists, Overwriting"
 		fi
 	else
-		echo "OperandRegistry: ${RESOURCE_ID} - No OperandRegistries Found, Creating"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRegistry: ${RESOURCE_ID} - No OperandRegistries Found, Creating"
 	fi
-	echo "OperandRegistry: ${RESOURCE_ID}: ${RESOURCE_JSON}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRegistry: ${RESOURCE_ID}: ${RESOURCE_JSON}"
 	echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
 	RESOURCE_FILE="${RESOURCE_ID}.yaml"
-	echo "OperandRegistry: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRegistry: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
 
-	## Create/Apply OperandRegistry from yaml file and wait until OperandRequest is Ready
+	## Create/Apply OperandRegistry from yaml file and wait until OperandRegistry is Ready
 	if [ "$RESOURCE_FILE" != "" ]; then
 		local RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
 		local RESOURCE_RC="$?"
 		if [ "$RESOURCE_RC" != 0 ]; then
-			echo "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_RC}"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_RC}"
 		else
 			local RESOURCE_READY="false"
 			local RETRY_COUNT=0
@@ -1065,11 +1168,11 @@ function checkCreateOperandRegistry() {
 				RESOURCE_JSON=`oc get operandregistry "$RESOURCE_NAME" -n "$RESOURCE_NAMESPACE" -o json`
 				RESOURCE_RC="$?"
 				if [ "$RESOURCE_RC" != 0 ]; then
-					echo "oc get operandregistry ${RESOURCE_NAME} -n "$RESOURCE_NAMESPACE" - FAILED with:  ${RESOURCE_RC}"
+					echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get operandregistry ${RESOURCE_NAME} -n "$RESOURCE_NAMESPACE" - FAILED with:  ${RESOURCE_RC}"
 				else
 					local RESOURCE_STATUS=`echo $RESOURCE_JSON | jq ".status.phase" | sed -e 's|"||g'`
 					RESOURCE_READY="true"
-					echo "OperandRegistry: ${RESOURCE_NAME} - phase: ${RESOURCE_STATUS}"
+					echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRegistry: ${RESOURCE_NAME} - phase: ${RESOURCE_STATUS}"
 				fi
 				if [ "${RESOURCE_READY}" != "true" ] && [ "${RETRY_COUNT}" -le "${RETRY_LIMIT}" ]; then
 					sleep ${RETRY_INTERVAL}
@@ -1093,7 +1196,7 @@ function checkCreateOperandConfig() {
 	local CHECK_RESOURCES=`oc get operandconfig -n "$RESOURCE_NAMESPACE" 2>&1 | egrep "^error:*"`
 	local CHECK_RC="$?"
 	if [ "$CHECK_RC" != 0 ] || [ "$CHECK_RESOURCES" != "" ]; then
-		echo "oc get operandconfig -n "$RESOURCE_NAMESPACE" - FAILED with:  ${CHECK_RESOURCES}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get operandconfig -n "$RESOURCE_NAMESPACE" - FAILED with:  ${CHECK_RESOURCES}"
 		return 1
 	fi
 		
@@ -1106,25 +1209,25 @@ function checkCreateOperandConfig() {
 		local GET_RESOURCE=`echo $GET_RESOURCES | jq ".${RESOURCE_KEY}"`
 		## Check for given OperandConfig Key
 		if [ "$GET_RESOURCE" == null ]; then
-			echo "OperandConfig: ${RESOURCE_ID}: ${RESOURCE_JSON}"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandConfig: ${RESOURCE_ID}: ${RESOURCE_JSON}"
 			echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
 			RESOURCE_FILE="${RESOURCE_ID}.yaml"
-			echo "OperandConfig: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandConfig: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
 		else
-			echo "OperandConfig: ${RESOURCE_ID} - Already Exists"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandConfig: ${RESOURCE_ID} - Already Exists"
 		fi
 	else
 		echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
 		RESOURCE_FILE="${RESOURCE_ID}.yaml"
-		echo "OperandConfig: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandConfig: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
 	fi
 
-	## Create/Apply OperandConfig from yaml file and wait until OperandRequest is Ready
+	## Create/Apply OperandConfig from yaml file and wait until OperandConfig is Ready
 	if [ "$RESOURCE_FILE" != "" ]; then
 		local RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
 		local RESOURCE_RC="$?"
 		if [ "$RESOURCE_RC" != 0 ]; then
-			echo "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_RC}"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_RC}"
 		else
 			local RESOURCE_READY="false"
 			local RETRY_COUNT=0
@@ -1133,11 +1236,11 @@ function checkCreateOperandConfig() {
 				RESOURCE_JSON=`oc get operandconfig "$RESOURCE_NAME" -n "$RESOURCE_NAMESPACE" -o json`
 				RESOURCE_RC="$?"
 				if [ "$RESOURCE_RC" != 0 ]; then
-					echo "oc get operandconfig ${RESOURCE_NAME} -n "$RESOURCE_NAMESPACE" - FAILED with:  ${RESOURCE_RC}"
+					echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get operandconfig ${RESOURCE_NAME} -n "$RESOURCE_NAMESPACE" - FAILED with:  ${RESOURCE_RC}"
 				else
 					local RESOURCE_STATUS=`echo $RESOURCE_JSON | jq ".status.phase" | sed -e 's|"||g'`
 					RESOURCE_READY="true"
-					echo "OperandConfig: ${RESOURCE_NAME} - phase: ${RESOURCE_STATUS}"
+					echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandConfig: ${RESOURCE_NAME} - phase: ${RESOURCE_STATUS}"
 				fi
 				if [ "${RESOURCE_READY}" != "true" ] && [ "${RETRY_COUNT}" -le "${RETRY_LIMIT}" ]; then
 					sleep ${RETRY_INTERVAL}
@@ -1154,7 +1257,7 @@ function checkCreateOperandRequest() {
 	local CHECK_RESOURCES=`oc get operandrequests -n "$OPERATORS_NAMESPACE" 2>&1 | egrep "^error:*"`
 	local CHECK_RC="$?"
 	if [ "$CHECK_RC" != 0 ] || [ "$CHECK_RESOURCES" != "" ]; then
-		echo "oc get operandrequests -n ${OPERATORS_NAMESPACE} - FAILED with:  ${CHECK_RESOURCES}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get operandrequests -n ${OPERATORS_NAMESPACE} - FAILED with:  ${CHECK_RESOURCES}"
 		return 1
 	fi
 		
@@ -1173,12 +1276,12 @@ function checkCreateOperandRequest() {
 		local GET_RESOURCE=`echo $GET_RESOURCES | jq ".${RESOURCE_KEY}"`
 		## Check for given OperandRequest Key
 		if [ "$GET_RESOURCE" == null ]; then
-			echo "OperandRequest: ${RESOURCE_ID}: ${RESOURCE_JSON}"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRequest: ${RESOURCE_ID}: ${RESOURCE_JSON}"
 			echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
 			RESOURCE_FILE="${RESOURCE_ID}.yaml"
-			echo "OperandRequest: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRequest: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
 		else
-			echo "OperandRequest: ${RESOURCE_ID} - Already Exists"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRequest: ${RESOURCE_ID} - Already Exists"
 			# TODO Check Subscription/wait until ready
 			local RESOURCE_READY="false"
 			local RETRY_COUNT=0
@@ -1186,19 +1289,20 @@ function checkCreateOperandRequest() {
 				RESOURCE_JSON=`oc get operandrequests "$RESOURCE_NAME" -n "$OPERATORS_NAMESPACE" -o json`
 				RESOURCE_RC="$?"
 				if [ "$RESOURCE_RC" != 0 ]; then
-					echo "oc get operandrequests ${RESOURCE_NAME} -n ${OPERATORS_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
+					echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get operandrequests ${RESOURCE_NAME} -n ${OPERATORS_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
 					RETRY_COUNT=${RETRY_LIMIT}
 				else
 					local RESOURCE_STATUS=`echo $RESOURCE_JSON | jq ".status.phase" | sed -e 's|"||g'`
+					local REQUESTS_SPEC=`echo $RESOURCE_JSON | jq ".spec"`
 					local REQUESTS_JSON=`echo $RESOURCE_JSON | jq ".spec.requests"`
-					if [ "$REQUESTS_JSON" == "[]" ]; then
+					if [ "$REQUESTS_SPEC" == "" ] || [ "$REQUESTS_SPEC" == null ] || [ "$REQUESTS_JSON" == "[]" ]; then
 						RESOURCE_READY="true"
 					else
 						if [ "$RESOURCE_STATUS" == "Running" ]; then
 							RESOURCE_READY="true"
 						fi
 					fi
-					echo "OperandRequest: ${RESOURCE_NAME} - phase: ${RESOURCE_STATUS}"
+					echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRequest: ${RESOURCE_NAME} - phase: ${RESOURCE_STATUS}"
 				fi
 				if [ "${RESOURCE_READY}" != "true" ] && [ "${RETRY_COUNT}" -le "${RETRY_LIMIT}" ]; then
 					sleep ${RETRY_INTERVAL}
@@ -1209,7 +1313,7 @@ function checkCreateOperandRequest() {
 	else
 		echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
 		RESOURCE_FILE="${RESOURCE_ID}.yaml"
-		echo "OperandRequest: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRequest: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
 	fi
 
 	## Create/Apply OperandRequest from yaml file and wait until OperandRequest is Ready
@@ -1217,7 +1321,7 @@ function checkCreateOperandRequest() {
 		local RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
 		local RESOURCE_RC="$?"
 		if [ "$RESOURCE_RC" != 0 ]; then
-			echo "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_RC}"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_RC}"
 		else
 			local RESOURCE_READY="false"
 			local RETRY_COUNT=0
@@ -1226,18 +1330,19 @@ function checkCreateOperandRequest() {
 				RESOURCE_JSON=`oc get operandrequests "$RESOURCE_NAME" -n "$OPERATORS_NAMESPACE" -o json`
 				RESOURCE_RC="$?"
 				if [ "$RESOURCE_RC" != 0 ]; then
-					echo "oc get operandrequests ${RESOURCE_NAME} -n ${OPERATORS_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
+					echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get operandrequests ${RESOURCE_NAME} -n ${OPERATORS_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
 				else
 					local RESOURCE_STATUS=`echo $RESOURCE_JSON | jq ".status.phase" | sed -e 's|"||g'`
-					local REQUESTS_JSON=`echo $RESOURCE_JSON | jq ".spec.requests"` 
-					if [ "$REQUESTS_JSON" == "[]" ]; then
+					local REQUESTS_SPEC=`echo $RESOURCE_JSON | jq ".spec"`
+					local REQUESTS_JSON=`echo $RESOURCE_JSON | jq ".spec.requests"`
+					if [ "$REQUESTS_SPEC" == "" ] || [ "$REQUESTS_SPEC" == null ] || [ "$REQUESTS_JSON" == "[]" ]; then
 						RESOURCE_READY="true"
 					else
 						if [ "$RESOURCE_STATUS" == "Running" ]; then
 							RESOURCE_READY="true"
 						fi
 					fi
-					echo "OperandRequest: ${RESOURCE_NAME} - phase: ${RESOURCE_STATUS}"
+					echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRequest: ${RESOURCE_NAME} - phase: ${RESOURCE_STATUS}"
 				fi
 				if [ "${RESOURCE_READY}" != "true" ] && [ "${RETRY_COUNT}" -le "${RETRY_LIMIT}" ]; then
 					sleep ${RETRY_INTERVAL}
@@ -1258,11 +1363,11 @@ function checkCreateNamespace() {
 	local CHECK_RESOURCES=`oc get project "$RESOURCE_ID" 2>&1 | egrep "^Error*"`
 	local CHECK_RC="$?"
 	if [ "$CHECK_RC" == 0 ] && [ "$CHECK_RESOURCES" == "" ]; then
-		echo "Project: ${RESOURCE_ID} - Already Exists"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Project: ${RESOURCE_ID} - Already Exists"
 	else
 		echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
 		RESOURCE_FILE="${RESOURCE_ID}.yaml"
-		echo "Project: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Project: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
 	fi
 
 	## Create/Apply Namespace from yaml file
@@ -1270,9 +1375,51 @@ function checkCreateNamespace() {
 		local RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
 		local RESOURCE_RC="$?"
 		if [ "$RESOURCE_RC" != 0 ]; then
-			echo "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_RC}"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_RC}"
 		else
-			echo "Project: ${RESOURCE_ID} - Created"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Project: ${RESOURCE_ID} - Created"
+		fi
+	fi
+	echo "--------------------------------------------------"
+}
+
+function checkCreateNamespaceScope() {
+	## Validate that NamespaceScopes are deployed
+	local CHECK_RESOURCES=`oc get namespacescope -n "$OPERATORS_NAMESPACE" 2>&1 | egrep "^error:*"`
+	local CHECK_RC="$?"
+	if [ "$CHECK_RC" != 0 ] || [ "$CHECK_RESOURCES" != "" ]; then
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get namespacescope -n ${OPERATORS_NAMESPACE} - FAILED with:  ${CHECK_RESOURCES}"
+		return 1
+	fi
+		
+	## Retrieve all NamespaceScopes in the CPD Operators Namespace and check for given NamespaceScope by Key
+	CHECK_RESOURCES=`oc get namespacescope -n "$OPERATORS_NAMESPACE" 2>&1 | egrep "^No resources*"`
+	if [ "$CHECK_RESOURCES" == "" ]; then
+		## Retrieve NamespaceScopes sort by .metadata.name and filter JSON for only select keys 	
+		local GET_RESOURCES=`oc get namespacescope -n "$OPERATORS_NAMESPACE" -o jsonpath="{'{'}{range .items[*]}{'\"'}{.metadata.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\"}, \"spec\": '}{.spec}{', \"status\": '}{.status}{'}\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$|}|" -e 's|\\"|"|g'`
+		local RESOURCES_JSON=`echo $GET_RESOURCES | jq`
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - NamespaceScopes: ${RESOURCES_JSON}"
+	else
+		cat <<EOF | oc apply -f -
+apiVersion: operator.ibm.com/v1
+kind: NamespaceScope
+metadata:
+  name: nss-cpd-operators
+  namespace: $OPERATORS_NAMESPACE
+spec:
+  csvInjector:
+    enable: true
+  namespaceMembers:
+  - $OPERATORS_NAMESPACE
+EOF
+		local RESOURCE_RC="$?"
+		if [ "$RESOURCE_RC" != 0 ]; then
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_RC}"
+		else
+			## Retrieve NamespaceScopes sort by .metadata.name and filter JSON for only select keys 	
+			local GET_RESOURCES=`oc get namespacescope -n "$OPERATORS_NAMESPACE" -o jsonpath="{'{'}{range .items[*]}{'\"'}{.metadata.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\"}, \"spec\": '}{.spec}{', \"status\": '}{.status}{'}\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$|}|" -e 's|\\"|"|g'`
+			local RESOURCES_JSON=`echo $GET_RESOURCES | jq`
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - NamespaceScopes: ${RESOURCES_JSON}"
 		fi
 	fi
 	echo "--------------------------------------------------"
@@ -1291,7 +1438,7 @@ function addIAMIdentityProviders() {
 	# Add Identity Providers
 	local IDENTITY_PROVIDERS=$(curl -s -k -X GET --header "Authorization: Bearer $IDP_TOKEN" --header 'Content-Type: application/json' \
 https://$INGRESS_HOST:443/idmgmt/identity/api/v1/directory/ldap/list)
-	echo "IAM Identity Providers: ${IDENTITY_PROVIDERS}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - IAM Identity Providers: ${IDENTITY_PROVIDERS}"
 	
 	local LDAP_ID=
 	local IDENTITY_PROVIDER=$(curl -s -k -X POST \
@@ -1299,7 +1446,88 @@ https://$INGRESS_HOST:443/idmgmt/identity/api/v1/directory/ldap/list)
         --header 'Content-Type: application/json' \
         -d "{\"LDAP_ID\":\"my-ldap\",\"LDAP_URL\":\"$ldap_server\",\"LDAP_BASEDN\":\"dc=ibm,dc=com\",\"LDAP_BINDDN\":\"cn=admin,dc=ibm,dc=com\",\"LDAP_BINDPASSWORD\":\"YWRtaW4=\",\"LDAP_TYPE\":\"Custom\",\"LDAP_USERFILTER\":\"(&(uid=%v)(objectclass=person))\",\"LDAP_GROUPFILTER\":\"(&(cn=%v)(objectclass=groupOfUniqueNames))\",\"LDAP_USERIDMAP\":\"*:uid\",\"LDAP_GROUPIDMAP\":\"*:cn\",\"LDAP_GROUPMEMBERIDMAP\":\"groupOfUniqueNames:uniqueMember\"}" \
         https://$master_ip:443/idmgmt/identity/api/v1/directory/ldap/onboardDirectory)
-	echo "IAM Identity Provider: ${IDENTITY_PROVIDER}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - IAM Identity Provider: ${IDENTITY_PROVIDER}"
+}
+
+## Leveraged by cpd-operator-restore to restore IAM MongoDB Data in Foundation Namespace
+function restoreIAMData() {
+	local NAMESPACE_NAME=$1
+	local CHECK_RESOURCES=`oc get pvc mongodbdir-icp-mongodb-0 -n $NAMESPACE_NAME 2>&1 | egrep "^Error*"`
+	if [ "$CHECK_RESOURCES" == "" ]; then
+		# Cleanup any previous job and volumes
+		local RESOURCE_DELETE=`oc delete job mongodb-restore --ignore-not-found -n $NAMESPACE_NAME`
+		local RESOURCE_RC="$?"
+		if [ "$RESOURCE_RC" != 0 ]; then
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc delete job mongodb-restore --ignore-not-found -n ${NAMESPACE_NAME} - FAILED with:  ${RESOURCE_DELETE}"
+		fi
+		local CHECK_RESOURCES=`oc get pvc cs-mongodump -n $NAMESPACE_NAME 2>&1 | egrep "^Error*"`
+		if [ "$CHECK_RESOURCES" != "" ]; then
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get pvc cs-mongodump -n ${NAMESPACE_NAME} - FAILED with:  ${CHECK_RESOURCES}"
+		else
+			## Re-create secret
+			RESOURCE_DELETE=`oc delete secret icp-mongo-setaccess --ignore-not-found -n $NAMESPACE_NAME`
+			RESOURCE_RC="$?"
+			if [ "$RESOURCE_RC" != 0 ]; then
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc delete secret icp-mongo-setaccess --ignore-not-found -n ${NAMESPACE_NAME} - FAILED with:  ${RESOURCE_DELETE}"
+			fi
+			local RESOURCE_CREATE=`oc create secret generic icp-mongo-setaccess -n $NAMESPACE_NAME --from-file=set_access.js`
+			RESOURCE_RC="$?"
+			if [ "$RESOURCE_RC" != 0 ]; then
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc create secret generic icp-mongo-setaccess -n ${NAMESPACE_NAME} --from-file=set_access.js - FAILED with:  ${RESOURCE_CREATE}"
+			fi
+		
+			# Restore MongoDB
+			# Create Restore Job
+			local RESOURCE_APPLY=`oc apply -f mongo-restore-job.yaml`
+			RESOURCE_RC="$?"
+			if [ "$RESOURCE_RC" != 0 ]; then
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc apply -f mongo-restore-job.yaml - FAILED with:  ${RESOURCE_RC}"
+				sleep 20s
+			fi
+
+			local RESOURCE_STATUS="pending"
+			local RETRY_COUNT=0
+			until [ "${RESOURCE_STATUS}" == "succeeded" ] || [ "${RESOURCE_STATUS}" == "failed" ] || [ "${RETRY_COUNT}" -gt "${RETRY_LIMIT}" ]; do
+				RESOURCE_JSON=`oc get job mongodb-restore -n "$NAMESPACE_NAME" -o json`
+				RESOURCE_RC="$?"
+				if [ "$RESOURCE_RC" != 0 ]; then
+					echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get job mongodb-restore -n ${NAMESPACE_NAME} - FAILED with:  ${RESOURCE_RC}"
+					RESOURCE_STATUS="failed"
+				else
+					# ".status.active" 1
+					# ".status.failed" 5
+					# ".status.succeeded" 1
+					local STATUS_SUCCEEDED=`echo $RESOURCE_JSON | jq ".status.succeeded"`
+					local STATUS_FAILED=`echo $RESOURCE_JSON | jq ".status.failed"`
+					local STATUS_ACTIVE=`echo $RESOURCE_JSON | jq ".status.active"`
+					if [ "${STATUS_SUCCEEDED}" != "" ] && [ "${STATUS_SUCCEEDED}" != null ]; then
+						if [ "${STATUS_SUCCEEDED}" -ge 1 ]; then
+							RESOURCE_STATUS="succeeded"
+							IAM_DATA="true"
+						fi
+					else 
+						if [ "${STATUS_ACTIVE}" != "" ] && [ "${STATUS_ACTIVE}" != null ]; then
+							if [ "${STATUS_ACTIVE}" -ge 1 ]; then
+								RESOURCE_STATUS="active"
+							fi
+						else 
+							if [ "${STATUS_FAILED}" != "" ] && [ "${STATUS_FAILED}" != null ]; then
+								if [ "${STATUS_FAILED}" -ge 5 ]; then
+									RESOURCE_STATUS="failed"
+								fi
+							fi
+						fi
+					fi
+					echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Job mongodb-restore status: ${RESOURCE_STATUS}"
+				fi
+				if [ "${RESOURCE_STATUS}" != "succeeded" ] && [ "${RESOURCE_STATUS}" != "failed" ] && [ "${RETRY_COUNT}" -le "${RETRY_LIMIT}" ]; then
+					sleep ${RETRY_INTERVAL}
+					((RETRY_COUNT+=1))
+				fi
+			done
+		fi
+	fi
+	echo "--------------------------------------------------"
 }
 
 ## Main restore script to be run against CPD Operators Namespace after cpdbr restore of the CPD Operators Namespace
@@ -1310,7 +1538,7 @@ function cpd-operators-restore () {
 	## Retrieve CatalogSources from cpd-operators ConfigMap 
 	BACKEDUP_CAT_SRCS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.catalogsources}"`
 	local BACKEDUP_CAT_SRC_KEYS=(`echo $BACKEDUP_CAT_SRCS | jq keys[]`)
-	echo "CatalogSources: ${BACKEDUP_CAT_SRCS}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - CatalogSources: ${BACKEDUP_CAT_SRCS}"
 	echo "--------------------------------------------------"
 
 	# Iterate through BACKEDUP_CAT_SRC_KEYS and process each BACKEDUP_CAT_SRC_KEY - will create CatalogSource for each
@@ -1321,25 +1549,35 @@ function cpd-operators-restore () {
 
 	## Retrieve Subscriptions from cpd-operators ConfigMap 
 	BACKEDUP_SUBS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.subscriptions}"`
-	echo "Subscriptions: $BACKEDUP_SUBS"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Subscriptions: $BACKEDUP_SUBS"
 	echo "--------------------------------------------------"
 
-	## Create CPD Platform Subscription First - if present will bootstrap Bedrock/ibm-common-service-operator
-	checkCreateSubscription "\"cpd-platform-operator\""
+	## Retrieve Subscriptions from cpd-operators ConfigMap 
+	BACKEDUP_ODLM_SUBS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.odlmsubscriptions}"`
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Subscriptions from ODLM: $BACKEDUP_SUBS"
+	echo "--------------------------------------------------"
 
-	## Create Common Services Operator Subscription - if present CPD Platform will have already bootstrapped Bedrock/ibm-common-service-operator
-	checkCreateSubscription "\"ibm-common-service-operator\""
+	## Create Common Services Operator Subscription from CPD Backup
+	checkCreateSubscription "\"${OPERATORS_NAMESPACE}-ibm-common-service-operator\""
 
-	## Create NamespaceScope next
-	checkCreateSubscription "\"ibm-namespace-scope-operator\""
+	## Create NamespaceScope Subscription from CPD Backup
+	checkCreateSubscription "\"${OPERATORS_NAMESPACE}-ibm-namespace-scope-operator\""
 	
+	## Create CPD Platform Subscription with OLM dependency on ibm-common-service-operator
+	checkCreateSubscription "\"${OPERATORS_NAMESPACE}-cpd-platform-operator\""
+
+	## Create NamespaceScope CR if not already created
+	if [ "$OPERATORS_NAMESPACE" != "$BEDROCK_NAMESPACE" ]; then
+		checkCreateNamespaceScope
+	fi
+
 	# Iterate through remaining BACKEDUP_SUB_KEYS and process each Subscription
 	local BACKEDUP_SUB_KEYS=(`echo $BACKEDUP_SUBS | jq keys[]`)
 
 	# Iterate through BACKEDUP_SUB_KEYS and process each SUBSCRIPTION
 	for BACKEDUP_SUB_KEY in "${BACKEDUP_SUB_KEYS[@]}"
 	do
-		if [ "${BACKEDUP_SUB_KEY}" != "\"cpd-platform-operator\"" ] && [ "${BACKEDUP_SUB_KEY}" != "\"ibm-common-service-operator\"" ] && [ "${BACKEDUP_SUB_KEY}" != "\"ibm-namespace-scope-operator\"" ]; then
+		if [ "${BACKEDUP_SUB_KEY}" != "\"${OPERATORS_NAMESPACE}-cpd-platform-operator\"" ] && [ "${BACKEDUP_SUB_KEY}" != "\"${OPERATORS_NAMESPACE}-ibm-common-service-operator\"" ] && [ "${BACKEDUP_SUB_KEY}" != "\"${OPERATORS_NAMESPACE}-ibm-namespace-scope-operator\"" ]  && [ "${BACKEDUP_SUB_KEY}" != "\"${BEDROCK_NAMESPACE}-ibm-common-service-operator\"" ] && [ "${BACKEDUP_SUB_KEY}" != "\"${BEDROCK_NAMESPACE}-ibm-namespace-scope-operator\"" ]; then
 			checkCreateSubscription "${BACKEDUP_SUB_KEY}"
 		fi
 	done
@@ -1350,7 +1588,7 @@ function cpd-operators-restore () {
 	## Retrieve OperandConfigs from cpd-operators ConfigMap 
 	BACKEDUP_OP_CFGS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.operandconfigs}"`
 	local BACKEDUP_OP_CFG_KEYS=(`echo $BACKEDUP_OP_CFGS | jq keys[]`)
-	echo "OperandConfigs: ${BACKEDUP_OP_CFGS}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandConfigs: ${BACKEDUP_OP_CFGS}"
 	echo "--------------------------------------------------"
 
 	# Iterate through BACKEDUP_OP_CFG_KEYS and process each BACKEDUP_OP_CFG - will create OperandConfig for each
@@ -1362,7 +1600,7 @@ function cpd-operators-restore () {
 	## Retrieve OperandRegistries from cpd-operators ConfigMap 
 	BACKEDUP_OP_REGS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.operandregistries}"`
 	local BACKEDUP_OP_REG_KEYS=(`echo $BACKEDUP_OP_REGS | jq keys[]`)
-	echo "OperandRegistries: ${BACKEDUP_OP_REGS}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRegistries: ${BACKEDUP_OP_REGS}"
 	echo "--------------------------------------------------"
 
 	# Iterate through BACKEDUP_OP_REG_KEYS and process each BACKEDUP_OP_REG - will create OperandRegistry for each
@@ -1374,7 +1612,7 @@ function cpd-operators-restore () {
 	## Retrieve OperandRequests from cpd-operators ConfigMap 
 	BACKEDUP_OP_REQS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.operandrequests}"`
 	local BACKEDUP_OP_REQ_KEYS=(`echo $BACKEDUP_OP_REQS | jq keys[]`)
-	echo "OperandRequests: ${BACKEDUP_OP_REQS}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRequests: ${BACKEDUP_OP_REQS}"
 	echo "--------------------------------------------------"
 
 	# Iterate through BACKEDUP_OP_REQ_KEYS and process each BACKEDUP_OP_REQS - will create Subscription for each
@@ -1388,7 +1626,7 @@ function cpd-operators-restore () {
 	# Iterate ClusterServiceVersions that have hot fixes
 	BACKEDUP_CLUSTER_SVS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.clusterserviceversions}"`
 	local BACKEDUP_CLUSTER_SV_KEYS=(`echo $BACKEDUP_CLUSTER_SVS | jq keys[]`)
-	echo "ClusterServiceVersions: ${BACKEDUP_CLUSTER_SVS}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - ClusterServiceVersions: ${BACKEDUP_CLUSTER_SVS}"
 	echo "--------------------------------------------------"
 
 	# Iterate through BACKEDUP_CLUSTER_SV_KEYS and process each BACKEDUP_CLUSTER_SVS - will patch deployments for each ClusterServiceVersion
@@ -1400,7 +1638,7 @@ function cpd-operators-restore () {
 	## Retrieve CA Certificate Secret from cpd-operators ConfigMap 
 	BACKEDUP_CA_CERT_SECRET=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.cacertificatesecret}"`
 	local BACKEDUP_CA_CERT_SECRET_KEYS=(`echo $BACKEDUP_CA_CERT_SECRET | jq keys[]`)
-	echo "Secrets: ${BACKEDUP_CA_CERT_SECRET_KEYS}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Secrets: ${BACKEDUP_CA_CERT_SECRET_KEYS}"
 	echo "--------------------------------------------------"
 
 	# Iterate through BACKEDUP_CA_CERT_SECRET_KEYS and process each BACKEDUP_CA_CERT_SECRET - will create Secret for each
@@ -1412,7 +1650,7 @@ function cpd-operators-restore () {
 	## Retrieve Self Signed Issuer from cpd-operators ConfigMap 
 	BACKEDUP_SS_ISSUER=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.selfsignedissuer}"`
 	local BACKEDUP_SS_ISSUER_KEYS=(`echo $BACKEDUP_SS_ISSUER | jq keys[]`)
-	echo "Issuers: ${BACKEDUP_SS_ISSUER_KEYS}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Issuers: ${BACKEDUP_SS_ISSUER_KEYS}"
 	echo "--------------------------------------------------"
 
 	# Iterate through BACKEDUP_SS_ISSUER_KEYS and process each BACKEDUP_SS_ISSUER - will create Issuer for each
@@ -1424,7 +1662,7 @@ function cpd-operators-restore () {
 	## Retrieve CA Certificate from cpd-operators ConfigMap 
 	BACKEDUP_CA_CERT=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.cacertificate}"`
 	local BACKEDUP_CA_CERT_KEYS=(`echo $BACKEDUP_CA_CERT | jq keys[]`)
-	echo "Certificates: ${BACKEDUP_CA_CERT_KEYS}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Certificates: ${BACKEDUP_CA_CERT_KEYS}"
 	echo "--------------------------------------------------"
 
 	# Iterate through BACKEDUP_CA_CERT_KEYS and process each BACKEDUP_CA_CERT - will create Certificate for each
@@ -1433,11 +1671,25 @@ function cpd-operators-restore () {
 		checkCreateCertificate "${BACKEDUP_CA_CERT_KEY}"
 	done
 	
+	# Iterate through BACKEDUP_CA_CERT_KEYS and process each BACKEDUP_CA_CERT - will create Certificate for each
+	for BACKEDUP_CA_CERT_KEY in "${BACKEDUP_CA_CERT_KEYS[@]}"
+	do
+		checkCreateCertificate "${BACKEDUP_CA_CERT_KEY}"
+	done
+	
+	## Optionally Backup IAM/Mongo Data to Volume if IAM deployed
+	BACKEDUP_IAM_DATA=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.iamdata}"`
+	if [ $BACKEDUP_IAM_DATA == "true" ]; then
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - IAM MongoDB Data: ${IAM_DATA}"
+		restoreIAMData $BEDROCK_NAMESPACE
+		echo "--------------------------------------------------"
+	fi
+
 	if [ $RESTORE_INSTANCE_NAMESPACES -eq 1 ]; then
 		## Retrieve CPD Instance Namespaces from cpd-operators ConfigMap 
 		BACKEDUP_CPD_INSTANCE_NAMESPACES=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.instancenamespaces}"`
 		local BACKEDUP_CPD_INSTANCE_NAMESPACE_KEYS=(`echo $BACKEDUP_CPD_INSTANCE_NAMESPACES | jq keys[]`)
-		echo "Projects: ${BACKEDUP_CPD_INSTANCE_NAMESPACES}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Projects: ${BACKEDUP_CPD_INSTANCE_NAMESPACES}"
 		echo "--------------------------------------------------"
 
 		# Iterate through BACKEDUP_CPD_INSTANCE_NAMESPACE_KEYS and process each BACKEDUP_CPD_INSTANCE_NAMESPACES - will create Namespace for each that does not already exist
@@ -1458,6 +1710,8 @@ BEDROCK_NAMESPACE=""
 OPERATORS_NAMESPACE=""
 RESTORE_INSTANCE_NAMESPACES=0
 RESTORE_INSTANCE_NAMESPACES_ONLY=0
+BACKUP_IAM_DATA=0
+IAM_DATA="false"
 
 # Retry constants: 10 intervals of 60 seconds
 RETRY_LIMIT=10
@@ -1515,6 +1769,10 @@ while (( $# )); do
 			RESTORE_INSTANCE_NAMESPACES=1
 			shift 1
 			;;
+		--backup-iam-data)
+			BACKUP_IAM_DATA=1
+			shift 1
+			;;
 		-h|--h) # help
 			help
 			exit 1
@@ -1549,24 +1807,32 @@ if [ $BACKUP -eq 1 ] && [ $RESTORE -eq 1 ]; then
     exit 1
 fi 
 
-CURRENT_NAMESPACE=`oc project -q 2>&1 `
-NAMESPACE_RC="$?"
+PROJECT_CHECK=`oc project 2>&1 `
+CHECK_RC="$?"
 
-if [ "$NAMESPACE_RC" != 0 ]; then
-	echo "oc project -q - FAILED"
+if [ "$CHECK_RC" != 0 ]; then
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc project -q - FAILED"
     echo ""
     echo "Note: User must be logged into the Openshift cluster from the oc command line"
     echo ""
 	exit 1
 else
-	if [ "$BEDROCK_NAMESPACE" == "" ]; then
-		BEDROCK_NAMESPACE=$CURRENT_NAMESPACE
+    CURRENT_PROJECT=`oc project -q 2>&1 `
+	CHECK_RC="$?"
+	if [ "$CHECK_RC" != 0 ]; then
+		if [ "$BEDROCK_NAMESPACE" == "" ]; then
+			BEDROCK_NAMESPACE="ibm-common-services"
+		fi
+	else
+		if [ "$BEDROCK_NAMESPACE" == "" ]; then
+			BEDROCK_NAMESPACE=$CURRENT_PROJECT
+		fi
 	fi
 	if [ "$OPERATORS_NAMESPACE" == "" ]; then
 		OPERATORS_NAMESPACE=$BEDROCK_NAMESPACE
 	fi
 fi
-echo "--------------------------------------------------"
+echo "Start Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z`"
 echo "Foundational Service namespace: $BEDROCK_NAMESPACE"
 echo "CPD Operators namespace: $OPERATORS_NAMESPACE"
 
@@ -1574,13 +1840,13 @@ echo "CPD Operators namespace: $OPERATORS_NAMESPACE"
 CHECK_RESOURCES=`oc get project "$OPERATORS_NAMESPACE" 2>&1 `
 CHECK_RC="$?"
 if [ "$CHECK_RC" != 0 ]; then
-		echo "oc get project $OPERATORS_NAMESPACE - FAILED with: ${CHECK_RC}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get project $OPERATORS_NAMESPACE - FAILED with: ${CHECK_RC}"
     echo ""
 	exit 1
 fi
 CHECK_RESOURCES=`oc get project "$OPERATORS_NAMESPACE" 2>&1 | egrep "^Error*"`
 if [ "$CHECK_RESOURCES" != "" ]; then
-	echo "oc get project $OPERATORS_NAMESPACE - FAILED with: ${CHECK_RESOURCES}"
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get project $OPERATORS_NAMESPACE - FAILED with: ${CHECK_RESOURCES}"
     echo ""
 	exit 1
 fi
@@ -1591,13 +1857,13 @@ if [ $BACKUP -eq 1 ]; then
 		CHECK_RESOURCES=`oc get project "$BEDROCK_NAMESPACE" 2>&1 `
 		CHECK_RC="$?"
 		if [ "$CHECK_RC" != 0 ]; then
-			echo "oc get project $BEDROCK_NAMESPACE - FAILED with: ${CHECK_RC}"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get project $BEDROCK_NAMESPACE - FAILED with: ${CHECK_RC}"
 		    echo ""
 			exit 1
 		fi
 		CHECK_RESOURCES=`oc get project "$BEDROCK_NAMESPACE" 2>&1 | egrep "^Error*"`
 		if [ "$CHECK_RESOURCES" != "" ]; then
-			echo "oc get project $BEDROCK_NAMESPACE - FAILED with: ${CHECK_RESOURCES}"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get project $BEDROCK_NAMESPACE - FAILED with: ${CHECK_RESOURCES}"
 		    echo ""
 			exit 1
 		fi
@@ -1612,7 +1878,7 @@ if [ $RESTORE -eq 1 ]; then
 		## Retrieve CPD Instance Namespaces from cpd-operators ConfigMap 
 		BACKEDUP_CPD_INSTANCE_NAMESPACES=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.instancenamespaces}"`
 		CPD_INSTANCE_NAMESPACE_KEYS=(`echo $BACKEDUP_CPD_INSTANCE_NAMESPACES | jq keys[]`)
-		echo "Projects: ${BACKEDUP_CPD_INSTANCE_NAMESPACES}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Projects: ${BACKEDUP_CPD_INSTANCE_NAMESPACES}"
 		echo "--------------------------------------------------"
 
 		# Iterate through CPD_INSTANCE_NAMESPACE_KEYS and process each CPD_INSTANCE_NAMESPACES - will create Namespace for each that does not already exist
@@ -1624,3 +1890,4 @@ if [ $RESTORE -eq 1 ]; then
 		cpd-operators-restore $BEDROCK_NAMESPACE $OPERATORS_NAMESPACE
 	fi
 fi 
+echo "End Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z`"
