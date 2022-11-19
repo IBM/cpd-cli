@@ -7,19 +7,31 @@
 # as a cluster admin.
 #
 # 
+VERSION="4.6"
 
 function help() {
     echo ""
     echo "cpd-operators.sh - Backup and Restore CPD Operators to/from cpd-operators ConfigMap"
+	echo "    Version: ${VERSION}"
     echo ""
     echo "    SYNTAX:"
     echo "        ./cpd-operators.sh (backup|restore) [--foundation-namespace 'Foundational Services' namespace> : default is current namespace] [--operators-namespace 'CPD Operators' namespace> : default is 'Foundational Services' Namespace]"
     echo ""
     echo "    COMMANDS:"
-    echo "        backup : Gathers relevant CPD Operator configuration into cpd-operators ConfigMap"
-    echo "        restore: Restores CPD Operators from cpd-operators ConfigMap"
+	echo "        version : Return script version."
+    echo "        backup  : Gathers relevant CPD Operator configuration into cpd-operators ConfigMap."
+    echo "        restore : Restores CPD Operators from cpd-operators ConfigMap."
+    echo "        restore-instance-operand-requests : Restores OperandRequests to the CPD Instance namespace(s)."
     echo ""
-    echo "     NOTE: User must be logged into the Openshift cluster from the oc command line"
+    echo "    PARAMETERS:"
+	echo "        --foundation-namespace : Namespace Foundation/Bedrock Services are/are to be deployed. Defaults to current namespace."
+	echo "        --operators-namespace : Namespace CPD Operators are/are to be deployed. Defaults to --foundation-namespace."
+	echo "        --backup-iam-data : Only valid with 'backup' command.  If IAM is deployed, invokes IAM MongoDB scripts to export IAM data to volume."
+	echo "        --restore-instance-namespaces : Only valid with 'restore' command.  In addition to restoring CPD Operators, restores the CPD Instance Namespace(s) if not found."
+	echo "        --restore-instance-namespaces-only : Only valid with 'restore' command.  Restores only the CPD Instance Namespace(s) if not found."
+	echo "        --backup-iam-data : Only valid with 'restore' command.  Only restores the CPD Instance Namespace(s) if not found."
+    echo ""
+    echo "     NOTE: User must be logged into the Openshift cluster from the oc command line."
     echo ""
 }
 
@@ -310,9 +322,9 @@ function getOperandRequestsByNamespace() {
 				else
 					local RESOURCE_SPEC=`echo $RESOURCE_JSON | jq ".spec"`
 					if [ "$RESOURCE_SPEC" == "" ] || [ "$RESOURCE_SPEC" == null ]; then
-						OP_REQ=`oc get operandrequests ${RESOURCE_NAME} -n "$NAMESPACE_NAME" -o jsonpath="{'\"'}{.metadata.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"$OPERATORS_NAMESPACE\"}}\n'}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
+						OP_REQ=`oc get operandrequests ${RESOURCE_NAME} -n "$NAMESPACE_NAME" -o jsonpath="{'\"'}{.metadata.namespace}{'-'}{.metadata.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\"}}\n'}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
 					else
-						OP_REQ=`oc get operandrequests ${RESOURCE_NAME} -n "$NAMESPACE_NAME" -o jsonpath="{'\"'}{.metadata.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"$OPERATORS_NAMESPACE\"}, \"spec\": '}{.spec}{'}\n'}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
+						OP_REQ=`oc get operandrequests ${RESOURCE_NAME} -n "$NAMESPACE_NAME" -o jsonpath="{'\"'}{.metadata.namespace}{'-'}{.metadata.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\"}, \"spec\": '}{.spec}{'}\n'}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
 					fi
 					if [ "${BACKUP_OP_REQS}" == "" ]; then
 						BACKUP_OP_REQS="${OP_REQ}"
@@ -1253,67 +1265,90 @@ function checkCreateOperandConfig() {
 }
 
 function checkCreateOperandRequest() {
-	## Validate that OperandRequsts are deployed
-	local CHECK_RESOURCES=`oc get operandrequests -n "$OPERATORS_NAMESPACE" 2>&1 | egrep "^error:*"`
-	local CHECK_RC="$?"
-	if [ "$CHECK_RC" != 0 ] || [ "$CHECK_RESOURCES" != "" ]; then
-		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get operandrequests -n ${OPERATORS_NAMESPACE} - FAILED with:  ${CHECK_RESOURCES}"
-		return 1
-	fi
-		
 	local RESOURCE_KEY=$1
+	local RESOURCE_NAMESPACE=$2
 	local RESOURCE_ID=`echo $RESOURCE_KEY | sed -e 's|"||g'`
 	local RESOURCE_JSON=`echo $BACKEDUP_OP_REQS | jq ".${RESOURCE_KEY}"`
 	local RESOURCE_FILE=""
 	local RESOURCE_NAME=`echo $RESOURCE_JSON | jq ".metadata.name" | sed -e 's|"||g'`
+	local CAPTURED_NAMESPACE=`echo $RESOURCE_JSON | jq ".metadata.namespace" | sed -e 's|"||g'`
+	local RESTORE_RESOURCE=1
 
-	## Retrieve all OperandRequests in the CPD Operators Namespace and check for given OperandRequest by Key
-	CHECK_RESOURCES=`oc get operandrequests -n "$OPERATORS_NAMESPACE" 2>&1 | egrep "^No resources*"`
-	if [ "$CHECK_RESOURCES" == "" ]; then
-		## Retrieve OperandRequests sort by .metadata.name and filter JSON for only select keys 	
-		local GET_RESOURCES=`oc get operandrequests -n "$OPERATORS_NAMESPACE" -o jsonpath="{'{'}{range .items[*]}{'\"'}{.metadata.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\"}}\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$|}|" -e 's|\\"|"|g'`
-		local RESOURCE_RC="$?"
-		local GET_RESOURCE=`echo $GET_RESOURCES | jq ".${RESOURCE_KEY}"`
-		## Check for given OperandRequest Key
-		if [ "$GET_RESOURCE" == null ]; then
-			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRequest: ${RESOURCE_ID}: ${RESOURCE_JSON}"
+	if [ "$RESOURCE_NAMESPACE" == null ] || [ "$RESOURCE_NAMESPACE" == "" ]; then
+		## Restore Instance Operand Request
+		if [ "$CAPTURED_NAMESPACE" != "$OPERATORS_NAMESPACE" ] && [ "$CAPTURED_NAMESPACE" != "$BEDROCK_NAMESPACE" ]; then
+			RESOURCE_NAMESPACE=$CAPTURED_NAMESPACE
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Instance OperandRequest: ${RESOURCE_ID}"
+		else
+			## Skip Operand Request and Return 
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - Skip OperandRequest: ${RESOURCE_ID} - Not in Instance Namespace"
+			RESTORE_RESOURCE=0
+		fi
+	else
+		## Restore to given $RESOURCE_NAMESPACE
+		## Replace metadata.namespace in $RESOURCE_JSON
+		RESOURCE_JSON=`echo $BACKEDUP_OP_REQS | jq ".${RESOURCE_KEY}" | jq -c -M --arg a "$RESOURCE_NAMESPACE" '.metadata.namespace = $a'`
+		RESOURCE_ID="${RESOURCE_NAMESPACE}-${RESOURCE_NAME}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - CPD Operators OperandRequest: ${RESOURCE_ID}"
+	fi
+
+	## Validate that OperandRequsts are deployed
+	local CHECK_RESOURCES=`oc get operandrequests -n "$RESOURCE_NAMESPACE" 2>&1 | egrep "^error:*"`
+	local CHECK_RC="$?"
+	if [ "$CHECK_RC" != 0 ] || [ "$CHECK_RESOURCES" != "" ]; then
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get operandrequests -n ${RESOURCE_NAMESPACE} - FAILED with:  ${CHECK_RESOURCES}"
+		return 1
+	fi
+		
+	if [ $RESTORE_RESOURCE -eq 1 ]; then
+		## Retrieve all OperandRequests in the Resources Namespace and check for given OperandRequest by Key
+		CHECK_RESOURCES=`oc get operandrequests -n "$RESOURCE_NAMESPACE" 2>&1 | egrep "^No resources*"`
+		if [ "$CHECK_RESOURCES" == "" ]; then
+			## Retrieve OperandRequests sort by .metadata.name and filter JSON for only select keys 	
+			local GET_RESOURCES=`oc get operandrequests -n "$RESOURCE_NAMESPACE" -o jsonpath="{'{'}{range .items[*]}{'\"'}{.metadata.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"kind\": \"'}{.kind}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\", \"namespace\": \"'}{.metadata.namespace}{'\"}}\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$|}|" -e 's|\\"|"|g'`
+			local RESOURCE_RC="$?"
+			local GET_RESOURCE=`echo $GET_RESOURCES | jq ".\"${RESOURCE_NAME}\""`
+			## Check for given OperandRequest Key
+			if [ "$GET_RESOURCE" == null ]; then
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRequest: ${RESOURCE_ID}: ${RESOURCE_JSON}"
+				echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
+				RESOURCE_FILE="${RESOURCE_ID}.yaml"
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRequest: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
+			else
+				echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRequest: ${RESOURCE_ID} - Already Exists"
+				# TODO Check Subscription/wait until ready
+				local RESOURCE_READY="false"
+				local RETRY_COUNT=0
+				until [ "${RESOURCE_READY}" == "true" ] || [ "${RETRY_COUNT}" -gt "${RETRY_LIMIT}" ]; do
+					RESOURCE_JSON=`oc get operandrequests "$RESOURCE_NAME" -n "$RESOURCE_NAMESPACE" -o json`
+					RESOURCE_RC="$?"
+					if [ "$RESOURCE_RC" != 0 ]; then
+						echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get operandrequests ${RESOURCE_NAME} -n ${OPERATORS_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
+						RETRY_COUNT=${RETRY_LIMIT}
+					else
+						local RESOURCE_STATUS=`echo $RESOURCE_JSON | jq ".status.phase" | sed -e 's|"||g'`
+						local REQUESTS_SPEC=`echo $RESOURCE_JSON | jq ".spec"`
+						local REQUESTS_JSON=`echo $RESOURCE_JSON | jq ".spec.requests"`
+						if [ "$REQUESTS_SPEC" == "" ] || [ "$REQUESTS_SPEC" == null ] || [ "$REQUESTS_JSON" == "[]" ]; then
+							RESOURCE_READY="true"
+						else
+							if [ "$RESOURCE_STATUS" == "Running" ]; then
+								RESOURCE_READY="true"
+							fi
+						fi
+						echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRequest: ${RESOURCE_NAME} - phase: ${RESOURCE_STATUS}"
+					fi
+					if [ "${RESOURCE_READY}" != "true" ] && [ "${RETRY_COUNT}" -le "${RETRY_LIMIT}" ]; then
+						sleep ${RETRY_INTERVAL}
+						((RETRY_COUNT+=1))
+					fi
+				done
+			fi
+		else
 			echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
 			RESOURCE_FILE="${RESOURCE_ID}.yaml"
 			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRequest: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
-		else
-			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRequest: ${RESOURCE_ID} - Already Exists"
-			# TODO Check Subscription/wait until ready
-			local RESOURCE_READY="false"
-			local RETRY_COUNT=0
-			until [ "${RESOURCE_READY}" == "true" ] || [ "${RETRY_COUNT}" -gt "${RETRY_LIMIT}" ]; do
-				RESOURCE_JSON=`oc get operandrequests "$RESOURCE_NAME" -n "$OPERATORS_NAMESPACE" -o json`
-				RESOURCE_RC="$?"
-				if [ "$RESOURCE_RC" != 0 ]; then
-					echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get operandrequests ${RESOURCE_NAME} -n ${OPERATORS_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
-					RETRY_COUNT=${RETRY_LIMIT}
-				else
-					local RESOURCE_STATUS=`echo $RESOURCE_JSON | jq ".status.phase" | sed -e 's|"||g'`
-					local REQUESTS_SPEC=`echo $RESOURCE_JSON | jq ".spec"`
-					local REQUESTS_JSON=`echo $RESOURCE_JSON | jq ".spec.requests"`
-					if [ "$REQUESTS_SPEC" == "" ] || [ "$REQUESTS_SPEC" == null ] || [ "$REQUESTS_JSON" == "[]" ]; then
-						RESOURCE_READY="true"
-					else
-						if [ "$RESOURCE_STATUS" == "Running" ]; then
-							RESOURCE_READY="true"
-						fi
-					fi
-					echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRequest: ${RESOURCE_NAME} - phase: ${RESOURCE_STATUS}"
-				fi
-				if [ "${RESOURCE_READY}" != "true" ] && [ "${RETRY_COUNT}" -le "${RETRY_LIMIT}" ]; then
-					sleep ${RETRY_INTERVAL}
-					((RETRY_COUNT+=1))
-				fi
-			done
 		fi
-	else
-		echo ${RESOURCE_JSON} > ${RESOURCE_ID}.yaml
-		RESOURCE_FILE="${RESOURCE_ID}.yaml"
-		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRequest: ${RESOURCE_ID}: ${RESOURCE_ID}.yaml"
 	fi
 
 	## Create/Apply OperandRequest from yaml file and wait until OperandRequest is Ready
@@ -1327,7 +1362,7 @@ function checkCreateOperandRequest() {
 			local RETRY_COUNT=0
 			until [ "${RESOURCE_READY}" == "true" ] || [ "${RETRY_COUNT}" -gt "${RETRY_LIMIT}" ]; do
 				sleep 10
-				RESOURCE_JSON=`oc get operandrequests "$RESOURCE_NAME" -n "$OPERATORS_NAMESPACE" -o json`
+				RESOURCE_JSON=`oc get operandrequests "$RESOURCE_NAME" -n "$RESOURCE_NAMESPACE" -o json`
 				RESOURCE_RC="$?"
 				if [ "$RESOURCE_RC" != 0 ]; then
 					echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - oc get operandrequests ${RESOURCE_NAME} -n ${OPERATORS_NAMESPACE} - FAILED with:  ${RESOURCE_RC}"
@@ -1618,7 +1653,7 @@ function cpd-operators-restore () {
 	# Iterate through BACKEDUP_OP_REQ_KEYS and process each BACKEDUP_OP_REQS - will create Subscription for each
 	for BACKEDUP_OP_REQ_KEY in "${BACKEDUP_OP_REQ_KEYS[@]}"
 	do
-		checkCreateOperandRequest "${BACKEDUP_OP_REQ_KEY}"
+		checkCreateOperandRequest "${BACKEDUP_OP_REQ_KEY}" "${OPERATORS_NAMESPACE}"
 	done
 	
 	## At this point all ODLM Subscriptions "odlmsubscriptions" should already be created via OperandRquests 
@@ -1671,12 +1706,6 @@ function cpd-operators-restore () {
 		checkCreateCertificate "${BACKEDUP_CA_CERT_KEY}"
 	done
 	
-	# Iterate through BACKEDUP_CA_CERT_KEYS and process each BACKEDUP_CA_CERT - will create Certificate for each
-	for BACKEDUP_CA_CERT_KEY in "${BACKEDUP_CA_CERT_KEYS[@]}"
-	do
-		checkCreateCertificate "${BACKEDUP_CA_CERT_KEY}"
-	done
-	
 	## Optionally Backup IAM/Mongo Data to Volume if IAM deployed
 	BACKEDUP_IAM_DATA=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.iamdata}"`
 	if [ $BACKEDUP_IAM_DATA == "true" ]; then
@@ -1721,6 +1750,7 @@ RETRY_INTERVAL=60
 PARAMS=""
 BACKUP=0
 RESTORE=0
+RESTORE_OP_REQS=0
 
 # RETRY_COUNT=0
 # until [ "${RETRY_COUNT}" -gt "${RETRY_LIMIT}" ]; do
@@ -1741,6 +1771,10 @@ while (( $# )); do
 			RESTORE=1
 			shift 1
 			;;   
+    	restore-instance-operand-requests)
+			RESTORE_OP_REQS=1
+			shift 1
+			;;
 		--operators-namespace)
 			if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
 				OPERATORS_NAMESPACE=$2
@@ -1773,7 +1807,11 @@ while (( $# )); do
 			BACKUP_IAM_DATA=1
 			shift 1
 			;;
-		-h|--h) # help
+		version|-v|--v|-version|--version) # version
+			echo "cpd-operators.sh Version: ${VERSION}"
+			exit 1
+			;;
+		help|-h|--h|-help|--help) # help
 			help
 			exit 1
 			;;
@@ -1795,16 +1833,24 @@ if [ -n "$PARAMS" ]; then
     exit 1
 fi
 
-if [ $BACKUP -eq 0 ] && [ $RESTORE -eq 0 ]; then
+if [ $BACKUP -eq 0 ] && [ $RESTORE -eq 0 ] && [ $RESTORE_OP_REQS -eq 0 ]; then
     echo "Invalid COMMAND(s): " $PARAMS
     help
     exit 1
 fi 
 
-if [ $BACKUP -eq 1 ] && [ $RESTORE -eq 1 ]; then
-    echo "Invalid COMMAND(s): " $PARAMS
-    help
-    exit 1
+if [ $BACKUP -eq 1 ]; then
+	if [ $RESTORE -eq 1 ] || [ $RESTORE_OP_REQS -eq 1 ]; then
+    	echo "Invalid COMMAND(s): " $PARAMS
+    	help
+    	exit 1
+	fi
+else 
+	if [ $RESTORE -eq 1 ] && [ $RESTORE_OP_REQS -eq 1 ]; then
+    	echo "Invalid COMMAND(s): " $PARAMS
+    	help
+    	exit 1
+	fi
 fi 
 
 PROJECT_CHECK=`oc project 2>&1 `
@@ -1832,9 +1878,9 @@ else
 		OPERATORS_NAMESPACE=$BEDROCK_NAMESPACE
 	fi
 fi
-echo "Start Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z`"
-echo "Foundational Service namespace: $BEDROCK_NAMESPACE"
-echo "CPD Operators namespace: $OPERATORS_NAMESPACE"
+echo "Start Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` Version: ${VERSION}"
+echo "    Foundational Service namespace: $BEDROCK_NAMESPACE"
+echo "    CPD Operators namespace: $OPERATORS_NAMESPACE"
 
 # Validate CPD Operators Namespace
 CHECK_RESOURCES=`oc get project "$OPERATORS_NAMESPACE" 2>&1 `
@@ -1890,4 +1936,21 @@ if [ $RESTORE -eq 1 ]; then
 		cpd-operators-restore $BEDROCK_NAMESPACE $OPERATORS_NAMESPACE
 	fi
 fi 
+
+if [ $RESTORE_OP_REQS -eq 1 ]; then
+	echo "--------------------------------------------------"
+	## Retrieve OperandRequests from cpd-operators ConfigMap 
+	BACKEDUP_OP_REQS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.operandrequests}"`
+	BACKEDUP_CPD_OP_REQ_KEYS=(`echo $BACKEDUP_OP_REQS | jq keys[]`)
+	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` - OperandRequests: ${BACKEDUP_OP_REQS}"
+	echo "--------------------------------------------------"
+
+	# Iterate through BACKEDUP_OP_REQ_KEYS and process each BACKEDUP_OP_REQS - will create Subscription for each
+	for BACKEDUP_CPD_OP_REQ_KEY in "${BACKEDUP_CPD_OP_REQ_KEYS[@]}"
+	do
+		checkCreateOperandRequest "${BACKEDUP_CPD_OP_REQ_KEY}"
+	done
+	
+fi 
+
 echo "End Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z`"
