@@ -35,7 +35,7 @@ If necessary, download "oc", include it in the PATH, and configure access to the
 https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/
 
 
-#### Install the cpdtool docker image
+#### Install the cpdtool docker image (Air-Gapped Installation)
 For OCP 3.11, docker can be used to push docker images.<br>
 For OCP 3.11 or 4.x, podman can be used to push docker images.
 
@@ -51,45 +51,35 @@ Note your docker image registry may be different than what is documented here, s
 
 Note: Use the Build Number from cpd-cli export-import version command
 
-OpenShift 4.x example:
+OpenShift 4.x air-gapped installation example:
 ```
-IMAGE_REGISTRY=`oc get route -n openshift-image-registry | grep image-registry | awk '{print $2}'`
-echo $IMAGE_REGISTRY
-NAMESPACE=`oc project -q`
-echo $NAMESPACE
+# On a cluster with external network access:
 CPU_ARCH=`uname -m`
 echo $CPU_ARCH
 # build-number can be obtained from cpd-cli export-import version command 
 BUILD_NUM=<build-number>
 echo $BUILD_NUM
 
-# Pull cpdtool image from IBM Cloud Container Registry
+# Pull cpdtool image from the IBM Cloud Container Registry
 podman pull icr.io/cpopen/cpd/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH}
-# Push image to internal registry
-podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag icr.io/cpopen/cpd/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH}
-podman push $IMAGE_REGISTRY/$NAMESPACE/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
-```
+# Save image to file
+podman save icr.io/cpopen/cpd/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH} > cpdtool-img-4.0.0-${BUILD_NUM}-${CPU_ARCH}.tar
 
-OpenShift 3.11, example:
-```
-IMAGE_REGISTRY=`oc registry info`
-echo $IMAGE_REGISTRY
-NAMESPACE=`oc project -q`
-echo $NAMESPACE
+# Transfer file to air-gapped cluster
+
+# On the air-gapped cluster:
+# Push image to the private image registry.  Ensure the installation environment variables such as PRIVATE_REGISTRY_LOCATION, PRIVATE_REGISTRY_PUSH_USER, and PRIVATE_REGISTRY_PUSH_PASSWORD are set. 
+echo $PRIVATE_REGISTRY_LOCATION
 CPU_ARCH=`uname -m`
 echo $CPU_ARCH
 # build-number can be obtained from cpd-cli export-import version command 
 BUILD_NUM=<build-number>
 echo $BUILD_NUM
 
-
-# Pull cpdtool image from IBM Cloud Container Registry
-podman pull icr.io/cpopen/cpd/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH}
-# Push image to internal registry
-podman login -u ocadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag icr.io/cpopen/cpd/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH}
-podman push $IMAGE_REGISTRY/$NAMESPACE/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
+podman login -u ${PRIVATE_REGISTRY_PUSH_USER} -p ${PRIVATE_REGISTRY_PUSH_PASSWORD} ${PRIVATE_REGISTRY_LOCATION}
+podman load -i cpdtool-img-4.0.0-${BUILD_NUM}-${CPU_ARCH}.tar
+podman tag icr.io/cpopen/cpd/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH} $PRIVATE_REGISTRY_LOCATION/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman push $PRIVATE_REGISTRY_LOCATION/cpdtool:4.0.0-${BUILD_NUM}-${CPU_ARCH}
 ```
 
 #### Shared Volume PVC
@@ -131,13 +121,11 @@ Note your docker image registry may be different than what is documented here, s
 OpenShift 4.x example:
 ```
 # Initialize the cpdtool first with pvc name for storage and user/password of the CPD admin
-$ cpd-cli export-import init --namespace $NAMESPACE --arch $CPU_ARCH --pvc-name zen-pvc --profile=default --image-prefix=image-registry.openshift-image-registry.svc:5000/$NAMESPACE --profile=default
-```
+# Example for cluster with access to ICR
+$ cpd-cli export-import init --namespace $NAMESPACE --arch $CPU_ARCH --pvc-name zen-pvc --profile=default --image-prefix=icr.io/cpopen/cpd --profile=default
 
-OpenShift 3.11 example:
-```
-# Initialize the cpdtool first with pvc name for storage and user/password of the CPD admin
-$ cpd-cli export-import init --namespace $NAMESPACE --arch $CPU_ARCH --pvc-name zen-pvc --profile=default --image-prefix=docker-registry.default.svc:5000/$NAMESPACE --profile=default
+# Example for air-gapped environment
+$ cpd-cli export-import init --namespace $NAMESPACE --arch $CPU_ARCH --pvc-name zen-pvc --profile=default --image-prefix=$PRIVATE_REGISTRY_LOCATION --profile=default
 ```
 
 ### Examples
@@ -257,57 +245,45 @@ sample-aux:
   pvc2: testpvc2
 ```
 
-### Zen Core Auxiliary Component (Unsupported in CPD 4.5+)
+### Zen Core Auxiliary Component (Deprecated in CPD 4.x, unsupported in CPD 4.5+)
 
 The cpdtool framework is responsible for dispatching jobs provided by CPD services to export metadata from one 
 CPD installation to another. Registered export/import modules for each service component contain jobs that perform 
 the actual export and import logic. The zen-core auxiliary module performs export and import for the CPD control plane.
 
-Deprecated - support for zen-core-aux will be removed in a future release
-
-#### Install the zen-core-aux docker image from Docker Hub
+#### Install the zen-core-aux docker image from Docker Hub (Air-Gapped Installation)
 
 Note your docker image registry may be different than what is documented here, so please adjust those related flags accordingly.
 
 For CPD 4.0, use zen-core-aux 4.0.0.
 
-OpenShift 4.x example:
+OpenShift 4.x air-gapped installation example:
 ```
-IMAGE_REGISTRY=`oc get route -n openshift-image-registry | grep image-registry | awk '{print $2}'`
-echo $IMAGE_REGISTRY
-NAMESPACE=`oc project -q`
-echo $NAMESPACE
+# On a cluster with external network access:
 CPU_ARCH=`uname -m`
 echo $CPU_ARCH
 BUILD_NUM=355
 echo $BUILD_NUM
 
-# Pull zen-core-aux image from IBM Cloud Container Registry
+# Pull zen-core-aux image from the IBM Cloud Container Registry
 podman pull icr.io/cpopen/cpd/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH}
-# Push image to internal registry
-podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag icr.io/cpopen/cpd/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH}
-podman push $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
-```
+# Save image to file
+podman save icr.io/cpopen/cpd/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH} > zen-core-aux-img-4.0.0-${BUILD_NUM}-${CPU_ARCH}.tar
 
-OpenShift 3.11, example:
+# Transfer file to air-gapped cluster
 
-```
-IMAGE_REGISTRY=`oc registry info`
-echo $IMAGE_REGISTRY
-NAMESPACE=`oc project -q`
-echo $NAMESPACE
+# On the air-gapped cluster:
+# Push image to the private image registry.  Ensure the installation environment variables such as PRIVATE_REGISTRY_LOCATION, PRIVATE_REGISTRY_PUSH_USER, and PRIVATE_REGISTRY_PUSH_PASSWORD are set. 
+echo $PRIVATE_REGISTRY_LOCATION
 CPU_ARCH=`uname -m`
 echo $CPU_ARCH
 BUILD_NUM=355
 echo $BUILD_NUM
 
-# Pull zen-core-aux image from IBM Cloud Container Registry
-podman pull icr.io/cpopen/cpd/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH}
-# Push image to internal registry
-podman login -u ocadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag icr.io/cpopen/cpd/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH}
-podman push $IMAGE_REGISTRY/$NAMESPACE/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
+podman login -u ${PRIVATE_REGISTRY_PUSH_USER} -p ${PRIVATE_REGISTRY_PUSH_PASSWORD} ${PRIVATE_REGISTRY_LOCATION}
+podman load -i zen-core-aux-img-4.0.0-${BUILD_NUM}-${CPU_ARCH}.tar
+podman tag icr.io/cpopen/cpd/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH} $PRIVATE_REGISTRY_LOCATION/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman push $PRIVATE_REGISTRY_LOCATION/zen-core-aux:4.0.0-${BUILD_NUM}-${CPU_ARCH}
 ```
 
 #### Install the zen-core-aux helm chart
@@ -417,7 +393,7 @@ Flags:
       --aux-pod-mem-limit string     Memory limit for CPD auxiliary pod. ("0" means unbounded) (default "0")
       --aux-pod-mem-request string   Memory request for CPD auxiliary pod. ("0" means unbounded) (default "0")
   -h, --help                         help for init
-      --image-prefix string          Specify the image prefix (default "image-registry.openshift-image-registry.svc:5000/zen")
+      --image-prefix string          Specify the image prefix (default "icr.io/cpopen/cpd")
       --pvc-name string              Specify the persistence volume claim name for backup/export
       --service-account string       Specify service account (default "cpd-admin-sa")
 
