@@ -13,14 +13,14 @@ cpdbr-oadp version 4.5.0, included as a part of cpd-cli.  This README is for cpd
   - [Sample Object Store using MinIO](#sample-object-store-using-minio)
     - [Creating PVCs for MinIO](#creating-pvcs-for-minio)
   - [Sample Object Store using MinIO (Air-Gapped Installation)](#sample-object-store-using-minio-air-gapped-installation)
-  - [Install the cpdbr-velero-plugin](#install-the-cpdbr-velero-plugin)
-  - [Install OADP](#install-oadp)
-    - [Installing OADP 1.x GA Operator in OperatorHub (velero v1.7.0)](#installing-oadp-1x-ga-operator-in-operatorhub-velero-v170)
+  - [Install OADP ](#install-oadp)
+    - [Installing OADP 1.x GA Operator in OperatorHub](#installing-oadp-1x-ga-operator-in-operatorhub)
     - [Example DataProtectionApplication Custom Resource](#example-dataprotectionapplication-custom-resource)
-    - [OADP 1.x GA Operator Air-gapped Installation](#oadp-1x-ga-operator-air-gapped-installation)
+    - [OADP 1.x GA Operator (Air-gapped Installation)](#oadp-1x-ga-operator-air-gapped-installation)
   - [Configure cpdbr-oadp](#configure-cpdbr-oadp)
   - [Create Two Volume Snapshot Classes (For Ceph CSI Snapshots, OCS 4.6+)](#create-two-volume-snapshot-classes-for-ceph-csi-snapshots-ocs-46)
   - [Create Volume Snapshot Class (For Spectrum Scale CSI Snapshots, 5.1.3.x+)](#create-volume-snapshot-class-for-spectrum-scale-csi-snapshots-513x)
+  - [Create Volume Snapshot Class (For Portworx CSI Snapshots)](#create-volume-snapshot-class-for-portworx-csi-snapshots)
 - [Offline (Disruptive) Backup and Restore](#offline-disruptive-backup-and-restore)
   - [Example Steps for Backup using restic](#example-steps-for-backup-using-restic)
     - [Prerequistes](#prerequistes)
@@ -97,7 +97,7 @@ Restic is an open source utility to perform volume backups via file
 copying, and includes features such as encryption and deduplication.
 Using restic, a backup can be restored to a different cluster.
 - Backups using CSI snapshots can be used for CPD
-installed on CSI volumes such as OCS 4.6+. Snapshots are typically much
+installed on CSI volumes such as OCS/ODF, Spectrum Scale, and Portworx CSI. Snapshots are typically much
 faster than file copying, using copy-on-write techniques to save changes
 instead of performing a full copy. However, snapshots are typically stored locally in the cluster.
 Currently, cpdbr-oadp cannot move data from snapshots to another cluster, and thus cpdbr-oadp backups using snapshots
@@ -124,7 +124,8 @@ Cluster
 - OADP 1.x Operator is available for OCP 4.6+, on linux x86_64 and ppc64le.<br>
   Note: Community operators are upstream development projects that have no official support. Users will typically install the OADP Operator that is supported by Red Hat.
 - The cpdbr-velero-plugin is available for linux x86_64 and ppc64le.
-- Ceph CSI snapshots is available for OCS 4.6+.  For OCP 4.6, use OADP 1.0.x.  For OCP 4.10, use OADP 1.1.0+.
+- Ceph CSI snapshots is available for OCS 4.6+.
+- When using CSI snapshots on OCP 4.6, use OADP 1.0.x.  For OCP 4.10, use OADP 1.1.0+.
 - If CPD is installed on NFS, NFS storage must be configured with no_root_squash for OADP restic backups.
 
 Client
@@ -305,23 +306,20 @@ open-source object store.
 
 4. On the air-gapped cluster, create the "velero" namespace.
 
-5. Push the images to the OpenShift internal registry.
+5. Push the images to the private image registry.  Ensure the installation environment variables such as PRIVATE_REGISTRY_LOCATION, PRIVATE_REGISTRY_PUSH_USER, and PRIVATE_REGISTRY_PUSH_PASSWORD are set.
     ```
-    IMAGE_REGISTRY=`oc get route -n openshift-image-registry | grep image-registry | awk '{print $2}'`
-    echo $IMAGE_REGISTRY
-    NAMESPACE=velero
-    echo $NAMESPACE
+    echo $PRIVATE_REGISTRY_LOCATION
 
-    # Login to internal registry
-    podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
+    # Login to the private image registry
+    podman login -u ${PRIVATE_REGISTRY_PUSH_USER} -p ${PRIVATE_REGISTRY_PUSH_PASSWORD} ${PRIVATE_REGISTRY_LOCATION}
 
     podman load -i minio-img-RELEASE.2021-04-22T15-44-28Z.tar
-    podman tag docker.io/minio/minio:RELEASE.2021-04-22T15-44-28Z $IMAGE_REGISTRY/$NAMESPACE/minio:RELEASE.2021-04-22T15-44-28Z
-    podman push $IMAGE_REGISTRY/$NAMESPACE/minio:RELEASE.2021-04-22T15-44-28Z --tls-verify=false
+    podman tag docker.io/minio/minio:RELEASE.2021-04-22T15-44-28Z $PRIVATE_REGISTRY_LOCATION/minio:RELEASE.2021-04-22T15-44-28Z
+    podman push $PRIVATE_REGISTRY_LOCATION/minio:RELEASE.2021-04-22T15-44-28Z
 
     podman load -i mc-img-latest.tar
-    podman tag docker.io/minio/mc:latest $IMAGE_REGISTRY/$NAMESPACE/mc:latest
-    podman push $IMAGE_REGISTRY/$NAMESPACE/mc:latest --tls-verify=false
+    podman tag docker.io/minio/mc:latest $PRIVATE_REGISTRY_LOCATION/mc:latest
+    podman push $PRIVATE_REGISTRY_LOCATION/mc:latest
     ```
     
 6. Extract the Velero tar.gz
@@ -336,12 +334,16 @@ open-source object store.
     a. Change
     image: minio/minio:latest
     to 
-    image: image-registry.openshift-image-registry.svc:5000/velero/minio:RELEASE.2021-04-22T15-44-28Z
+    image: $PRIVATE_REGISTRY_LOCATION/minio:RELEASE.2021-04-22T15-44-28Z
+    
+    (Replace $PRIVATE_REGISTRY_LOCATION with the resolved value)
 
     b. Change
     image: minio/mc:latest
     to
-    image: image-registry.openshift-image-registry.svc:5000/velero/mc:latest
+    image: $PRIVATE_REGISTRY_LOCATION/mc:latest
+
+    (Replace $PRIVATE_REGISTRY_LOCATION with the resolved value)
     ```
 
 8. From the extracted velero folder, run the following. This creates a sample MinIO deployment in the "velero" namespace.
@@ -354,49 +356,21 @@ open-source object store.
    See [Creating PVCs for MinIO](#creating-pvcs-for-minio)
 
 
-## Install the cpdbr-velero-plugin
-
-1. Create the "oadp-operator" namespace
-
-2. Install the cpdbr-velero-plugin docker image from IBM Cloud Container Registry using podman
-
-    OpenShift 4.x example:
-    ```
-    IMAGE_REGISTRY=`oc get route -n openshift-image-registry | grep image-registry | awk '{print $2}'`
-    echo $IMAGE_REGISTRY
-    NAMESPACE=oadp-operator
-    echo $NAMESPACE
-    CPU_ARCH=`uname -m`
-    echo $CPU_ARCH
-    BUILD_NUM=1
-    echo $BUILD_NUM
-
-
-    # Pull cpdbr-velero-plugin image from IBM Cloud Container Registry
-    podman pull icr.io/cpopen/cpd/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}
-    # Push image to internal registry
-    podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-    podman tag icr.io/cpopen/cpd/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}
-    podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
-    ```
-
-    If there is no route in the "openshift-image-registry" namespace, try enabling the internal registry default route:<br>
-    https://docs.openshift.com/container-platform/4.6/registry/configuring-registry-operator.html#registry-operator-default-crd_configuring-registry-operator
-
-
 ## Install OADP 
 
-### Installing OADP 1.x GA Operator in OperatorHub (velero v1.7.0)
+### Installing OADP 1.x GA Operator in OperatorHub
 
 Note: Community operators are upstream development projects that have no official support.  Users will typically 
 install the OADP Operator that is supported by Red Hat.
 
-1. Annotate the OADP operator namespace so that restic pods can be scheduled on all nodes.
+1. Create the "oadp-operator" namespace if it doesn't already exist
+
+2. Annotate the OADP operator namespace so that restic pods can be scheduled on all nodes.
    ```
    oc annotate namespace oadp-operator openshift.io/node-selector=""
    ```
 
-2.  OADP can be installed from the OperatorHub in the Openshift Console
+3.  OADP can be installed from the OperatorHub in the Openshift Console
 
     Reference:
 
@@ -410,7 +384,7 @@ install the OADP Operator that is supported by Red Hat.
         "oadp-operator".
 
 
-3.  Create a secret in the "oadp-operator" namespace with the object store credentials
+4.  Create a secret in the "oadp-operator" namespace with the object store credentials
 
     1.  Create a file "credentials-velero" containing the credentials for the object store.  Credentials should use alpha-numeric characters,  and not contain special characters like '#'.<br>
         vi credentials-velero
@@ -427,7 +401,7 @@ install the OADP Operator that is supported by Red Hat.
         ```oc create secret generic cloud-credentials --namespace oadp-operator --from-file cloud=./credentials-velero```
 
 
-1.  Create a DataProtectionApplication (Velero) instance (OADP 1.x)
+5.  Create a DataProtectionApplication (Velero) instance (OADP 1.x)
 
     Reference:
 
@@ -437,16 +411,19 @@ install the OADP Operator that is supported by Red Hat.
     
     Notes:
     1.  Replace the "s3Url" in the backup storage location with the URL of the object store.
-        For Amazon S3, the s3ForcePathStyle and s3Url can be omitted.
+        - If the object store is Amazon S3, the s3ForcePathStyle and s3Url can be omitted.
+        - If the object store is IBM Cloud Object Storage on public cloud, an example s3url is https://s3.us-south.cloud-object-storage.appdomain.cloud where *us-south* is the region.  The public endpoint can be found under Bucket -> Configuration -> Endpoints.
+        - Omit any default ports from the s3url (:80 for http, :443 for https).
     2.  A bucket must first be created in the object store.  Specify the same bucket name in the "bucket" field.
     3.  Breaking change - OADP 1.x requires a prefix name to be set, so backup files are stored under bucket/prefix.
         <br>Because of this, previous backups using the OADP 0.2.6 Community Operator might no longer be visible.  
         The prefix was optional, resulting in backups being stored in a different path.
     4.  The name of the credential secret must be "cloud-credentials".
-    5.  The cpdbr-velero-plugin is specified under the customPlugins property.  Ensure the image prefix is correct.
+    5.  The cpdbr-velero-plugin is specified under the customPlugins property.
+        - Update the image prefix accordingly.  The example assumes the cluster has access to icr.io/cpopen/cpd.  If a private image registry is used, the image prefix is the resolved value of $PRIVATE_REGISTRY_LOCATION, as indicated in the air-gapped installation steps.
         - For x86, use image name 'cpdbr-velero-plugin:4.0.0-beta1-1-x86_64'.
         - For ppc64le, use image name 'cpdbr-velero-plugin:4.0.0-beta1-1-ppc64le'.
-    6.  The example uses a restic timeout of 2 hours. The default is 1 hour.  <br>
+    6.  The example uses a restic timeout of 12 hours. The default is 1 hour.  <br>
         If restic backup or restore fails with pod volume timeout errors in the Velero log, consider increasing the timeout by changing spec.configuration.restic.timeout.
     7.  For object stores with a self-signed certificate, specify 
         the base64 encoded certificate string as a value for backupLocations.velero.objectStorage.caCert<br>
@@ -466,7 +443,7 @@ spec:
   configuration:
     velero:
       customPlugins:
-      - image: image-registry.openshift-image-registry.svc:5000/oadp-operator/cpdbr-velero-plugin:4.0.0-beta1-1-x86_64
+      - image: icr.io/cpopen/cpd/cpdbr-velero-plugin:4.0.0-beta1-1-x86_64
         name: cpdbr-velero-plugin
       defaultPlugins:
       - aws
@@ -482,7 +459,7 @@ spec:
             memory: 256Mi
     restic:
       enable: true
-      timeout: 2h
+      timeout: 12h
       podConfig:
         resourceAllocations:
           limits:
@@ -512,7 +489,7 @@ spec:
           key: cloud
 ```
 
-1.  Check that the velero pods are running in the "oadp-operator" namespace.  
+6.  Check that the velero pods are running in the "oadp-operator" namespace.  
     The restic daemonset should create one restic pod for each worker node.
     ```
     oc get po -n oadp-operator
@@ -525,13 +502,13 @@ spec:
     velero-7d847d5bb7-zm6vd                             1/1     Running   0          49m
     ```
 
-### OADP 1.x GA Operator Air-gapped Installation
+### OADP 1.x GA Operator (Air-gapped Installation)
 
 1.  For the OADP operator, there is a generic procedure using oc tooling for mirroring Red Hat operators.  See:
 
     https://docs.openshift.com/container-platform/4.8/operators/admin/olm-restricted-networks.html#olm-mirror-catalog_olm-restricted-networks
 
-2.  Additionally for cpdbr-oadp, push the UBI and cpdbr-velero-plugin images to the OpenShift internal registry.
+2.  Additionally for cpdbr-oadp, push the UBI and cpdbr-velero-plugin images to a private image registry.
 
     1. On a cluster with network access, pull images and save them as files.  Requires access to icr.io and registry.redhat.io.
         ```
@@ -555,30 +532,28 @@ spec:
 
     3. On the air-gapped cluster, create the "oadp-operator" namespace if it doesn't exist.
 
-    4. Push the images to the internal registry.
+    4. Push the images to the private image registry.  Ensure the installation environment variables such as PRIVATE_REGISTRY_LOCATION, PRIVATE_REGISTRY_PUSH_USER, and PRIVATE_REGISTRY_PUSH_PASSWORD are set.
         ```
-        IMAGE_REGISTRY=`oc get route -n openshift-image-registry | grep image-registry | awk '{print $2}'`
-        echo $IMAGE_REGISTRY
-        NAMESPACE=oadp-operator
-        echo $NAMESPACE
+        echo $PRIVATE_REGISTRY_LOCATION
         CPU_ARCH=`uname -m`
         echo $CPU_ARCH
         BUILD_NUM=1
         echo $BUILD_NUM
 
-        # Login to internal registry
-        podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
+        # Login to the private image registry
+        podman login -u ${PRIVATE_REGISTRY_PUSH_USER} -p ${PRIVATE_REGISTRY_PUSH_PASSWORD} ${PRIVATE_REGISTRY_LOCATION}
 
         # Push images
         podman load -i cpdbr-velero-plugin-img-4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}.tar
-        podman tag icr.io/cpopen/cpd/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}
-        podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
+        podman tag icr.io/cpopen/cpd/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH} $PRIVATE_REGISTRY_LOCATION/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}
+        podman push $PRIVATE_REGISTRY_LOCATION/cpdbr-velero-plugin:4.0.0-beta1-${BUILD_NUM}-${CPU_ARCH}
 
         podman load -i ubi-minimal-img-latest.tar
-        podman tag registry.redhat.io/ubi8/ubi-minimal:latest $IMAGE_REGISTRY/$NAMESPACE/ubi-minimal:latest
-        podman push $IMAGE_REGISTRY/$NAMESPACE/ubi-minimal:latest --tls-verify=false
+        podman tag registry.redhat.io/ubi8/ubi-minimal:latest $PRIVATE_REGISTRY_LOCATION/ubi-minimal:latest
+        podman push $PRIVATE_REGISTRY_LOCATION/ubi-minimal:latest
         ```
-
+     
+     5. Proceed to the steps to install OADP in OperatorHub
 
 ## Configure cpdbr-oadp
 
@@ -637,11 +612,25 @@ deletionPolicy: Retain
 driver: spectrumscale.csi.ibm.com
 kind: VolumeSnapshotClass
 metadata:
-  name: ibm-spectrum-scale-snapshot-class
+  name: ibm-spectrum-scale-snapclass-velero
   labels:
     velero.io/csi-volumesnapshot-class: "true"
 ```
 
+## Create Volume Snapshot Class (For Portworx CSI Snapshots)
+
+1.  ```oc apply -f px-csi-snapclass-velero.yaml```
+
+```
+apiVersion: snapshot.storage.k8s.io/v1
+deletionPolicy: Retain
+driver: pxd.portworx.com
+kind: VolumeSnapshotClass
+metadata:
+  name: px-csi-snapclass-velero
+  labels:
+    velero.io/csi-volumesnapshot-class: "true"
+```
 
 # Offline (Disruptive) Backup and Restore
 
@@ -669,9 +658,9 @@ metadata:
     cpd-cli oadp backup create --include-namespaces=zen --exclude-resources='Event,Event.events.k8s.io' --default-volumes-to-restic --snapshot-volumes=false --cleanup-completed-resources zen-backup --log-level=debug --verbose
     ```
 
-    In an air-gapped environment, additionally specify the internal registry image prefix with the OADP namespace.
+    In an air-gapped environment, additionally specify the private registry image prefix with the OADP namespace.
     ```
-    cpd-cli oadp backup create --include-namespaces=zen --exclude-resources='Event,Event.events.k8s.io' --default-volumes-to-restic --snapshot-volumes=false --cleanup-completed-resources --image-prefix=image-registry.openshift-image-registry.svc:5000/oadp-operator zen-backup --log-level=debug --verbose
+    cpd-cli oadp backup create --include-namespaces=zen --exclude-resources='Event,Event.events.k8s.io' --default-volumes-to-restic --snapshot-volumes=false --cleanup-completed-resources --image-prefix=$PRIVATE_REGISTRY_LOCATION zen-backup --log-level=debug --verbose
     ```
 
 2.  Note down and save the values of the following annotations in the backup namespace
@@ -744,9 +733,9 @@ Restore to same cluster.  Foundational Services namespace and CPD operators name
         cpd-cli oadp restore create --from-backup=zen-backup --exclude-resources='ImageTag,clients' zen-restore --include-cluster-resources=true --log-level=debug --verbose
         ```
 
-        In an air-gapped environment, additionally specify the internal registry image prefix with the OADP namespace.
+        In an air-gapped environment, additionally specify the private registry image prefix with the OADP namespace.
         ```
-        cpd-cli oadp restore create --from-backup=zen-backup --exclude-resources='ImageTag,clients' zen-restore --include-cluster-resources=true --image-prefix=image-registry.openshift-image-registry.svc:5000/oadp-operator --log-level=debug --verbose
+        cpd-cli oadp restore create --from-backup=zen-backup --exclude-resources='ImageTag,clients' zen-restore --include-cluster-resources=true --image-prefix=$PRIVATE_REGISTRY_LOCATION --log-level=debug --verbose
         ```
 
 4.  List restores
@@ -837,8 +826,7 @@ cpd-cli oadp backup create --include-namespaces=zen1,zen2 --exclude-resources='E
 
 ### Storage Requirements
 
-- OpenShift Container Storage 4.6+ / OpenShift Data Foundation 4.9+
-- Cloud Pak for Data installed using OCS storage classes 
+- Cloud Pak for Data installed on storage classes that support CSI snapshots, such as OCS/ODF, Spectrum Scale, and Portworx CSI.
 
 ### Limitations
   - Only for CPD installed on CSI volumes such as OCS
@@ -968,7 +956,7 @@ Note: Do not force delete the namespace.
     oc delete ug -n <cpd-instance-namespace> --all
 
     # Get Db2assservice CR, delete finalizers and delete CR
-    oc get Db2aaserviceService -n wkc
+    oc get Db2aaserviceService -n <cpd-instance-namespace>
     oc patch  Db2aaserviceService <db2asservice-cr-name> -n <cpd-instance-namespace> -p '{"metadata":{"finalizers":[]}}' --type=merge
     oc delete Db2aaserviceService  -n <cpd-instance-namespace> --all
     ```
@@ -1067,8 +1055,7 @@ spec:
 
 ### Storage Requirements
 
-- OpenShift Container Storage 4.6+ / OpenShift Data Foundation 4.9+
-- Cloud Pak for Data installed using OCS storage classes 
+- Cloud Pak for Data installed on storage classes that support CSI snapshots, such as OCS/ODF, Spectrum Scale, and Portworx CSI.
   
 ### Limitations
   - Only for CPD installed on CSI volumes such as OCS
