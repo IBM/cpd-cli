@@ -63,7 +63,7 @@ If necessary, download "oc", include it in the PATH, and configure access to the
 https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/
 
 
-#### Install the cpdbr docker image
+#### Install the cpdbr docker image (Air-Gapped Installation)
 For OCP 3.11, docker can be used to push docker images.<br>
 For OCP 3.11 or 4.x, podman can be used to push docker images.
 
@@ -73,49 +73,10 @@ https://podman.io/getting-started/installation.html
 
 Note your docker image registry may be different than what is documented here, so please adjust those related flags accordingly.
 
-#### Install the cpdbr docker image using docker or podman from IBM Cloud Container Registry
+#### Install the cpdbr docker image using docker or podman from the IBM Cloud Container Registry
 
 Note: Use the Build Number from cpd-cli backup-restore version command
-                 
-OpenShift 4.x example:
-```
-IMAGE_REGISTRY=`oc get route -n openshift-image-registry | grep image-registry | awk '{print $2}'`
-echo $IMAGE_REGISTRY
-NAMESPACE=`oc project -q`
-echo $NAMESPACE
-CPU_ARCH=`uname -m`
-echo $CPU_ARCH
-BUILD_NUM=<build-number>
-echo $BUILD_NUM
-
-
-# Pull cpdbr image from IBM Cloud Container Registry
-podman pull icr.io/cpopen/cpd/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
-# Push image to internal registry
-podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag icr.io/cpopen/cpd/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
-podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
-```
-
-OpenShift 3.11 example:
-```
-IMAGE_REGISTRY=`oc registry info`
-echo $IMAGE_REGISTRY
-NAMESPACE=`oc project -q`
-echo $NAMESPACE
-CPU_ARCH=`uname -m`
-echo $CPU_ARCH
-BUILD_NUM=<build-number>
-echo $BUILD_NUM
-
-# Pull cpdbr image from IBM Cloud Container Registry
-podman pull icr.io/cpopen/cpd/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
-# Push image to internal registry
-podman login -u ocadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
-podman tag icr.io/cpopen/cpd/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
-podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
-```
-                 
+                                  
 OpenShift 4.x air-gapped installation example:
 ```
 # On a cluster with external network access:
@@ -124,28 +85,25 @@ echo $CPU_ARCH
 BUILD_NUM=<build-number>
 echo $BUILD_NUM
 
-# Pull cpdbr image from IBM Cloud Container Registry
+# Pull cpdbr image from the IBM Cloud Container Registry
 podman pull icr.io/cpopen/cpd/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
 # Save image to file
 podman save icr.io/cpopen/cpd/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} > cpdbr-img-4.0.0-${BUILD_NUM}-${CPU_ARCH}.tar
 
 # Transfer file to air-gapped cluster
 
-# On air-gapped cluster:
-# Push image to internal registry
-IMAGE_REGISTRY=`oc get route -n openshift-image-registry | grep image-registry | awk '{print $2}'`
-echo $IMAGE_REGISTRY
-NAMESPACE=`oc project -q`
-echo $NAMESPACE
+# On the air-gapped cluster:
+# Push image to the private image registry.  Ensure the installation environment variables such as PRIVATE_REGISTRY_LOCATION, PRIVATE_REGISTRY_PUSH_USER, and PRIVATE_REGISTRY_PUSH_PASSWORD are set. 
+echo $PRIVATE_REGISTRY_LOCATION
 CPU_ARCH=`uname -m`
 echo $CPU_ARCH
 BUILD_NUM=<build-number>
 echo $BUILD_NUM
 
-podman login -u kubeadmin -p $(oc whoami -t) $IMAGE_REGISTRY --tls-verify=false
+podman login -u ${PRIVATE_REGISTRY_PUSH_USER} -p ${PRIVATE_REGISTRY_PUSH_PASSWORD} ${PRIVATE_REGISTRY_LOCATION}
 podman load -i cpdbr-img-4.0.0-${BUILD_NUM}-${CPU_ARCH}.tar
-podman tag icr.io/cpopen/cpd/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} $IMAGE_REGISTRY/$NAMESPACE/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
-podman push $IMAGE_REGISTRY/$NAMESPACE/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} --tls-verify=false
+podman tag icr.io/cpopen/cpd/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH} $PRIVATE_REGISTRY_LOCATION/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
+podman push $PRIVATE_REGISTRY_LOCATION/cpdbr:4.0.0-${BUILD_NUM}-${CPU_ARCH}
 ```
 
 #### Shared Volume PVC
@@ -211,21 +169,25 @@ Note your docker image registry may be different than what is documented here, s
 OpenShift 4.x:
 ```
 # Initialize the cpdbr first with pvc name and s3 storage.  Note that the bucket must exist.
-$ cpd-cli backup-restore init --namespace $NAMESPACE --pvc-name cpdbr-pvc --image-prefix=image-registry.openshift-image-registry.svc:5000/$NAMESPACE \
+# Example for cluster with access to ICR
+$ cpd-cli backup-restore init --namespace $NAMESPACE --pvc-name cpdbr-pvc --image-prefix=icr.io/cpopen/cpd \
      --provider=s3 --s3-endpoint="s3 endpoint" --s3-bucket=cpdbr --s3-prefix=$NAMESPACE/
-```
 
-OpenShift 3.11:
-```
-# Initialize the cpdbr first with pvc name and s3 storage.  Note that the bucket must exist.
-$ cpd-cli backup-restore init -n $NAMESPACE --pvc-name cpdbr-pvc --image-prefix=docker-registry.default.svc:5000/$NAMESPACE \
+# Example for air-gapped environment
+$ cpd-cli backup-restore init --namespace $NAMESPACE --pvc-name cpdbr-pvc --image-prefix=$PRIVATE_REGISTRY_LOCATION \
      --provider=s3 --s3-endpoint="s3 endpoint" --s3-bucket=cpdbr --s3-prefix=$NAMESPACE/
 ```
 
 ##### Local Repository Example
 ```
-cpd-cli backup-restore init -n zen --log-level=debug --verbose --pvc-name cpdbr-pvc \ 
-             --image-prefix=image-registry.openshift-image-registry.svc:5000/zen \
+# Example for cluster with access to ICR
+cpd-cli backup-restore init -n $NAMESPACE --log-level=debug --verbose --pvc-name cpdbr-pvc \ 
+             --image-prefix=icr.io/cpopen/cpd \
+             --provider=local
+
+# Example for air-gapped environment
+cpd-cli backup-restore init -n $NAMESPACE --log-level=debug --verbose --pvc-name cpdbr-pvc \ 
+             --image-prefix=$PRIVATE_REGISTRY_LOCATION \
              --provider=local
 ```
 
@@ -236,7 +198,7 @@ cpd-cli backup-restore init -n zen --log-level=debug --verbose --pvc-name cpdbr-
 #### Local Repository Example
 ```
 cpd-cli backup-restore init -n zen --log-level=debug --verbose --pvc-name cpdbr-pvc \ 
-             --image-prefix=image-registry.openshift-image-registry.svc:5000/zen \
+             --image-prefix=icr.io/cpopen/cpd \
              --provider=local
 
 # volume backup for namespace zen, the backup name should be named with namespace as its prefix so to avoid
@@ -281,11 +243,11 @@ oc create secret generic -n zen cpdbr-repo-secret \
 # Note that the specified bucket needs to exist
 
 # cpdbr init with minio example:
-cpd-cli backup-restore init --namespace zen --pvc-name cpdbr-pvc --image-prefix=image-registry.openshift-image-registry.svc:5000/$NAMESPACE \
+cpd-cli backup-restore init --namespace zen --pvc-name cpdbr-pvc --image-prefix=icr.io/cpopen/cpd \
      --provider=s3 --s3-endpoint="http://minio-minio.svc:9000" --s3-bucket=cpdbr --s3-prefix=zen/
      
 # cpdbr init with Amazon S3 example: 
-cpd-cli backup-restore init --namespace zen --pvc-name cpdbr-pvc --image-prefix=image-registry.openshift-image-registry.svc:5000/$NAMESPACE \
+cpd-cli backup-restore init --namespace zen --pvc-name cpdbr-pvc --image-prefix=icr.io/cpopen/cpd \
      --provider=s3 --s3-bucket=cpdbr --s3-prefix=zen/
 
 # volume backup for namespace zen
@@ -370,7 +332,7 @@ Quiesce (with default options) and volume-backup (with --skip-quiesce) can be us
 cpd-cli backup-restore quiesce -n zen
 
 # initialize cpdbr
-cpd-cli backup-restore init -n zen --pvc-name demo-nfs-pvc --image-prefix=image-registry.openshift-image-registry.svc:5000/zen --log-level=debug --verbose --provider=local
+cpd-cli backup-restore init -n zen --pvc-name demo-nfs-pvc --image-prefix=icr.io/cpopen/cpd --log-level=debug --verbose --provider=local
 
 # volume backup
 cpd-cli backup-restore volume-backup create --namespace zen myid --skip-quiesce=true --log-level=debug --verbose
@@ -386,7 +348,7 @@ cpd-cli backup-restore unquiesce -n zen
 cpd-cli backup-restore quiesce -n zen
 
 # initialize cpdbr
-cpd-cli backup-restore init -n zen --pvc-name demo-nfs-pvc --image-prefix=image-registry.openshift-image-registry.svc:5000/zen --log-level=debug --verbose --provider=local
+cpd-cli backup-restore init -n zen --pvc-name demo-nfs-pvc --image-prefix=icr.io/cpopen/cpd --log-level=debug --verbose --provider=local
 
 # volume restore
 cpd-cli backup-restore volume-restore create --from-backup myid --namespace zen myid --skip-quiesce=true --log-level=debug --verbose
@@ -460,7 +422,7 @@ Flags:
       --aux-pod-mem-limit string     Memory limit for CPD auxiliary pod. ("0" means unbounded) (default "0")
       --aux-pod-mem-request string   Memory request for CPD auxiliary pod. ("0" means unbounded) (default "0")
   -h, --help                         help for init
-      --image-prefix string          Specify the image prefix (default "image-registry.openshift-image-registry.svc:5000/zen")
+      --image-prefix string          Specify the image prefix (default "icr.io/cpopen/cpd")
       --provider string              Storage provider type[local,s3] (default "local")
       --pvc-name string              Specify the persistence volume claim name for cpd-cli backup-restore to use
       --s3-bucket string             Storage bucket name where backups should be stored
@@ -559,7 +521,7 @@ Flags:
       --dry-run                 if true, performs a dry-run without execution
   -h, --help                    help for quiesce
       --ignore-hooks            quiesce via scale down
-      --image-prefix string     Specify the image prefix (default "image-registry.openshift-image-registry.svc:5000/zen")
+      --image-prefix string     Specify the image prefix (default "icr.io/cpopen/cpd")
   -r, --values ValueFiles       specify values in a YAML file(can specify multiple) (default [])
       --wait-timeout duration   wait timeout (default 6m0s)
 
@@ -581,7 +543,7 @@ Flags:
       --dry-run                 if true, performs a dry-run without execution
   -h, --help                    help for unquiesce
       --ignore-hooks            unquiesce via scale up
-      --image-prefix string     Specify the image prefix (default "image-registry.openshift-image-registry.svc:5000/zen")
+      --image-prefix string     Specify the image prefix (default "icr.io/cpopen/cpd")
   -r, --values ValueFiles       specify values in a YAML file(can specify multiple) (default [])
   -w, --wait                    if true, wait for operation to complete
       --wait-timeout duration   wait timeout (default 6m0s)
@@ -716,7 +678,7 @@ Flags:
       --dry-run                       if true, performs a dry-run without execution
   -s, --from-snapshot string          The snapshot/backup name to restore from
   -h, --help                          help for create
-      --image-prefix string           Specify the image prefix (default "image-registry.openshift-image-registry.svc:5000/zen")
+      --image-prefix string           Specify the image prefix (default "icr.io/cpopen/cpd")
       --scale-wait-timeout duration   Scale wait timeout (default 6m0s)
       --skip-quiesce                  Skip quiesce and unquiesce steps
       --wait-timeout duration         Restore wait timeout (default 6h0m0s)
@@ -810,7 +772,7 @@ Flags:
       --cleanup-completed-resources   if true, deletes completed Kubernetes jobs and pods
       --dry-run                       if true, performs a dry-run without execution
   -h, --help                          help for create
-      --image-prefix string           Specify the image prefix (default "image-registry.openshift-image-registry.svc:5000/zen")
+      --image-prefix string           Specify the image prefix (default "icr.io/cpopen/cpd")
   -l, --pvc-selectors string          a list of comma separated PVC labels to filter on(e.g. -l key1=value1,key2=value2)
       --scale-wait-timeout duration   Scale wait timeout (default 6m0s)
       --skip-quiesce                  Skip quiesce and unquiesce steps
@@ -976,7 +938,7 @@ Flags:
       --dry-run                       if true, performs a dry-run without execution
       --from-backup string            The backup name to restore from
   -h, --help                          help for create
-      --image-prefix string           Specify the image prefix (default "image-registry.openshift-image-registry.svc:5000/zen")
+      --image-prefix string           Specify the image prefix (default "icr.io/cpopen/cpd")
       --scale-wait-timeout duration   Scale wait timeout (default 6m0s)
       --skip-quiesce                  Skip quiesce and unquiesce steps
       --wait-timeout duration         Restore wait timeout (default 6h0m0s)
