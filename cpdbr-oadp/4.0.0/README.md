@@ -848,7 +848,7 @@ Note: Do not force delete the namespace.
     oc delete ug -n <cpd-instance-namespace> --all
 
     # Get Db2assservice CR, delete finalizers and delete CR
-    oc get Db2aaserviceService -n wkc
+    oc get Db2aaserviceService -n <cpd-instance-namespace>
     oc patch  Db2aaserviceService <db2asservice-cr-name> -n <cpd-instance-namespace> -p '{"metadata":{"finalizers":[]}}' --type=merge
     oc delete Db2aaserviceService  -n <cpd-instance-namespace> --all
     ```
