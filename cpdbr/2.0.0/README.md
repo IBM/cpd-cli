@@ -126,7 +126,7 @@ podman save docker.io/ibmcom/cpdbr:2.0.0-${BUILD_NUM}-${CPU_ARCH} > cpdbr-img-2.
 
 # Transfer file to air-gapped cluster
 
-# On air-gapped cluster:
+# On the air-gapped cluster:
 # Push image to internal registry
 IMAGE_REGISTRY=`oc get route -n openshift-image-registry | grep image-registry | awk '{print $2}'`
 echo $IMAGE_REGISTRY
