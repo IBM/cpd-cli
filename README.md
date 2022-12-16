@@ -6,11 +6,31 @@ depends on the version of Cloud Pak for Data that you are using:
 
 | Release   | Installation | Upgrade   | Administration | CLI Version |
 | ------    | ------       | ------    | -----------    | ------      |
+| 4.6       | &#10004;     | &#10004;  | &#10004;       | 12.x      |
 | 4.5       | &#10004;     | &#10004;  | &#10004;       | 11.x      |
 | 4.0       |              |           | &#10004;       | 10.0.x      |
 | 3.5       | &#10004;     | &#10004;  | &#10004;       | 3.5.x       |
 | 3.0.1     | &#10004;     | &#10004;  | &#10004;       | 3.0.1       |
 
+## Cloud Pak for Data Version 4.6
+
+**Remember:** Use `cpd-cli` Version 12.0.0 with Cloud Pak for Data Version 4.6
+
+You can install Cloud Pak for Data from a client workstation that can connect to
+your cluster. You must run the installation from a Linux, Mac, or Windows machine.
+For details, see [Installing IBM Cloud Pak for Data](https://www.ibm.com/docs/SSQNUZ_4.6.x/cpd/install/install.html)
+
+Download the package that corresponds to the license that you purchased and the operating system where you will run the CLI. Dowload EE for Cloud Pak for Data Enterprise Edition. Download SE for Cloud Pak for Data Standard Edition.
+
+| Operating system | CLI               |  Notes      |           
+| :--              | :--               | :--         |
+| Linux            | cpd-cli-linux-*   |             |
+| Mac OS           | cpd-cli-darwin-*  |             |
+| Windows          | cpd-cli-linux-*   | Requires Windows Subsystem for Linux.
+| POWER (ppc64le)  | cpd-cli-ppc64le-* | Cannot be used to install or upgrade. Supported only for administrative tasks. |
+| Z (s390x)        | cpd-cli-s390x-*   | Cannot be used to install or upgrade. Supported only for administrative tasks. |
+
+For more information on using `cpd-cli`, see [Cloud Pak for Data command-line interface (cpd-cli)](https://www.ibm.com/docs/SSQNUZ_4.6.x/cpd-cli/cpd-cli-intro.html).
 
 ## Cloud Pak for Data Version 4.5
 
