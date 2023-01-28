@@ -14,7 +14,7 @@ depends on the version of Cloud Pak for Data that you are using:
 
 ## Cloud Pak for Data Version 4.6
 
-**Remember:** Use `cpd-cli` Version 12.0.0 with Cloud Pak for Data Version 4.6
+**Remember:** Use `cpd-cli` Version 12.x with Cloud Pak for Data Version 4.6.x
 
 You can install Cloud Pak for Data from a client workstation that can connect to
 your cluster. You must run the installation from a Linux, Mac, or Windows machine.
