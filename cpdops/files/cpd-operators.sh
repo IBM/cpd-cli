@@ -2430,38 +2430,40 @@ function cpd-operators-restore () {
 		done
 	fi
 
-	## Retrieve CA Certificate Secret from cpd-operators ConfigMap 
-	BACKEDUP_CA_CERT_SECRETS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.cacertificatesecrets}"`
-	local BACKEDUP_CA_CERT_SECRET_KEYS=(`echo $BACKEDUP_CA_CERT_SECRETS | jq keys[]`)
-	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` level=info - Secrets: ${BACKEDUP_CA_CERT_SECRET_KEYS}"
-	echo "--------------------------------------------------"
-	# Iterate through BACKEDUP_CA_CERT_SECRET_KEYS and process each BACKEDUP_CA_CERT_SECRET - will create Secret for each
-	for BACKEDUP_CA_CERT_SECRET_KEY in "${BACKEDUP_CA_CERT_SECRET_KEYS[@]}"
-	do
-		checkCreateSecret "${BACKEDUP_CA_CERT_SECRET_KEY}"
-	done
+	if [ "$CPFS_OPERANDS_NAMESPACE" != "$CPFS_OPERATORS_NAMESPACE" ]; then
+		## Retrieve CA Certificate Secret from cpd-operators ConfigMap 
+		BACKEDUP_CA_CERT_SECRETS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.cacertificatesecrets}"`
+		local BACKEDUP_CA_CERT_SECRET_KEYS=(`echo $BACKEDUP_CA_CERT_SECRETS | jq keys[]`)
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` level=info - Secrets: ${BACKEDUP_CA_CERT_SECRET_KEYS}"
+		echo "--------------------------------------------------"
+		# Iterate through BACKEDUP_CA_CERT_SECRET_KEYS and process each BACKEDUP_CA_CERT_SECRET - will create Secret for each
+		for BACKEDUP_CA_CERT_SECRET_KEY in "${BACKEDUP_CA_CERT_SECRET_KEYS[@]}"
+		do
+			checkCreateSecret "${BACKEDUP_CA_CERT_SECRET_KEY}"
+		done
 
-	## Retrieve Self Signed Issuer from cpd-operators ConfigMap 
-	BACKEDUP_SS_ISSUERS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.selfsignedissuers}"`
-	local BACKEDUP_SS_ISSUER_KEYS=(`echo -E $BACKEDUP_SS_ISSUERS | jq keys[]`)
-	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` level=info - Issuers: ${BACKEDUP_SS_ISSUER_KEYS}"
-	echo "--------------------------------------------------"
-	# Iterate through BACKEDUP_SS_ISSUER_KEYS and process each BACKEDUP_SS_ISSUER - will create Issuer for each
-	for BACKEDUP_SS_ISSUER_KEY in "${BACKEDUP_SS_ISSUER_KEYS[@]}"
-	do
-		checkCreateIssuer "${BACKEDUP_SS_ISSUER_KEY}"
-	done
+		## Retrieve Self Signed Issuer from cpd-operators ConfigMap 
+		BACKEDUP_SS_ISSUERS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.selfsignedissuers}"`
+		local BACKEDUP_SS_ISSUER_KEYS=(`echo -E $BACKEDUP_SS_ISSUERS | jq keys[]`)
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` level=info - Issuers: ${BACKEDUP_SS_ISSUER_KEYS}"
+		echo "--------------------------------------------------"
+		# Iterate through BACKEDUP_SS_ISSUER_KEYS and process each BACKEDUP_SS_ISSUER - will create Issuer for each
+		for BACKEDUP_SS_ISSUER_KEY in "${BACKEDUP_SS_ISSUER_KEYS[@]}"
+		do
+			checkCreateIssuer "${BACKEDUP_SS_ISSUER_KEY}"
+		done
 
-	## Retrieve CA Certificate from cpd-operators ConfigMap 
-	BACKEDUP_CA_CERTS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.cacertificates}"`
-	local BACKEDUP_CA_CERT_KEYS=(`echo -E $BACKEDUP_CA_CERTS | jq keys[]`)
-	echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` level=info - Certificates: ${BACKEDUP_CA_CERT_KEYS}"
-	echo "--------------------------------------------------"
-	# Iterate through BACKEDUP_CA_CERT_KEYS and process each BACKEDUP_CA_CERT - will create Certificate for each
-	for BACKEDUP_CA_CERT_KEY in "${BACKEDUP_CA_CERT_KEYS[@]}"
-	do
-		checkCreateCertificate "${BACKEDUP_CA_CERT_KEY}"
-	done
+		## Retrieve CA Certificate from cpd-operators ConfigMap 
+		BACKEDUP_CA_CERTS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.cacertificates}"`
+		local BACKEDUP_CA_CERT_KEYS=(`echo -E $BACKEDUP_CA_CERTS | jq keys[]`)
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` level=info - Certificates: ${BACKEDUP_CA_CERT_KEYS}"
+		echo "--------------------------------------------------"
+		# Iterate through BACKEDUP_CA_CERT_KEYS and process each BACKEDUP_CA_CERT - will create Certificate for each
+		for BACKEDUP_CA_CERT_KEY in "${BACKEDUP_CA_CERT_KEYS[@]}"
+		do
+			checkCreateCertificate "${BACKEDUP_CA_CERT_KEY}"
+		done
+	fi
 	
 	if  [ $RESTORE_INSTANCE -eq 0 ]; then
 		## Retrieve Operator Namespaces from cpd-operators ConfigMap 
@@ -2575,7 +2577,41 @@ function cpd-operators-restore () {
 #		## Patch NamespaceScope CR to remove CPFS_OPERANDS_NAMESPACE
 #		checkCreateUpdateNamespaceScope patch common-service ${OPERATORS_NAMESPACE}
 #	fi
+	if [ "$CPFS_OPERANDS_NAMESPACE" == "$CPFS_OPERATORS_NAMESPACE" ]; then
+		## Retrieve CA Certificate Secret from cpd-operators ConfigMap 
+		BACKEDUP_CA_CERT_SECRETS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.cacertificatesecrets}"`
+		local BACKEDUP_CA_CERT_SECRET_KEYS=(`echo $BACKEDUP_CA_CERT_SECRETS | jq keys[]`)
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` level=info - Secrets: ${BACKEDUP_CA_CERT_SECRET_KEYS}"
+		echo "--------------------------------------------------"
+		# Iterate through BACKEDUP_CA_CERT_SECRET_KEYS and process each BACKEDUP_CA_CERT_SECRET - will create Secret for each
+		for BACKEDUP_CA_CERT_SECRET_KEY in "${BACKEDUP_CA_CERT_SECRET_KEYS[@]}"
+		do
+			checkCreateSecret "${BACKEDUP_CA_CERT_SECRET_KEY}"
+		done
 
+		## Retrieve Self Signed Issuer from cpd-operators ConfigMap 
+		BACKEDUP_SS_ISSUERS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.selfsignedissuers}"`
+		local BACKEDUP_SS_ISSUER_KEYS=(`echo -E $BACKEDUP_SS_ISSUERS | jq keys[]`)
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` level=info - Issuers: ${BACKEDUP_SS_ISSUER_KEYS}"
+		echo "--------------------------------------------------"
+		# Iterate through BACKEDUP_SS_ISSUER_KEYS and process each BACKEDUP_SS_ISSUER - will create Issuer for each
+		for BACKEDUP_SS_ISSUER_KEY in "${BACKEDUP_SS_ISSUER_KEYS[@]}"
+		do
+			checkCreateIssuer "${BACKEDUP_SS_ISSUER_KEY}"
+		done
+
+		## Retrieve CA Certificate from cpd-operators ConfigMap 
+		BACKEDUP_CA_CERTS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.cacertificates}"`
+		local BACKEDUP_CA_CERT_KEYS=(`echo -E $BACKEDUP_CA_CERTS | jq keys[]`)
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` level=info - Certificates: ${BACKEDUP_CA_CERT_KEYS}"
+		echo "--------------------------------------------------"
+		# Iterate through BACKEDUP_CA_CERT_KEYS and process each BACKEDUP_CA_CERT - will create Certificate for each
+		for BACKEDUP_CA_CERT_KEY in "${BACKEDUP_CA_CERT_KEYS[@]}"
+		do
+			checkCreateCertificate "${BACKEDUP_CA_CERT_KEY}"
+		done
+	fi
+	
 	if  [ $RESTORE_INSTANCE -eq 0 ]; then
 		# Iterate ClusterServiceVersions that have hot fixes
 		BACKEDUP_CLUSTER_SVS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.clusterserviceversions}"`
