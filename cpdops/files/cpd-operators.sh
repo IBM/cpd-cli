@@ -67,7 +67,7 @@ function getTopology() {
 	CHECK_RESOURCES=`oc get catalogsources.operators.coreos.com  -n "$OPERATORS_NAMESPACE" 2>&1`
 	local CHECK_RC=$?
 	if [ $CHECK_RC -eq 1 ]; then
-		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` level=error - oc get catalogsources.operators.coreos.com  -n ${OPERATORS_NAMESPACE} Failed with ${CHECK_RESOURCES}"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` level=error - oc get catalogsources.operators.coreos.com  -n ${OPERATORS_NAMESPACE} FAILED with ${CHECK_RESOURCES}"
 		exit 1
 	else
 		CHECK_RESOURCES=`oc get catalogsources.operators.coreos.com  -n "$OPERATORS_NAMESPACE" 2>&1 | egrep "^No resources*"`
@@ -130,7 +130,7 @@ function getCACertSecretInNamespace() {
 		RESOURCE_JSON=`oc get secret "$RESOURCE_NAME" -n "$NAMESPACE_NAME" -o json 2>&1`
 		local RESOURCE_RC=$?
 		if [ $RESOURCE_RC -eq 1 ]; then
-			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` level=warning - oc get secret ${RESOURCE_NAME} -n ${NAMESPACE_NAME} - FAILED with:  ${RESOURCE_JSON}"
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` level=warning - oc get secret ${RESOURCE_NAME} -n ${NAMESPACE_NAME} Not Found"
 		else
 			RESOURCE_JSON=`oc get secret "$RESOURCE_NAME" -n "$NAMESPACE_NAME" -o json | jq -c -M 'del(.metadata.creationTimestamp, .metadata.generation, .metadata.resourceVersion, .metadata.uid, .metadata.annotations.managedFields, .metadata.annotations."kubectl.kubernetes.io/last-applied-configuration", .status)' | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
 			local CA_CERT_SECRET="\"${NAMESPACE_NAME}-${RESOURCE_NAME}\": ${RESOURCE_JSON}"
