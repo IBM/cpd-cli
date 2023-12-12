@@ -7,7 +7,7 @@
 # as a cluster admin.
 #
 # 
-VERSION="4.7.4"
+VERSION="4.8.0"
 
 scriptdir=`dirname $0`
 cd ${scriptdir}
@@ -902,7 +902,15 @@ function cpd-operators-backup () {
 	echo -E "${CONFIGMAP_DATA}" > cpd-operators-configmap.json
 	## Create ConfigMap from cpd-operator.json file
 	if [ $PREVIEW -eq 0 ]; then
-		oc apply -f cpd-operators-configmap.json
+		local RESOURCE_APPLY=''
+		RESOURCE_APPLY=`oc apply -f cpd-operators-configmap.json`
+		local RESOURCE_RC=$?
+		if [ $RESOURCE_RC -eq 1 ]; then
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` level=error - oc apply -f cpd-operators-configmap.json - FAILED with:  ${RESOURCE_APPLY}"
+			exit 1
+		else
+			echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` level=info - cpd-operators ConfigMap created/updated in ${OPERATORS_NAMESPACE}"
+		fi
 	fi
 }
 
@@ -2494,7 +2502,7 @@ function cpd-operators-restore () {
 		echo "--------------------------------------------------"
 		## Retrieve Subscriptions from cpd-operators ConfigMap 
 		BACKEDUP_ODLM_SUBS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.odlmsubscriptions}"`
-		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` level=info - Subscriptions from ODLM: $BACKEDUP_SUBS"
+		echo "Time: `date -u +%Y-%m-%dT%H:%M:%S.%3N%z` level=info - Subscriptions from ODLM: $BACKEDUP_ODLM_SUBS"
 		echo "--------------------------------------------------"
 
 		if [ "$CPFS_OPERANDS_NAMESPACE" == "$CPFS_OPERATORS_NAMESPACE" ]; then
