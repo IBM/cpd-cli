@@ -13,9 +13,32 @@ depends on the version of Cloud Pak for Data that you are using:
 | 3.5       | &#10004;     | &#10004;  | &#10004;       | 3.5.x       |
 | 3.0.1     | &#10004;     | &#10004;  | &#10004;       | 3.0.1       |
 
+## Cloud Pak for Data Version 4.8
+
+**Remember:** Use `cpd-cli` Version 13.1.x with Cloud Pak for Data Version 4.8.x
+
+You can install Cloud Pak for Data from a client workstation that can connect to
+your cluster. You must run the installation from a Linux, Mac, or Windows machine.
+For details, see [Installing IBM Cloud Pak for Data](https://www.ibm.com/docs/en/cloud-paks/cp-data/4.8.x?topic=installing)
+
+Download the package that corresponds to the license that you purchased and the operating system where you will run the CLI:
+- Download EE for Cloud Pak for Data Enterprise Edition. 
+- Download SE for Cloud Pak for Data Standard Edition.
+
+| Operating system | CLI               |  Notes      |           
+| :--              | :--               | :--         |
+| Linux            | cpd-cli-linux-*   |             |
+| Mac OS           | cpd-cli-darwin-*  |             |
+| Windows          | cpd-cli-linux-*   | Requires Windows Subsystem for Linux.
+| POWER (ppc64le)  | cpd-cli-ppc64le-* | Cannot be used to install or upgrade. Supported only for administrative tasks. |
+| Z (s390x)        | cpd-cli-s390x-*   | Cannot be used to install or upgrade. Supported only for administrative tasks. |
+
+For more information on using `cpd-cli`, see [Cloud Pak for Data command-line interface (cpd-cli)](https://www.ibm.com/docs/en/cloud-paks/cp-data/4.8.x?topic=reference-cpd-cli-cloud-pak-data-command-line-interface).
+
+---
 ## Cloud Pak for Data Version 4.7
 
-**Remember:** Use `cpd-cli` Version 13.x with Cloud Pak for Data Version 4.7.x
+**Remember:** Use `cpd-cli` Version 13.0.x with Cloud Pak for Data Version 4.7.x
 
 You can install Cloud Pak for Data from a client workstation that can connect to
 your cluster. You must run the installation from a Linux, Mac, or Windows machine.
@@ -36,6 +59,7 @@ Download the package that corresponds to the license that you purchased and the 
 For more information on using `cpd-cli`, see [Cloud Pak for Data command-line interface (cpd-cli)](https://www.ibm.com/docs/SSQNUZ_4.7.x/cpd-cli/cpd-cli-intro.html).
 
 ---
+
 
 ## Cloud Pak for Data Version 4.6
 
