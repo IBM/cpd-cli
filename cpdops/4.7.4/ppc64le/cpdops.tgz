@@ -63,12 +63,12 @@
     
 
   <link rel="assets" href="https://assets.github.ibm.com/">
-    <link rel="shared-web-socket" href="wss://github.ibm.com/_sockets/u/876/ws?session=eyJ2IjoiVjMiLCJ1Ijo4NzYsInMiOjMxMTY0OTc5LCJjIjoyMTcxNTEwMjYyLCJ0IjoxNjk5Mzc3ODc0fQ==--a11cc884346e5c53113f32a35964ae285b108b14e880d2ee0a00077691d4ffc0" data-refresh-url="/_alive" data-session-id="7692806cdf783ccb4e45c3eef88d42f2718ab6547e52766b8fa5efcd40a721f1">
+    <link rel="shared-web-socket" href="wss://github.ibm.com/_sockets/u/876/ws?session=eyJ2IjoiVjMiLCJ1Ijo4NzYsInMiOjMyNzEwMDMwLCJjIjo1NjEyNzczMTgsInQiOjE3MDY4MzEyNDN9--51d5ac09a420a3f995ccbad396294864749f94fd89dab2f1662c9d4ebe420d19" data-refresh-url="/_alive" data-session-id="2fe16f709ffc9b3ca8a98ff113cdb0cd053fda134f4b7c0744b14b061ad7d524">
     <link rel="shared-web-socket-src" href="/assets-cdn/worker/socket-worker-73f88bc55c37.js">
   <link rel="sudo-modal" href="/sessions/sudo_modal">
 
 
-  <meta name="request-id" content="a3177f08-cc68-4580-b61e-56f0532612cb" data-pjax-transient="true" /><meta name="html-safe-nonce" content="dec740ffcc1ec2fc035788da7c51b2e7887b5cbb78360f6454dd4622cfe639a3" data-pjax-transient="true" />
+  <meta name="request-id" content="dafad233-4aee-4c28-b4e5-a2cfa25b9526" data-pjax-transient="true" /><meta name="html-safe-nonce" content="211c298d1b62f99b02baa5b88def03ed6c8bf6d31c32ba9d1a1b08aabba99bfe" data-pjax-transient="true" />
 
     <meta name="hovercard-subject-tag" content="repository:848415" data-pjax-transient>
 
@@ -202,7 +202,7 @@
           spellcheck="false"
           autocomplete="off"
         >
-        <input type="hidden" value="ylStwMCOUnFiyfupdUUnCRj-CpPtsgZ-jUNAVkNopIp7ijzNo5bWUXBPOKQdIk0NZ-rWpCSsiapd5dLqXS8hVw" data-csrf="true" class="js-data-jump-to-suggestions-path-csrf" />
+        <input type="hidden" value="GWhF7zgQcnQnIxbTpxQMkFnT4zExbzqPj39VcU1sFkCgbEKEkz_g674l-QTcq3_KOtSDjObLUk-YS-QrSwo7Ow" data-csrf="true" class="js-data-jump-to-suggestions-path-csrf" />
         <input type="hidden" class="js-site-search-type-field" name="type" >
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="20" aria-hidden="true" class="mr-1 header-search-key-slash"><path fill="none" stroke="#979A9C" opacity=".4" d="M3.5.5h12c1.7 0 3 1.3 3 3v13c0 1.7-1.3 3-3 3h-12c-1.7 0-3-1.3-3-3v-13c0-1.7 1.3-3 3-3z"></path><path fill="#979A9C" d="M11.8 6L8 15.1h-.9L10.8 6h1z"></path></svg>
 
@@ -405,7 +405,7 @@
       <img class="avatar avatar-user" loading="lazy" decoding="async" src="https://avatars.github.ibm.com/u/876?s=40" width="20" height="20" alt="@nplantan" />
       nplantan
 </a>
-    <!-- '"` --><!-- </textarea></xmp> --></option></form><form data-turbo="false" action="/logout" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="tlmy1O4CyIdEyP1NVy3IXQ7vDSGIoujDqmIXVWXfgu7HidbxQBCKWse6WmGJQoImY0rZPm5fsrYZfrd-KM7Idg" />
+    <!-- '"` --><!-- </textarea></xmp> --></option></form><form data-turbo="false" action="/logout" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="0wo01epl_XF8y0RGZJeYOjV0dtBHrCKHUTkTBXcGJJXAHE8wi5mMd96mQBFFaJrw9rXSnlSmLNGC-2tQunBwXg" />
       <button
         type="submit"
         class="Header-link mr-0 mr-md-3 py-2 py-md-3 border-top border-md-top-0 border-white-fade d-md-none btn-link d-block width-full text-left"
@@ -445,7 +445,7 @@
       <notification-indicator
         class="js-socket-channel"
         data-test-selector="notifications-indicator"
-        data-channel="eyJjIjoibm90aWZpY2F0aW9uLWNoYW5nZWQ6ODc2IiwidCI6MTY5OTM3Nzg3NH0=--855e2740d243a47cb2f0d5c54be7e0d6851a091b90262a15b3b3349c670643c1">
+        data-channel="eyJjIjoibm90aWZpY2F0aW9uLWNoYW5nZWQ6ODc2IiwidCI6MTcwNjgzMTI0M30=--3cbf21a57f7685eec9d07f0b75dbc2d7fbbf1316f416d9e449440974f7c59df0">
         <a href="/notifications"
           data-turbo=false
           class="Header-link notification-indicator position-relative tooltipped tooltipped-sw"
@@ -536,7 +536,7 @@
 
             <div class="flash flash-full js-notice flash-warn" >
   <div>
-      <p><strong>Note</strong>: It is a known issue that the notifications page performance is degraded and may display a 502 error. A patch from the vendor is incoming to fix the problem, and we should have it resolved in a few days. Please check <a href="https://github.ibm.com/Whitewater/GitHub/issues/6232">this issue</a> for more information.</p>
+      <p>GitHub Enterprise will be unavailable on <strong>Sat, February 10</strong>, in order to upgrade to GitHub Enterprise 3.7. The upgrade will last for <strong>20 hours, starting at 07:00 ET (12:00 UTC)</strong>. More info here: <a href="https://ibm.biz/ghes3-7" rel="nofollow">ibm.biz/ghes3-7</a></p>
 
   </div>
 </div>
@@ -625,7 +625,7 @@
 
   <li>
   <div class="float-left" data-test-selector="pin-repo-button">
-    <form data-turbo="false" action="/PrivateCloud-analytics/cloudpak-for-data-installer/profile_pin" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="aIg_uPCJrfnIfCVNA8EXYZI3rjnITO_JSIgSOhfvMJSII-Nb55bAilLnbglvUJnkJPnUorKz5nmEvWluOSJovQ" autocomplete="off" />
+    <form data-turbo="false" action="/PrivateCloud-analytics/cloudpak-for-data-installer/profile_pin" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="b5zmBgxKf9S6eN5seX9BRh4v6gEuiK30AP-r9rJaDgbpR4xODsS9RJdXFBEg32jaZEsO0W65pIGsOOSRaEBFsQ" autocomplete="off" />
       <button title="Pin this repository to PrivateCloud-analytics&#39;s profile" type="submit" data-view-component="true" class="btn-sm btn">  <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-pin mr-2">
     <path fill-rule="evenodd" d="M4.456.734a1.75 1.75 0 012.826.504l.613 1.327a3.081 3.081 0 002.084 1.707l2.454.584c1.332.317 1.8 1.972.832 2.94L11.06 10l3.72 3.72a.75.75 0 11-1.061 1.06L10 11.06l-2.204 2.205c-.968.968-2.623.5-2.94-.832l-.584-2.454a3.081 3.081 0 00-1.707-2.084l-1.327-.613a1.75 1.75 0 01-.504-2.826L4.456.734zM5.92 1.866a.25.25 0 00-.404-.072L1.794 5.516a.25.25 0 00.072.404l1.328.613A4.582 4.582 0 015.73 9.63l.584 2.454a.25.25 0 00.42.12l5.47-5.47a.25.25 0 00-.12-.42L9.63 5.73a4.581 4.581 0 01-3.098-2.537L5.92 1.866z"></path>
 </svg>Pin
@@ -698,7 +698,7 @@
             </header>
 
             <div class="SelectMenu-list">
-              <form data-target="notifications-list-subscription-form.form" data-action="submit:notifications-list-subscription-form#submitForm" data-turbo="false" action="/notifications/subscribe" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="5XE0yMlA_Dd2lbZqgk9VaS3KQPfV8kKQfbEJ4MrUmIfqckCLTLwp3-Wksx_cKFJbLQHXWwIFEkYjd_NOhWLT9g" autocomplete="off" />
+              <form data-target="notifications-list-subscription-form.form" data-action="submit:notifications-list-subscription-form#submitForm" data-turbo="false" action="/notifications/subscribe" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="b4Y8hw7rj_pfrvY9hfHLV77TLtPOJnfI_jHhvHcUHr1aUcJ2wI_pQqqixBK12AiS4dcdPFcbJbvohMPN91stHw" autocomplete="off" />
 
                 <input type="hidden" name="repository_id" value="848415">
 
@@ -816,7 +816,7 @@
           hidden
         >
           <div class="SelectMenu-modal notifications-component-dialog-modal overflow-visible">
-            <form data-target="notifications-list-subscription-form.customform" data-action="submit:notifications-list-subscription-form#submitCustomForm" data-turbo="false" action="/notifications/subscribe" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="w9Zp62VCeachyw1sX9mcJq8KR5ZzT1iWq5lMuxb9DInM1R2o4L6sT7L6CBkBvpsUr8HQOqS4CED1X7YVWUtH-A" autocomplete="off" />
+            <form data-target="notifications-list-subscription-form.customform" data-action="submit:notifications-list-subscription-form#submitCustomForm" data-turbo="false" action="/notifications/subscribe" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="MUz5ycO6Cgi02l6AX0eNV5KHPVNKRXFQpvxlLKOgGtoEmwc4Dd5ssEHWbK9vbk6SzYMOvNN4IyOwSUddI-8peA" autocomplete="off" />
 
               <input type="hidden" name="repository_id" value="848415">
 
@@ -983,7 +983,7 @@
   <li>
         
   <div data-view-component="true" class="js-toggler-container js-social-container starring-container BtnGroup d-flex">
-    <form class="starred js-social-form BtnGroup-parent flex-auto" data-turbo="false" action="/PrivateCloud-analytics/cloudpak-for-data-installer/unstar" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="QPGquY0m_yOvunBNyjea4ZuuICMqpkVFZzBVxvzDiD8mRHVtV7nN6ned_Af3HDka14Ag4o9N-o4kxzw7Tbb2KQ" autocomplete="off" />
+    <form class="starred js-social-form BtnGroup-parent flex-auto" data-turbo="false" action="/PrivateCloud-analytics/cloudpak-for-data-installer/unstar" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="c7ON5cGPvifT7RiKnGK2XWgSH5XT2CwDoc0TICf7BincKgzg8usqFw61J2SGUDdYTMp-myvr5Z--4va5tDgNwA" autocomplete="off" />
       <input type="hidden" name="context" value="repository">
       <button data-ga-click="Repository, click unstar button, action:blob#show; text:Unstar" aria-label="Unstar this repository" type="submit" data-view-component="true" class="js-toggler-target rounded-left-2 border-right-0 btn-sm btn BtnGroup-item">  <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-star-fill starred-button-icon d-inline-block mr-2">
     <path fill-rule="evenodd" d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"></path>
@@ -992,7 +992,7 @@
 </span>          <span id="repo-stars-counter-unstar" aria-label="1 user starred this repository" data-singular-suffix="user starred this repository" data-plural-suffix="users starred this repository" data-pjax-replace="true" title="1" data-view-component="true" class="Counter js-social-count">1</span>
   
 </button></form>
-    <form class="unstarred js-social-form BtnGroup-parent flex-auto" data-turbo="false" action="/PrivateCloud-analytics/cloudpak-for-data-installer/star" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="uKDiwslFk5lW9UdEB4GNaFRnKf3nlsZY0CGw1DQdqX0XiGvJ4WJpQU7LRTOn-WvhBN12TJdaIinHfCpXXlymoQ" autocomplete="off" />
+    <form class="unstarred js-social-form BtnGroup-parent flex-auto" data-turbo="false" action="/PrivateCloud-analytics/cloudpak-for-data-installer/star" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="r_JrltP40WoETELhNQWON_C9jKPbxQOtYJSyadUIQmJxKkQ_w9SGP08h1vrKI1RG5QOhPxZo_mbN-rnqOOSgrw" autocomplete="off" />
       <input type="hidden" name="context" value="repository">
       <button data-ga-click="Repository, click star button, action:blob#show; text:Star" aria-label="Star this repository" type="submit" data-view-component="true" class="js-toggler-target rounded-left-2 btn-sm btn BtnGroup-item">  <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-star d-inline-block mr-2">
     <path fill-rule="evenodd" d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25zm0 2.445L6.615 5.5a.75.75 0 01-.564.41l-3.097.45 2.24 2.184a.75.75 0 01.216.664l-.528 3.084 2.769-1.456a.75.75 0 01.698 0l2.77 1.456-.53-3.084a.75.75 0 01.216-.664l2.24-2.183-3.096-.45a.75.75 0 01-.564-.41L8 2.694v.001z"></path>
@@ -1015,13 +1015,13 @@
       
 >
     <div class="SelectMenu-modal">
-        <button class="SelectMenu-closeButton position-absolute right-0 m-2" type="button" aria-label="Close menu" data-toggle-for="details-82b2b4">
+        <button class="SelectMenu-closeButton position-absolute right-0 m-2" type="button" aria-label="Close menu" data-toggle-for="details-134b9e">
           <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-x">
     <path fill-rule="evenodd" d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z"></path>
 </svg>
         </button>
       <div
-        id="filter-menu-82b2b4"
+        id="filter-menu-134b9e"
         class="d-flex flex-column flex-1 overflow-hidden"
 >
         <div
@@ -1222,7 +1222,7 @@
 
 
     
-<a class="d-none js-permalink-shortcut" data-hotkey="y" href="/PrivateCloud-analytics/cloudpak-for-data-installer/blob/794a7bbe9e347ba0e58e1a706a8b76e7ea0ba9e2/cpdops/4.7.4/ppc64le/cpdops.tgz">Permalink</a>
+<a class="d-none js-permalink-shortcut" data-hotkey="y" href="/PrivateCloud-analytics/cloudpak-for-data-installer/blob/854f4b5d3b16b94c68a0737126ac5c57a3eaa848/cpdops/4.7.4/ppc64le/cpdops.tgz">Permalink</a>
 
 <div class="d-flex flex-items-start flex-shrink-0 pb-3 flex-wrap flex-md-nowrap flex-justify-between flex-md-justify-start">
   
@@ -1292,7 +1292,7 @@
             </template>
 
               <template data-target="ref-selector.noMatchTemplate">
-    <!-- '"` --><!-- </textarea></xmp> --></option></form><form data-turbo="false" action="/PrivateCloud-analytics/cloudpak-for-data-installer/branches" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="d1OUY7Evs6J-i-RVp3mKyoXfmVZirDpfkPTH1SmpJjNPCfdgCdm8L9J2UfXSob6xJPfJS78uUgrxBhJ_oEuwkw" />
+    <!-- '"` --><!-- </textarea></xmp> --></option></form><form data-turbo="false" action="/PrivateCloud-analytics/cloudpak-for-data-installer/branches" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="BMoDww9IlWB1RbR_Njs7E5lbB3d2mpBiHOEYhUz_DkpyI5KOL5wFwA5P4kAyvEOp6_m-pS8sMBCUgCj2tYagIQ" />
       <input type="hidden" name="name" value="{{ refName }}">
       <input type="hidden" name="branch"  value="master">
       <input type="hidden" name="path_binary" value="Y3Bkb3BzLzQuNy40L3BwYzY0bGUvY3Bkb3BzLnRneg==">
@@ -1423,7 +1423,7 @@
 
 </clipboard-copy>        </li>
         <li>
-          <clipboard-copy data-toggle-for="blob-more-options-details" aria-label="Copy permalink" value="https://github.ibm.com/PrivateCloud-analytics/cloudpak-for-data-installer/blob/794a7bbe9e347ba0e58e1a706a8b76e7ea0ba9e2/cpdops/4.7.4/ppc64le/cpdops.tgz" data-view-component="true" class="dropdown-item cursor-pointer">
+          <clipboard-copy data-toggle-for="blob-more-options-details" aria-label="Copy permalink" value="https://github.ibm.com/PrivateCloud-analytics/cloudpak-for-data-installer/blob/854f4b5d3b16b94c68a0737126ac5c57a3eaa848/cpdops/4.7.4/ppc64le/cpdops.tgz" data-view-component="true" class="dropdown-item cursor-pointer">
     
             <span class="d-flex flex-items-baseline">
               <span class="flex-auto">Copy permalink</span>
@@ -1452,20 +1452,83 @@
   
 </div></div>
 
-    <include-fragment src="/PrivateCloud-analytics/cloudpak-for-data-installer/spoofed_commit_check/794a7bbe9e347ba0e58e1a706a8b76e7ea0ba9e2" data-test-selector="spoofed-commit-check"></include-fragment>
+    <include-fragment src="/PrivateCloud-analytics/cloudpak-for-data-installer/spoofed_commit_check/854f4b5d3b16b94c68a0737126ac5c57a3eaa848" data-test-selector="spoofed-commit-check"></include-fragment>
 
     <div class="Box d-flex flex-column flex-shrink-0 mb-3">
-  <include-fragment src="/PrivateCloud-analytics/cloudpak-for-data-installer/contributors/master/cpdops/4.7.4/ppc64le/cpdops.tgz" class="commit-loader">
-    <div class="Box-header d-flex flex-items-center">
-      <div class="Skeleton avatar avatar-user flex-shrink-0 ml-n1 mr-n1 mt-n1 mb-n1" style="width:24px;height:24px;"></div>
-      <div class="Skeleton Skeleton--text col-5 ml-2">&nbsp;</div>
-    </div>
+  
+  <div class="Box-header Details js-details-container">
+      <div class="d-flex flex-items-center">
+        <span class="flex-shrink-0 ml-n1 mr-n1 mt-n1 mb-n1">
+          <a rel="contributor" data-skip-pjax="true" data-hovercard-type="user" data-hovercard-url="/users/astreit/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="/astreit"><img class="avatar avatar-user" src="https://avatars.github.ibm.com/u/15852?s=48" width="24" height="24" alt="@astreit" /></a>
+        </span>
+        <div class="flex-1 d-flex flex-items-center ml-3 min-width-0">
+          <div class="css-truncate css-truncate-overflow">
+            <a class="text-bold Link--primary" rel="contributor" data-hovercard-type="user" data-hovercard-url="/users/astreit/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="/astreit">astreit</a>
 
-    <div class="Box-body d-flex flex-items-center" >
-      <div class="Skeleton Skeleton--text col-1">&nbsp;</div>
-      <span class="color-fg-danger h6 loader-error">Cannot retrieve contributors at this time</span>
-    </div>
-</include-fragment></div>
+              <span class="markdown-title">
+                <a data-pjax="true" title="Log rotation" class="Link--secondary" href="/PrivateCloud-analytics/cloudpak-for-data-installer/commit/854f4b5d3b16b94c68a0737126ac5c57a3eaa848">Log rotation</a>
+              </span>
+          </div>
+
+
+          <span class="ml-2">
+            <include-fragment accept="text/fragment+html" src="/PrivateCloud-analytics/cloudpak-for-data-installer/commit/854f4b5d3b16b94c68a0737126ac5c57a3eaa848/rollup?direction=e" class="d-inline"></include-fragment>
+          </span>
+        </div>
+        <div class="ml-3 d-flex flex-shrink-0 flex-items-center flex-justify-end color-fg-muted no-wrap">
+          <span class="d-none d-md-inline">
+            <span>Latest commit</span>
+            <a class="text-small text-mono Link--secondary" href="/PrivateCloud-analytics/cloudpak-for-data-installer/commit/854f4b5d3b16b94c68a0737126ac5c57a3eaa848" data-pjax>854f4b5</a>
+            <span itemprop="dateModified"><relative-time datetime="2023-11-30T23:47:44Z" class="no-wrap">Nov 30, 2023</relative-time></span>
+          </span>
+
+          <a data-pjax href="/PrivateCloud-analytics/cloudpak-for-data-installer/commits/master/cpdops/4.7.4/ppc64le/cpdops.tgz" class="ml-3 no-wrap Link--primary no-underline">
+            <svg text="gray" aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-history">
+    <path fill-rule="evenodd" d="M1.643 3.143L.427 1.927A.25.25 0 000 2.104V5.75c0 .138.112.25.25.25h3.646a.25.25 0 00.177-.427L2.715 4.215a6.5 6.5 0 11-1.18 4.458.75.75 0 10-1.493.154 8.001 8.001 0 101.6-5.684zM7.75 4a.75.75 0 01.75.75v2.992l2.028.812a.75.75 0 01-.557 1.392l-2.5-1A.75.75 0 017 8.25v-3.5A.75.75 0 017.75 4z"></path>
+</svg>
+            <span class="d-none d-sm-inline">
+              <strong>History</strong>
+            </span>
+          </a>
+        </div>
+      </div>
+
+  </div>
+
+  <div class="Box-body d-flex flex-items-center flex-auto border-bottom-0 flex-wrap" >
+    <details class="details-reset details-overlay details-overlay-dark lh-default color-fg-default float-left mr-3" id="blob_contributors_box">
+      <summary class="Link--primary">
+        <svg text="gray" aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-people">
+    <path fill-rule="evenodd" d="M5.5 3.5a2 2 0 100 4 2 2 0 000-4zM2 5.5a3.5 3.5 0 115.898 2.549 5.507 5.507 0 013.034 4.084.75.75 0 11-1.482.235 4.001 4.001 0 00-7.9 0 .75.75 0 01-1.482-.236A5.507 5.507 0 013.102 8.05 3.49 3.49 0 012 5.5zM11 4a.75.75 0 100 1.5 1.5 1.5 0 01.666 2.844.75.75 0 00-.416.672v.352a.75.75 0 00.574.73c1.2.289 2.162 1.2 2.522 2.372a.75.75 0 101.434-.44 5.01 5.01 0 00-2.56-3.012A3 3 0 0011 4z"></path>
+</svg>
+        <strong>1</strong>
+        
+        contributor
+      </summary>
+      <details-dialog
+        class="Box Box--overlay d-flex flex-column anim-fade-in fast"
+        aria-label="Users who have contributed to this file"
+        src="/PrivateCloud-analytics/cloudpak-for-data-installer/contributors-list/master/cpdops/4.7.4/ppc64le/cpdops.tgz" preload>
+        <div class="Box-header">
+          <button class="Box-btn-octicon btn-octicon float-right" type="button" aria-label="Close dialog" data-close-dialog>
+            <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-x">
+    <path fill-rule="evenodd" d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z"></path>
+</svg>
+          </button>
+          <h3 class="Box-title">
+            Users who have contributed to this file
+          </h3>
+        </div>
+        <include-fragment>
+          <svg style="box-sizing: content-box; color: var(--color-icon-primary);" width="32" height="32" viewBox="0 0 16 16" fill="none" data-view-component="true" class="my-3 mx-auto d-block anim-rotate">
+  <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-opacity="0.25" stroke-width="2" vector-effect="non-scaling-stroke" />
+  <path d="M15 8a7.002 7.002 0 00-7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+</svg>
+        </include-fragment>
+      </details-dialog>
+    </details>
+  </div>
+</div>
 
 
 
@@ -1488,14 +1551,14 @@
 
   <div class="text-mono f6 flex-auto pr-3 flex-order-2 flex-md-order-1">
 
-    19.1 KB
+    25.2 KB
   </div>
 
   <div class="d-flex py-1 py-md-0 flex-auto flex-order-1 flex-md-order-2 flex-sm-grow-0 flex-justify-between hide-sm hide-md">
       
 
     <div class="BtnGroup">
-      <a data-permalink-href="/PrivateCloud-analytics/cloudpak-for-data-installer/raw/794a7bbe9e347ba0e58e1a706a8b76e7ea0ba9e2/cpdops/4.7.4/ppc64le/cpdops.tgz" href="/PrivateCloud-analytics/cloudpak-for-data-installer/raw/master/cpdops/4.7.4/ppc64le/cpdops.tgz" id="raw-url" data-view-component="true" class="js-permalink-replaceable-link btn-sm btn BtnGroup-item">  Download
+      <a data-permalink-href="/PrivateCloud-analytics/cloudpak-for-data-installer/raw/854f4b5d3b16b94c68a0737126ac5c57a3eaa848/cpdops/4.7.4/ppc64le/cpdops.tgz" href="/PrivateCloud-analytics/cloudpak-for-data-installer/raw/master/cpdops/4.7.4/ppc64le/cpdops.tgz" id="raw-url" data-view-component="true" class="js-permalink-replaceable-link btn-sm btn BtnGroup-item">  Download
   
 </a>    </div>
 
@@ -1510,7 +1573,7 @@
 </svg>
           </a>
 
-          <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="inline-form" data-turbo="false" action="/PrivateCloud-analytics/cloudpak-for-data-installer/delete/master/cpdops/4.7.4/ppc64le/cpdops.tgz" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="DD2EG1xC7-B1iZi-dqnThZBN8bHc6v2-RMQauWCpLLFykz4WA63-h1XMk3oedRNo4YldVQ9eDvqlRZBjc8wYWA" />
+          <!-- '"` --><!-- </textarea></xmp> --></option></form><form class="inline-form" data-turbo="false" action="/PrivateCloud-analytics/cloudpak-for-data-installer/delete/master/cpdops/4.7.4/ppc64le/cpdops.tgz" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="Y8e2uzgtnLFJyvYOx_sKY0nrxA4ozcoDY_5L7TYHJ5nWcG34ET47AgZAN5mJzRv-ZwnjwbCzx3TTvHmV5gRVIg" />
             <button class="btn-octicon btn-octicon-danger tooltipped tooltipped-nw" type="submit"
               aria-label="Delete this file" data-disable-with>
               <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-trash">
@@ -1616,7 +1679,7 @@
     <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
 </svg>
 </a>        <span>
-        &copy; 2023 GitHub, Inc.
+        &copy; 2024 GitHub, Inc.
         </span>
       </li>
     </ul>
