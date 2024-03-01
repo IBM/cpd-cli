@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """
    Copyright 2023 NetApp, Inc
+
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
+
        http://www.apache.org/licenses/LICENSE-2.0
+
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -563,7 +566,7 @@ if __name__ == "__main__":
             '/cpdbr-scripts/cpdbr/cpdbr-logrotate.sh\n'
             'echo "*** cpdbr-tenant.sh post-restore start ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log\n'
             'CPDBR_SCRIPT_OUTPUT=""\n'
-            'CPDBR_SCRIPT_OUTPUT="$(/cpdbr-scripts/cpdbr/cpdbr-tenant.sh post-restore --tenant-operator-namespace $1 2>&1)"\n'
+            'CPDBR_SCRIPT_OUTPUT="$(/cpdbr-scripts/cpdbr/cpdbr-tenant.sh post-restore --tenant-operator-namespace $1 --scale-wait-timeout 30m 2>&1)"\n'
             "CHECK_RC=$?\n"
             'echo "${CPDBR_SCRIPT_OUTPUT}" | tee -a /cpdbr-scripts/cpdbr-tenant.log\n'
             'echo "/cpdbr-scripts/cpdbr/cpdbr-tenant.sh post-restore exit code=${CHECK_RC}" | tee -a /cpdbr-scripts/cpdbr-tenant.log\n'
