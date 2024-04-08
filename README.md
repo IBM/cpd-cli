@@ -34,7 +34,7 @@ Download the package that corresponds to the license that you purchased and the 
 | POWER (ppc64le)  | cpd-cli-ppc64le-* | Cannot be used to install or upgrade. Supported only for administrative tasks. |
 | Z (s390x)        | cpd-cli-s390x-*   | Cannot be used to install or upgrade. Supported only for administrative tasks. |
 
-For more information on using `cpd-cli`, see [Cloud Pak for Data command-line interface (cpd-cli)](https://www.ibm.com/docs/en/cloud-paks/cp-data/4.8.x?topic=reference-cpd-cli-cloud-pak-data-command-line-interface).
+For more information on using `cpd-cli`, see [Cloud Pak for Data command-line interface (cpd-cli)](https://www.ibm.com/docs/SSQNUZ_4.8.x/cpd-cli/cpd-cli.html).
 
 ---
 ## Cloud Pak for Data Version 4.7
