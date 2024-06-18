@@ -6,6 +6,7 @@ depends on the version of Cloud Pak for Data that you are using:
 
 | Release   | Installation | Upgrade   | Administration | CLI Version |
 | ------    | ------       | ------    | -----------    | ------      |
+| 5.0       | &#10004;     | &#10004;  | &#10004;       | 14.0.x      |
 | 4.8       | &#10004;     | &#10004;  | &#10004;       | 13.1.x      |
 | 4.7       | &#10004;     | &#10004;  | &#10004;       | 13.0.x      |
 | 4.6       | &#10004;     | &#10004;  | &#10004;       | 12.x      |
@@ -14,6 +15,29 @@ depends on the version of Cloud Pak for Data that you are using:
 | 3.5       | &#10004;     | &#10004;  | &#10004;       | 3.5.x       |
 | 3.0.1     | &#10004;     | &#10004;  | &#10004;       | 3.0.1       |
 
+## Cloud Pak for Data Version 5.0
+
+**Remember:** Use `cpd-cli` Version 14.0.x with Cloud Pak for Data Version 5.0.x
+
+You can install Cloud Pak for Data from a client workstation that can connect to
+your cluster. You must run the installation from a Linux, Mac, or Windows machine.
+For details, see [Installing IBM Cloud Pak for Data](https://www.ibm.com/docs/en/cloud-paks/cp-data/5.0.x?topic=installing)
+
+Download the package that corresponds to the license that you purchased and the operating system where you will run the CLI:
+- Download EE for Cloud Pak for Data Enterprise Edition. 
+- Download SE for Cloud Pak for Data Standard Edition.
+
+| Operating system | CLI               |  Notes      |           
+| :--              | :--               | :--         |
+| Linux            | cpd-cli-linux-*   |             |
+| Mac OS           | cpd-cli-darwin-*  |             |
+| Windows          | cpd-cli-linux-*   | Requires Windows Subsystem for Linux.
+| POWER (ppc64le)  | cpd-cli-ppc64le-* |  |
+| Z (s390x)        | cpd-cli-s390x-*   |  |
+
+For more information on using `cpd-cli`, see [Cloud Pak for Data command-line interface (cpd-cli)](https://www.ibm.com/docs/SSQNUZ_5.0.x/cpd-cli/cpd-cli.html).
+
+---
 ## Cloud Pak for Data Version 4.8
 
 **Remember:** Use `cpd-cli` Version 13.1.x with Cloud Pak for Data Version 4.8.x
