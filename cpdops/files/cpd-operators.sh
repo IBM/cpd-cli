@@ -7,7 +7,7 @@
 # as a cluster admin.
 #
 # 
-VERSION="4.8.5"
+VERSION="5.0.1"
 
 scriptdir=`dirname $0`
 cd ${scriptdir}
@@ -166,6 +166,46 @@ function getTopology() {
 			displayMessage error "oc get operandregistry  -n ${CPFS_OPERATORS_NAMESPACE} FAILED with ${CHECK_RESOURCES}"
 		else
 			CPFS_OPERANDS_NAMESPACE=$CPFS_OPERATORS_NAMESPACE
+		fi
+	fi
+}
+
+## Leveraged by cpd-operator-backup to retrieve RSI Patch Service for given Namespace
+function getRSIWebHookService() {
+	local NAMESPACE_NAME=$1
+	local RESOURCE_NAME="rsi-webhook-svc"
+	local RESOURCE_JSON=""
+	RESOURCE_JSON=`oc get service "$RESOURCE_NAME" -n ${NAMESPACE_NAME} -o json 2>&1`
+	local RESOURCE_RC=$?
+	if [ $RESOURCE_RC -eq 1 ]; then
+		displayMessage info "oc get service ${RESOURCE_NAME} -n ${NAMESPACE_NAME} Not Found"
+	else
+		RESOURCE_JSON=`oc get service "$RESOURCE_NAME" -n ${NAMESPACE_NAME} -o json | jq -c -M 'del(.metadata.creationTimestamp, .metadata.generation, .metadata.resourceVersion, .metadata.uid, .metadata.annotations.managedFields, .metadata.annotations."kubectl.kubernetes.io/last-applied-configuration", .metadata.ownerReferences, .status)' | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
+		local RSI_WEBHOOK_SERVICE="\"${RESOURCE_NAME}\": ${RESOURCE_JSON}"
+		if [ "${BACKUP_RSI_WEBHOOK_SERVICE}" == "" ]; then
+			BACKUP_RSI_WEBHOOK_SERVICE="${RSI_WEBHOOK_SERVICE}"
+		else
+			BACKUP_RSI_WEBHOOK_SERVICE=`echo "${BACKUP_RSI_WEBHOOK_SERVICE},${RSI_WEBHOOK_SERVICE}"`
+		fi
+	fi
+}
+
+## Leveraged by cpd-operator-backup to retrieve RSI Patch MutatingWebhookConfiguration for given Namespace
+function getRSIWebHookConfiguration() {
+	local NAMESPACE_NAME=$1
+	local RESOURCE_NAME="rsi-webhook-cfg-${NAMESPACE_NAME}"
+	local RESOURCE_JSON=""
+	RESOURCE_JSON=`oc get MutatingWebhookConfiguration "$RESOURCE_NAME" -o json 2>&1`
+	local RESOURCE_RC=$?
+	if [ $RESOURCE_RC -eq 1 ]; then
+		displayMessage info "oc get MutatingWebhookConfiguration ${RESOURCE_NAME} Not Found"
+	else
+		RESOURCE_JSON=`oc get MutatingWebhookConfiguration "$RESOURCE_NAME" -o json | jq -c -M 'del(.metadata.creationTimestamp, .metadata.generation, .metadata.resourceVersion, .metadata.uid, .metadata.annotations.managedFields, .metadata.annotations."kubectl.kubernetes.io/last-applied-configuration", .metadata.ownerReferences)' | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
+		local RSI_WEBHOOK_CONFIG="\"${RESOURCE_NAME}\": ${RESOURCE_JSON}"
+		if [ "${BACKUP_RSI_WEBHOOK_CONFIG}" == "" ]; then
+			BACKUP_RSI_WEBHOOK_CONFIG="${RSI_WEBHOOK_CONFIG}"
+		else
+			BACKUP_RSI_WEBHOOK_CONFIG=`echo "${BACKUP_RSI_WEBHOOK_CONFIG},${RSI_WEBHOOK_CONFIG}"`
 		fi
 	fi
 }
@@ -716,7 +756,7 @@ spec:
 EOF
 
 		local RESOURCE_APPLY=""
-		RESOURCE_APPLY=`oc apply -f mongo-backup-job.yaml -n $NAMESPACE_NAME`
+		RESOURCE_APPLY=`oc apply -f mongo-backup-job.yaml -n $NAMESPACE_NAME 2>&1`
 		RESOURCE_RC=$?
 		if [ $RESOURCE_RC -eq 1 ]; then
 			displayMessage info "oc apply -f mongo-backup-job.yaml - FAILED with:  ${RESOURCE_APPLY}"
@@ -938,15 +978,21 @@ function cpd-operators-backup () {
 		displayDivider
 	fi
 
+	## Capture RSI Patch MutatingWebhook Service and Configuration
+	BACKUP_RSI_WEBHOOK_SERVICE=""
+	getRSIWebHookService $CPFS_OPERANDS_NAMESPACE
+	BACKUP_RSI_WEBHOOK_CONFIG=""
+	getRSIWebHookConfiguration $CPFS_OPERANDS_NAMESPACE
+
 	## Create ConfigMap cpd-operators.json file with Subscriptions, OperandRegistries, OperandConfigs and OperandRequests in .data
 	CAPTURE_TIME=`date -u +%Y-%m-%dT%H.%M.%S.UTC`
-	local CONFIGMAP_DATA=$(printf '{ "apiVersion" : "v1", "kind" : "ConfigMap", "metadata": { "name" : "cpd-operators", "namespace" : "%s", "labels" : {"icpdsupport/version": "%s","icpdsupport/capture": "%s", "app": "cpd-operators-backup", "icpdsupport/addOnId": "cpdbr", "icpdsupport/app": "br-service"} }, "data": { "foundationoperandsnamespace" : "%s", "privatecatalogs" : "%s", "iamdata" : "%s", "catalogsources" : "{ %s }",  "clusterserviceversions" : "{ %s }",  "subscriptions" : "{ %s }",  "odlmsubscriptions" : "{ %s }",  "operandregistries" : "{ %s }",  "operandconfigs" : "{ %s }", "operandrequests": "{ %s }", "cacertificatesecrets": "{ %s }", "cacertificates": "{ %s }", "selfsignedissuers": "{ %s }", "namespacescopes": "{ %s }", "configmaps": "{ %s }", "operatorgroups": "{ %s }", "operatornamespaces": "{ %s }", "instancenamespaces": "{ %s }" } }' "$OPERATORS_NAMESPACE" ${VERSION} ${CAPTURE_TIME} ${CPFS_OPERANDS_NAMESPACE} ${PRIVATE_CATALOGS} ${IAM_DATA} "$(echo "${BACKUP_CAT_SRCS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_CLUSTER_SVS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_SUBS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_ODLM_SUBS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_OP_REGS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo -E "${BACKUP_OP_CFGS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|\\"|\\\\"|g' -e 's|"|\\"|g' -e 's|\\n|\\\\n|g' | sed -e 's|\\\\\\n|\\\\\\\\n|g')" "$(echo "${BACKUP_OP_REQS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_CA_CERT_SECRETS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_CA_CERTS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_SS_ISSUERS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_NS_SCOPES}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_CONFIGMAPS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g' -e 's|\\n|\\\\n|g')" "$(echo "${BACKUP_OPERATOR_GROUPS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_OPERATOR_NAMESPACES}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_CPD_INSTANCE_NAMESPACES}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')")
+	local CONFIGMAP_DATA=$(printf '{ "apiVersion" : "v1", "kind" : "ConfigMap", "metadata": { "name" : "cpd-operators", "namespace" : "%s", "labels" : {"icpdsupport/version": "%s","icpdsupport/capture": "%s", "app": "cpd-operators-backup", "icpdsupport/addOnId": "cpdbr", "icpdsupport/app": "br-service"} }, "data": { "foundationoperandsnamespace" : "%s", "privatecatalogs" : "%s", "iamdata" : "%s", "catalogsources" : "{ %s }",  "clusterserviceversions" : "{ %s }",  "subscriptions" : "{ %s }",  "odlmsubscriptions" : "{ %s }",  "operandregistries" : "{ %s }",  "operandconfigs" : "{ %s }", "operandrequests": "{ %s }", "rsiwebhookservices": "{ %s }", "rsiwebhookconfigurations": "{ %s }", "cacertificatesecrets": "{ %s }", "cacertificates": "{ %s }", "selfsignedissuers": "{ %s }", "namespacescopes": "{ %s }", "configmaps": "{ %s }", "operatorgroups": "{ %s }", "operatornamespaces": "{ %s }", "instancenamespaces": "{ %s }" } }' "$OPERATORS_NAMESPACE" ${VERSION} ${CAPTURE_TIME} ${CPFS_OPERANDS_NAMESPACE} ${PRIVATE_CATALOGS} ${IAM_DATA} "$(echo "${BACKUP_CAT_SRCS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_CLUSTER_SVS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_SUBS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_ODLM_SUBS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_OP_REGS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo -E "${BACKUP_OP_CFGS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|\\"|\\\\"|g' -e 's|"|\\"|g' -e 's|\\n|\\\\n|g' | sed -e 's|\\\\\\n|\\\\\\\\n|g')" "$(echo "${BACKUP_OP_REQS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_RSI_WEBHOOK_SERVICE}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_RSI_WEBHOOK_CONFIG}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')"  "$(echo "${BACKUP_CA_CERT_SECRETS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_CA_CERTS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_SS_ISSUERS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_NS_SCOPES}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_CONFIGMAPS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g' -e 's|\\n|\\\\n|g')" "$(echo "${BACKUP_OPERATOR_GROUPS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_OPERATOR_NAMESPACES}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_CPD_INSTANCE_NAMESPACES}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')")
 #	local CONFIGMAP_DATA=$(printf '{ "apiVersion" : "v1", "kind" : "ConfigMap", "metadata": { "name" : "cpd-operators", "namespace" : "%s", "labels" : {"icpdsupport/version": "%s","icpdsupport/capture": "%s", "app": "cpd-operators-backup", "icpdsupport/addOnId": "cpdbr", "icpdsupport/app": "br-service"} }, "data": { "foundationoperandsnamespace" : "%s", "privatecatalogs" : "%s", "iamdata" : "%s", "catalogsources" : "{ %s }",  "clusterserviceversions" : "{ %s }",  "subscriptions" : "{ %s }",  "odlmsubscriptions" : "{ %s }",  "operandregistries" : "{ %s }",  "operandconfigs" : "{ %s }", "operandrequests": "{ %s }", "cacertificatesecrets": "{ %s }", "cacertificates": "{ %s }", "selfsignedissuers": "{ %s }", "namespacescopes": "{ %s }", "configmaps": "{ %s }", "operatorgroups": "{ %s }", "operatornamespaces": "{ %s }", "instancenamespaces": "{ %s }" } }' "$OPERATORS_NAMESPACE" ${VERSION} ${CAPTURE_TIME} ${CPFS_OPERANDS_NAMESPACE} ${PRIVATE_CATALOGS} ${IAM_DATA} "$(echo "${BACKUP_CAT_SRCS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_CLUSTER_SVS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_SUBS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_ODLM_SUBS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_OP_REGS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo -E "${BACKUP_OP_CFGS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g' -e 's|\\n|\\\\n|g' | sed -e 's|\\\\\\n|\\\\\\\\n|g')" "$(echo "${BACKUP_OP_REQS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_CA_CERT_SECRETS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo -E "${BACKUP_CA_CERTS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g' -e 's|\\"|\\\\"|g' -e 's|\\n|\\\\n|g' | sed -e 's|\\\\\\n|\\\\\\\\n|g')" "$(echo -E "${BACKUP_SS_ISSUERS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g' -e 's|\\n|\\\\n|g' | sed -e 's|\\\\\\n|\\\\\\\\n|g')" "$(echo "${BACKUP_NS_SCOPES}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_CONFIGMAPS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g' -e 's|\\n|\\\\n|g')" "$(echo "${BACKUP_OPERATOR_GROUPS}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_OPERATOR_NAMESPACES}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')" "$(echo "${BACKUP_CPD_INSTANCE_NAMESPACES}" | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g')")
 	echo -E "${CONFIGMAP_DATA}" > cpd-operators-configmap.json
 	## Create ConfigMap from cpd-operator.json file
 	if [ $PREVIEW -eq 0 ]; then
 		local RESOURCE_APPLY=''
-		RESOURCE_APPLY=`oc apply -f cpd-operators-configmap.json`
+		RESOURCE_APPLY=`oc apply -f cpd-operators-configmap.json 2>&1`
 		local RESOURCE_RC=$?
 		if [ $RESOURCE_RC -eq 1 ]; then
 			displayMessage error "oc apply -f cpd-operators-configmap.json - FAILED with:  ${RESOURCE_APPLY}"
@@ -954,6 +1000,173 @@ function cpd-operators-backup () {
 			displayMessage info "cpd-operators ConfigMap created/updated in ${OPERATORS_NAMESPACE}"
 		fi
 	fi
+}
+
+## Leveraged by cpd-operator-restore to check if a MutatingWebhook Service already exists and if not create it
+function checkCreateRSIWebHookService() {
+	local RESOURCE_KEY=$1
+	local RESOURCE_NAMESPACE=$2
+	local RESOURCE_ID=`echo $RESOURCE_KEY | sed -e 's|"||g'`
+	local RESOURCE_JSON=`echo "${BACKEDUP_RSI_WEBHOOK_SERVICE}" | jq ".${RESOURCE_KEY}"`
+	local RESOURCE_FILE=""
+
+	if [ "$RESOURCE_JSON" == null ]; then
+		displayMessage error "Service: ${RESOURCE_ID} - Not Found"
+	else
+		local RESOURCE_NAME=`echo $RESOURCE_JSON | jq ".metadata.name" | sed -e 's|"||g'`
+
+		## Retrieve Services sort by .metadata.name and filter JSON for only select keys 	
+		local GET_RESOURCES=""
+		local GET_RESOURCE=""
+		GET_RESOURCES=`oc get service -n "$RESOURCE_NAMESPACE" -o jsonpath="{'{'}{range .items[*]}{'\"'}{.metadata.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\"}}\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$|}|" -e 's|\\"|"|g'`
+		local RESOURCE_RC=$?
+		if [ $RESOURCE_RC -eq 1 ]; then
+			displayMessage error "oc get service -n ${RESOURCE_NAMESPACE} - FAILED with:  ${GET_RESOURCES}"
+		else
+			GET_RESOURCE=`echo "${GET_RESOURCES}" | jq ".\"${RESOURCE_NAME}\""`
+		fi
+		## Check for given Service Key
+		if [ "$GET_RESOURCE" == null ] || [ "$GET_RESOURCE" == "" ]; then
+			### When extracting the stashed json, clusterIP and clusterIPs fields should be excluded so they can be regenerated based on the target cluster CIDR range
+			### Otherwise, applying the original IPs that aren't in a target cluster's CIDR range will error out when apply is attempted
+			echo "${RESOURCE_JSON}" | jq 'del(.spec.clusterIP, .spec.clusterIPs)' > ${RESOURCE_ID}.json
+			RESOURCE_FILE="${RESOURCE_ID}.json"
+			displayMessage info "Service: ${RESOURCE_ID}: ${RESOURCE_ID}.json"
+		else
+			displayMessage info "Service: ${RESOURCE_ID} - Already Exists"
+		fi
+
+		## Create/Apply Service from yaml file and wait until Service is Ready
+		if [ "$RESOURCE_FILE" != "" ] && [ $PREVIEW -eq 0 ]; then
+			local RESOURCE_APPLY=""
+			RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}" -n ${RESOURCE_NAMESPACE} 2>&1`
+			local RESOURCE_RC=$?
+			if [ $RESOURCE_RC -eq 1 ]; then
+				displayMessage error "oc apply -f ${RESOURCE_FILE} -n ${RESOURCE_NAMESPACE} - FAILED with:  ${RESOURCE_APPLY}"
+			else
+				local RESOURCE_READY="false"
+				local RETRY_COUNT=0
+				local SLEEP_SECONDS=1
+				sleep 10
+				until [ "${RESOURCE_READY}" == "true" ] || [ "${RETRY_COUNT}" -gt "${RETRY_LIMIT}" ]; do
+					RESOURCE_JSON=`oc get service -n "$RESOURCE_NAMESPACE" "$RESOURCE_NAME" -o json`
+					RESOURCE_RC=$?
+					if [ $RESOURCE_RC -eq 1 ]; then
+						displayMessage info "oc get service -n ${RESOURCE_NAMESPACE} ${RESOURCE_NAME} - FAILED with:  ${RESOURCE_JSON}"
+					else
+						RESOURCE_READY="true"
+						displayMessage info "Service: ${RESOURCE_NAME} - Created"
+					fi
+					if [ "${RESOURCE_READY}" != "true" ]; then
+						((RETRY_COUNT+=1))
+						if [ "${RETRY_COUNT}" -le "${RETRY_LIMIT}" ]; then
+							if [ "${SLEEP_SECONDS}" -lt 60 ]; then
+								SLEEP_SECONDS=$((2 * ${SLEEP_SECONDS}))
+							fi
+							displayMessage info "sleeping for ${SLEEP_SECONDS}s... (retry attempt ${RETRY_COUNT}/${RETRY_LIMIT})"
+							sleep ${SLEEP_SECONDS}
+						fi
+					fi
+				done
+				if [ "${RETRY_COUNT}" -gt "${RETRY_LIMIT}" ]; then
+					displayMessage warning "Create Service Timeout Warning"
+				fi
+			fi
+		fi
+	fi
+	displayDivider
+}
+
+## Leveraged by cpd-operator-restore to check if a MutatingWebhookConfiguration already exists and if not create it
+function checkCreateRSIWebHookConfiguration() {
+	local RESOURCE_KEY=$1
+	local RESOURCE_NAMESPACE=$2
+	local RESOURCE_ID=`echo $RESOURCE_KEY | sed -e 's|"||g'`
+	local RESOURCE_JSON=`echo "${BACKEDUP_RSI_WEBHOOK_CONFIG}" | jq ".${RESOURCE_KEY}"`
+	local RESOURCE_FILE=""
+
+	if [ "$RESOURCE_JSON" == null ]; then
+		displayMessage error "MutatingWebhookConfiguration: ${RESOURCE_ID} - Not Found"
+	else
+		local RESOURCE_NAME=`echo $RESOURCE_JSON | jq ".metadata.name" | sed -e 's|"||g'`
+
+		## Retrieve Secrets sort by .metadata.name and filter JSON for only select keys 	
+		local GET_RESOURCES=""
+		local GET_RESOURCE=""
+		GET_RESOURCES=`oc get MutatingWebhookConfiguration -o jsonpath="{'{'}{range .items[*]}{'\"'}{.metadata.name}{'\": {\"apiVersion\": \"'}{.apiVersion}{'\", \"metadata\": {\"name\": \"'}{.metadata.name}{'\"}}\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$|}|" -e 's|\\"|"|g'`
+		local RESOURCE_RC=$?
+		if [ $RESOURCE_RC -eq 1 ]; then
+			displayMessage error "oc get MutatingWebhookConfiguration - FAILED with:  ${GET_RESOURCES}"
+		else
+			GET_RESOURCE=`echo "${GET_RESOURCES}" | jq ".\"${RESOURCE_NAME}\""`
+		fi
+		## Check for given MutatingWebhookConfiguration Key
+		if [ "$GET_RESOURCE" == null ] || [ "$GET_RESOURCE" == "" ]; then
+			echo "${RESOURCE_JSON}" > ${RESOURCE_ID}.json
+			RESOURCE_FILE="${RESOURCE_ID}.json"
+			displayMessage info "MutatingWebhookConfiguration: ${RESOURCE_ID}: ${RESOURCE_ID}.json"
+		else
+			displayMessage info "MutatingWebhookConfiguration: ${RESOURCE_ID} - Already Exists"
+		fi
+
+		## Create/Apply MutatingWebhookConfiguration from yaml file and wait until MutatingWebhookConfiguration is Ready
+		if [ "$RESOURCE_FILE" != "" ] && [ $PREVIEW -eq 0 ]; then
+			local TLS_CRT=`oc get -n "$RESOURCE_NAMESPACE" secret rsi-webhook-svc-certs -o jsonpath="{.data.tls\.crt}{'\n'}"`
+			local RESOURCE_RC=$?
+			if [ $RESOURCE_RC -eq 1 ]; then
+				displayMessage error "oc get -n ${RESOURCE_NAMESPACE} secret rsi-webhook-svc-certs -o jsonpath="{.data.tls\.crt}{'\n'}" - FAILED with:  ${RESOURCE_APPLY}"
+				return
+			else
+				displayMessage info "Found tls crt from rsi-webhook-svc-certs secret"
+			fi
+
+			## Replace the MutatingWebhookConfiguration's caBundle with the rsi-webhook-svc-certs secret tls crt value
+			## Note that its original backed up value needs to be replaced here because it is re-generated by the rsi-webhook-svc service when it is restored
+			local CA_BUNDLE_REPLACE="\"caBundle\": \"${TLS_CRT}\","
+			sed -i "s/\"caBundle\":.*/${CA_BUNDLE_REPLACE}/" ${RESOURCE_ID}.json
+			RESOURCE_RC=$?
+			if [ $RESOURCE_RC -ne 0 ]; then
+				displayMessage error "Error replacing caBundle value in ${RESOURCE_ID}.json - FAILED with:  ${RESOURCE_APPLY}"
+			fi
+			displayMessage info "Successfully updated caBundle value in ${RESOURCE_ID}.json"
+
+			local RESOURCE_APPLY=""
+			RESOURCE_APPLY=`oc apply -f "$RESOURCE_FILE" 2>&1`
+			local RESOURCE_RC=$?
+			if [ $RESOURCE_RC -eq 1 ]; then
+				displayMessage error "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_APPLY}"
+			else
+				local RESOURCE_READY="false"
+				local RETRY_COUNT=0
+				local SLEEP_SECONDS=1
+				sleep 10
+				until [ "${RESOURCE_READY}" == "true" ] || [ "${RETRY_COUNT}" -gt "${RETRY_LIMIT}" ]; do
+					RESOURCE_JSON=`oc get MutatingWebhookConfiguration "$RESOURCE_NAME" -o json`
+					RESOURCE_RC=$?
+					if [ $RESOURCE_RC -eq 1 ]; then
+						displayMessage info "oc get MutatingWebhookConfiguration ${RESOURCE_NAME} - FAILED with:  ${RESOURCE_JSON}"
+					else
+						RESOURCE_READY="true"
+						displayMessage info "MutatingWebhookConfiguration: ${RESOURCE_NAME} - Created"
+					fi
+					if [ "${RESOURCE_READY}" != "true" ]; then
+						((RETRY_COUNT+=1))
+						if [ "${RETRY_COUNT}" -le "${RETRY_LIMIT}" ]; then
+							if [ "${SLEEP_SECONDS}" -lt 60 ]; then
+								SLEEP_SECONDS=$((2 * ${SLEEP_SECONDS}))
+							fi
+							displayMessage info "sleeping for ${SLEEP_SECONDS}s... (retry attempt ${RETRY_COUNT}/${RETRY_LIMIT})"
+							sleep ${SLEEP_SECONDS}
+						fi
+					fi
+				done
+				if [ "${RETRY_COUNT}" -gt "${RETRY_LIMIT}" ]; then
+					displayMessage warning "Create MutatingWebhookConfiguration Timeout Warning"
+				fi
+			fi
+		fi
+	fi
+	displayDivider
 }
 
 ## Leveraged by cpd-operator-restore to check if a secret already exists and if not create it in the specified Namespace
@@ -1011,7 +1224,7 @@ function checkCreateSecret() {
 		## Create/Apply Secret from yaml file and wait until Secret is Ready
 		if [ "$RESOURCE_FILE" != "" ] && [ $PREVIEW -eq 0 ]; then
 			local RESOURCE_APPLY=""
-			RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
+			RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}" 2>&1`
 			local RESOURCE_RC=$?
 			if [ $RESOURCE_RC -eq 1 ]; then
 				displayMessage error "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_APPLY}"
@@ -1115,7 +1328,7 @@ function checkCreateCertificate() {
 		## Create/Apply Certificate from yaml file and wait until Certificate is Ready
 		if [ "$RESOURCE_FILE" != "" ] && [ $PREVIEW -eq 0 ]; then
 			local RESOURCE_APPLY=""
-			RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
+			RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}" 2>&1`
 			local RESOURCE_RC=$?
 			if [ $RESOURCE_RC -eq 1 ]; then
 				displayMessage error "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_APPLY}"
@@ -1220,7 +1433,7 @@ function checkCreateIssuer() {
 		## Create/Apply Issuer from yaml file and wait until Issuer is Ready
 		if [ "$RESOURCE_FILE" != "" ] && [ $PREVIEW -eq 0 ]; then
 			local RESOURCE_APPLY=""
-			RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
+			RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}" 2>&1`
 			local RESOURCE_RC=$?
 			if [ $RESOURCE_RC -eq 1 ]; then
 				displayMessage error "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_APPLY}"
@@ -1310,7 +1523,7 @@ function checkCreateConfigMap() {
 		## Create/Apply ConfigMap from yaml file and wait until ConfigMap is Ready
 		if [ "$RESOURCE_FILE" != "" ] && [ $PREVIEW -eq 0 ]; then
 			local RESOURCE_APPLY=""
-			RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
+			RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}" 2>&1`
 			local RESOURCE_RC=$?
 			if [ $RESOURCE_RC -eq 1 ]; then
 				displayMessage error "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_APPLY}"
@@ -1432,7 +1645,7 @@ function checkCreateCatalogSource() {
 	## Create/Apply CatalogSource from yaml file and wait until CatalogSource is Ready
 	if [ "$RESOURCE_FILE" != "" ] && [ $PREVIEW -eq 0 ]; then
 		local RESOURCE_APPLY=""
-		RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
+		RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}" 2>&1`
 		local RESOURCE_RC=$?
 		if [ $RESOURCE_RC -eq 1 ]; then
 			displayMessage error "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_APPLY}"
@@ -1495,22 +1708,22 @@ function checkClusterServiceVersion() {
 		displayMessage error "oc get clusterserviceversions.operators.coreos.com -n $RESOURCE_NAMESPACE - No resources found"
 	fi
 	
-	local CSVS=`oc get clusterserviceversions.operators.coreos.com -n "$RESOURCE_NAMESPACE" -o jsonpath="{range .items[*]}{'\"'}{.metadata.name}{'\": \"'}{.status.phase}{'\"\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$||"`
-	local CSVS_JSON=$(printf '{ %s }' "$CSVS")
-	local CSV_KEYS=(`echo $CSVS_JSON | jq keys[]`)
-	for CSV_KEY in "${CSV_KEYS[@]}"
-	do
-		local CSV_NAME=`echo $CSV_KEY | sed -e 's|"||g'`
-		# echo "CSV_KEY: ${CSV_KEY} CSV_NAME: ${CSV_NAME} "
-		if [[ "${CSV_NAME}" =~ ^${RESOURCE_KEY}\..* ]]; then
-			RESOURCE_NAME=${CSV_NAME} 
-			# echo "CSV_KEY: ${CSV_KEY} CSV_NAME: ${CSV_NAME} found ${RESOURCE_KEY}  "
-		fi 
-	done
-	if [ "${RESOURCE_NAME}" != "" ]; then
-		local SLEEP_SECONDS=1
-		local RESOURCE_JSON=""
-		until [ "${RESOURCE_READY}" == "true" ] || [ "${RETRY_COUNT}" -gt "${RETRY_LIMIT}" ]; do
+	local SLEEP_SECONDS=1
+	local RESOURCE_JSON=""
+	until [ "${RESOURCE_READY}" == "true" ] || [ "${RETRY_COUNT}" -gt "${RETRY_LIMIT}" ]; do
+		local CSVS=`oc get clusterserviceversions.operators.coreos.com -n "$RESOURCE_NAMESPACE" -o jsonpath="{range .items[*]}{'\"'}{.metadata.name}{'\": \"'}{.status.phase}{'\"\n'}{end}" | awk -vORS=, '{print $0}' | sed -e "s|,$||"`
+		local CSVS_JSON=$(printf '{ %s }' "$CSVS")
+		local CSV_KEYS=(`echo $CSVS_JSON | jq keys[]`)
+		for CSV_KEY in "${CSV_KEYS[@]}"
+		do
+			local CSV_NAME=`echo $CSV_KEY | sed -e 's|"||g'`
+			# echo "CSV_KEY: ${CSV_KEY} CSV_NAME: ${CSV_NAME} "
+			if [[ "${CSV_NAME}" =~ ^${RESOURCE_KEY}\..* ]]; then
+				RESOURCE_NAME=${CSV_NAME}
+				# echo "CSV_KEY: ${CSV_KEY} CSV_NAME: ${CSV_NAME} found ${RESOURCE_KEY}  "
+			fi 
+		done
+		if [ "${RESOURCE_NAME}" != "" ]; then
 			RESOURCE_JSON=`oc get clusterserviceversions.operators.coreos.com "$RESOURCE_NAME" -n "$RESOURCE_NAMESPACE" -o json`
 			RESOURCE_RC=$?
 			if [ $RESOURCE_RC -eq 1 ]; then
@@ -1522,18 +1735,21 @@ function checkClusterServiceVersion() {
 				fi
 				displayMessage info "Cluster Service Version: ${RESOURCE_NAME} - phase: ${RESOURCE_STATUS}"
 			fi
-			if [ "${RESOURCE_READY}" != "true" ]; then
-				((RETRY_COUNT+=1))
-				if [ "${RETRY_COUNT}" -le "${RETRY_LIMIT}" ]; then
-					if [ "${SLEEP_SECONDS}" -lt 60 ]; then
-						SLEEP_SECONDS=$((2 * ${SLEEP_SECONDS}))
-					fi
-					displayMessage info "sleeping for ${SLEEP_SECONDS}s... (retry attempt ${RETRY_COUNT}/${RETRY_LIMIT})"
-					sleep ${SLEEP_SECONDS}
+		else
+			# wait until operand-deployment-lifecycle-manager is up and running
+			displayMessage info "${RESOURCE_KEY} not found - Waiting..."
+		fi
+		if [ "${RESOURCE_READY}" != "true" ]; then
+			((RETRY_COUNT+=1))
+			if [ "${RETRY_COUNT}" -le "${RETRY_LIMIT}" ]; then
+				if [ "${SLEEP_SECONDS}" -lt 60 ]; then
+					SLEEP_SECONDS=$((2 * ${SLEEP_SECONDS}))
 				fi
+				displayMessage info "sleeping for ${SLEEP_SECONDS}s... (retry attempt ${RETRY_COUNT}/${RETRY_LIMIT})"
+				sleep ${SLEEP_SECONDS}
 			fi
-		done
-	fi
+		fi
+	done
 	if [ "${RESOURCE_READY}" != "true" ]; then
 		displayMessage warning "oc get clusterserviceversions.operators.coreos.com -n ${RESOURCE_NAMESPACE} for ${RESOURCE_KEY} - FAILED"
 	fi
@@ -1674,7 +1890,7 @@ function checkCreateSubscription() {
 	## Create/Apply Subscription from yaml file and wait until Subscription is Ready
 	if [ "$RESOURCE_FILE" != "" ] && [ $PREVIEW -eq 0 ]; then
 		local RESOURCE_APPLY=""
-		RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
+		RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}" 2>&1`
 		local RESOURCE_RC=$?
 		if [ $RESOURCE_RC -eq 1 ]; then
 			displayMessage error "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_APPLY}"
@@ -1804,7 +2020,7 @@ function checkCreateOperandRegistry() {
 
 	## Create/Apply OperandRegistry from yaml file and wait until OperandRegistry is Ready
 	if [ "$RESOURCE_FILE" != "" ] && [ $PREVIEW -eq 0 ]; then
-		local RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
+		local RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}" 2>&1`
 		local RESOURCE_RC=$?
 		if [ $RESOURCE_RC -eq 1 ]; then
 			displayMessage error "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_APPLY}"
@@ -1892,7 +2108,7 @@ function checkCreateOperandConfig() {
 
 	## Create/Apply OperandConfig from yaml file and wait until OperandConfig is Ready
 	if [ "$RESOURCE_FILE" != "" ] && [ $PREVIEW -eq 0 ]; then
-		local RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
+		local RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}" 2>&1`
 		local RESOURCE_RC=$?
 		if [ $RESOURCE_RC -eq 1 ]; then
 			displayMessage error "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_APPLY}"
@@ -2049,7 +2265,7 @@ function checkCreateOperandRequest() {
 	## Create/Apply OperandRequest from yaml file and wait until OperandRequest is Ready
 	if [ "$RESOURCE_FILE" != "" ] && [ $PREVIEW -eq 0 ]; then
 		local RESOURCE_APPLY=""
-		RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
+		RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}" 2>&1`
 		local RESOURCE_RC=$?
 		if [ $RESOURCE_RC -eq 1 ]; then
 			displayMessage error "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_APPLY}"
@@ -2121,7 +2337,7 @@ function checkCreateNamespace() {
 	## Create/Apply Namespace from yaml file
 	if [ "$RESOURCE_FILE" != "" ] && [ $PREVIEW -eq 0 ]; then
 		local RESOURCE_APPLY=""
-		RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
+		RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}" 2>&1`
 		local RESOURCE_RC=$?
 		if [ $RESOURCE_RC -eq 1 ]; then
 			displayMessage error "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_APPLY}"
@@ -2154,7 +2370,7 @@ function checkCreateOperatorGroup() {
 	## Create/Apply OperatorGroup from yaml file
 	if [ "$RESOURCE_FILE" != "" ] && [ $PREVIEW -eq 0 ]; then
 		local RESOURCE_APPLY=""
-		RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
+		RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}" 2>&1`
 		local RESOURCE_RC=$?
 		if [ $RESOURCE_RC -eq 1 ]; then
 			displayMessage error "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_APPLY}"
@@ -2250,7 +2466,7 @@ EOF
 		fi
 		if [ $PREVIEW -eq 0 ]; then
 			local RESOURCE_APPLY=""
-			RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}"`
+			RESOURCE_APPLY=`oc apply -f "${RESOURCE_FILE}" 2>&1`
 			local RESOURCE_RC=$?
 			if [ $RESOURCE_RC -eq 1 ]; then
 				displayMessage error "oc apply -f ${RESOURCE_FILE} - FAILED with:  ${RESOURCE_APPLY}"
@@ -2323,7 +2539,7 @@ function restoreIAMData() {
 			# Restore MongoDB
 			# Create Restore Job
 			local RESOURCE_APPLY=""
-			RESOURCE_APPLY=`oc apply -f mongo-restore-job.yaml -n $NAMESPACE_NAME`
+			RESOURCE_APPLY=`oc apply -f mongo-restore-job.yaml -n $NAMESPACE_NAME 2>&1`
 			RESOURCE_RC=$?
 			if [ $RESOURCE_RC -eq 1 ]; then
 				displayMessage info "oc apply -f mongo-restore-job.yaml - FAILED with:  ${RESOURCE_APPLY}"
@@ -2519,6 +2735,38 @@ function restoreOperandRequests () {
 	done
 }
 
+function waitForExampleAuthentication () {
+	# wait until example-authentication is up and running
+	local RESOURCE_READY="false"
+	local RETRY_COUNT=0
+	local SLEEP_SECONDS=1
+	until [ "${RESOURCE_READY}" == "true" ] || [ "${RETRY_COUNT}" -gt "${RETRY_LIMIT}" ]; do
+		local RESOURCE_STATUS=`oc get authentications.operator.ibm.com example-authentication -n ${CPFS_OPERANDS_NAMESPACE} -o jsonpath='{.status.service.status}' 2> /dev/null`
+		RESOURCE_RC=$?
+		if [ $RESOURCE_RC -ne 0 ]; then
+			displayMessage info "example-authentication not found - Waiting..."
+		else
+			displayMessage info "example-authentication - phase: ${RESOURCE_STATUS}"
+			if [ "$RESOURCE_STATUS" == "Ready" ]; then
+				RESOURCE_READY="true"
+			fi
+		fi
+		if [ "${RESOURCE_READY}" != "true" ]; then
+			((RETRY_COUNT+=1))
+			if [ "${RETRY_COUNT}" -le "${RETRY_LIMIT}" ]; then
+				if [ "${SLEEP_SECONDS}" -lt 60 ]; then
+					SLEEP_SECONDS=$((2 * ${SLEEP_SECONDS}))
+				fi
+				displayMessage info "sleeping for ${SLEEP_SECONDS}s... (retry attempt ${RETRY_COUNT}/${RETRY_LIMIT})"
+				sleep ${SLEEP_SECONDS}
+			fi
+		fi
+	done
+	if [ "${RETRY_COUNT}" -gt "${RETRY_LIMIT}" ]; then
+		displayMessage warning "example-authentication Timeout Warning"
+	fi
+}
+
 ## Main restore script to be run 
 function cpd-instance-restore () {
 	# Check/Validate ConfigMap
@@ -2666,6 +2914,9 @@ function cpd-operators-restore () {
 
 	restoreOperandRequests
 
+	# wait for example-authentication
+	waitForExampleAuthentication
+
 	# Iterate ClusterServiceVersions that have hot fixes
 	BACKEDUP_CLUSTER_SVS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.clusterserviceversions}"`
 	local BACKEDUP_CLUSTER_SV_KEYS=(`echo $BACKEDUP_CLUSTER_SVS | jq keys[]`)
@@ -2681,7 +2932,25 @@ function cpd-operators-restore () {
 		# Restore Certificate Authority Secret, Certificate and Issuer
 		restoreCertificateStack
 	fi
-	
+
+	# Iterate through BACKEDUP_RSI_WEBHOOK_SERVICE and process each Configuration
+	BACKEDUP_RSI_WEBHOOK_SERVICE=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.rsiwebhookservices}"`
+	local BACKEDUP_RSI_WEBHOOK_SERVICE_KEYS=(`echo $BACKEDUP_RSI_WEBHOOK_SERVICE | jq keys[]`)
+	# Iterate through BACKEDUP_RSI_WEBHOOK_SERVICE_KEYS and process each service
+	for BACKEDUP_RSI_WEBHOOK_SERVICE_KEY in "${BACKEDUP_RSI_WEBHOOK_SERVICE_KEYS[@]}"
+	do
+		checkCreateRSIWebHookService "${BACKEDUP_RSI_WEBHOOK_SERVICE_KEY}" "${CPFS_OPERANDS_NAMESPACE}"
+	done
+
+	# Iterate through BACKEDUP_RSI_WEBHOOK_CONFIG and process each Configuration
+	BACKEDUP_RSI_WEBHOOK_CONFIG=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.rsiwebhookconfigurations}"`
+	local BACKEDUP_RSI_WEBHOOK_CONFIG_KEYS=(`echo $BACKEDUP_RSI_WEBHOOK_CONFIG | jq keys[]`)
+	# Iterate through BACKEDUP_RSI_WEBHOOK_CONFIG_KEYS and process each MutatingWebhookConfiguration
+	for BACKEDUP_RSI_WEBHOOK_CONFIG_KEY in "${BACKEDUP_RSI_WEBHOOK_CONFIG_KEYS[@]}"
+	do
+		checkCreateRSIWebHookConfiguration "${BACKEDUP_RSI_WEBHOOK_CONFIG_KEY}" "${CPFS_OPERANDS_NAMESPACE}"
+	done
+
 	## Optionally Restore IAM/Mongo Data from Volume if IAM deployed in CPFS Operator Namespace
 	BACKEDUP_IAM_DATA=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.data.iamdata}"`
 	if [ $BACKEDUP_IAM_DATA == "true" ]; then
