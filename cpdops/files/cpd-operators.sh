@@ -7,7 +7,7 @@
 # as a cluster admin.
 #
 # 
-VERSION="5.0.1"
+VERSION="5.1.0"
 
 scriptdir=`dirname $0`
 cd ${scriptdir}
@@ -2981,7 +2981,7 @@ IAM_DATA="false"
 PRIVATE_CATALOGS="false"
 
 # Retry constants: 20 intervals of 2* seconds
-RETRY_LIMIT=20
+RETRY_LIMIT=10
 
 # Process COMMANDS and parameters
 PARAMS=""
@@ -3066,11 +3066,11 @@ while (( $# )); do
 			;;
 		version|-v|--v|-version|--version) # version
 			echo "cpd-operators.sh Version: ${VERSION}"
-			exit 1
+			exit 0
 			;;
 		help|-h|--h|-help|--help) # help
 			help
-			exit 1
+			exit 0
 			;;
 		-*|--*=) # unsupported flags
 			echo "Invalid parameter $1" >&2
