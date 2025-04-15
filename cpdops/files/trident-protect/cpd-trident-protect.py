@@ -22,7 +22,7 @@ urllib3.disable_warnings()
 
 # constants
 CLI_VERSION = "1.0.0"
-BUILD_NUMBER = "2"
+BUILD_NUMBER = "3"
 CMD_INSTALL = "install"
 CMD_UNINSTALL = "uninstall"
 
@@ -310,7 +310,24 @@ class YamlTemplates:
                 "name": application_name,
                 "namespace": cpd_operator_ns,
             },
-            "spec": {"includedNamespaces": includedNamespaces},
+            "spec": {
+                "includedNamespaces": includedNamespaces,
+                # make sure we backup main CRDs that will be needed for restore within the trident-protect backup itself.
+                "includedClusterScopedResources": [
+                    {
+                        "groupVersionKind": {
+                            "group": "apiextensions.k8s.io",
+                            "kind": "CustomResourceDefinition",
+                            "version": "v1"
+                        },
+                        "labelSelector": {
+                            "matchLabels": {
+                                "icpdsupport/cpdbr": "true"
+                            }
+                        }
+                    }
+                ]
+            },
         }
 
         return yaml.dump(body)
@@ -653,12 +670,46 @@ class TridentProtectManager:
     def get_tp_namespace(self):
         """Returns the trident protect namespace."""
         return self.tp_namespace
+    
+    def _label_main_crds(self):
+        
+        crds = [
+            "catalogsources.operators.coreos.com",
+            "namespacescopes.operator.ibm.com",
+            "commonservices.operator.ibm.com",
+            "operatorgroups.operators.coreos.com"
+        ]
+        message = f"labeling main crds={crds} with 'icpdsupport/cpdbr=true'"
+        log.info(message)
+        print(TextColor.blue(message))
 
-    def do_install(self, application_name: str, cpd_operator_ns: str, cpdbr_tenant_service_image_prefix: str, exec_hook_timeout: int, dry_run: bool):
+        for crd in crds:
+            command = ["oc", "label", "crd", f"{crd}", "icpdsupport/cpdbr=true", "--overwrite=true"]
+            command_str = " ".join(command)
+            
+            message = f"running command to label crd={crd}, command={command_str}"
+            log.info(message)
+            print(TextColor.blue(message))
+
+            process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = process.communicate()
+            if process.returncode != 0:
+                raise Exception(f"Command exited with non-zero return code {process.returncode}:\n\n`{command_str}`\n\n{stderr.decode()}")
+            log.info(f"stdout={stdout}")
+            log.info(f"stderr={stderr}")
+        
+        message = f"finished labeling main crds={crds}"
+        log.info(message)
+        print(TextColor.green(message))
+
+    def do_install(self, application_name: str, cpd_operator_ns: str, cpdbr_tenant_service_image_prefix: str, exec_hook_timeout: int, dry_run: bool, label_main_crds: bool = True):
         if not application_name:
             raise ValueError("application_name cannot be empty")
 
         cpdbr = CpdbrManager()
+
+        if label_main_crds:
+            self._label_main_crds()
 
         resolved_namespaces = cpdbr.resolve_namespaces_from_namespacescope(cpd_operator_ns)
         log.info(f"resolved namespaces: {resolved_namespaces}")
@@ -782,6 +833,9 @@ class TridentProtectManager:
         print(f"cr namespace: {cr_namespace}")
         print(f"wait: {wait}")
 
+        print()
+        print(TextColor.blue(f"** Checking Backup CR status... (backup_name={backup_name}, cr_namespace={cr_namespace})"))
+
         if wait:
             try:
                 print()
@@ -791,14 +845,19 @@ class TridentProtectManager:
                 log.info(e)
                 raise Exception(e)
 
-        print()
-        print(TextColor.blue(f"** Checking Backup CR status... (backup_name={backup_name}, cr_namespace={cr_namespace})"))
         backup_obj = None
         try:
             backup_obj = self.get_backup_by_name(backup_name, cr_namespace)
             log.info(f"Backup CR for {backup_name}: \n\n{backup_obj}")
+        except ApiException as e:
+            log.info(e)
+            if e.status == HTTP_NOT_FOUND:
+                print(TextColor.red(f"BackupRestore CR not found: backup_name={backup_name}, cr_namespace={cr_namespace}"))
+                return
+            raise e
         except Exception as e:
-            raise Exception(f"Error getting backup '{backup_name}': {e}")
+            log.info(e)
+            raise Exception(e)
 
         if getattr(backup_obj, "status") is None:
             raise Exception(f'missing "status" field in Backup "{backup_name}"')
@@ -825,22 +884,8 @@ class TridentProtectManager:
         print(f"cr namespace: {cr_namespace}")
         print(f"wait: {wait}")
 
-        try:
-            print()
-            print(TextColor.blue(f"** Checking BackupRestore CR status... (restore_name={restore_name}, cr_namespace={cr_namespace})"))
-
-            bir = self.get_backuprestore_by_name(restore_name, cr_namespace)
-            log.info(f"BackupRestore: {bir.to_dict()}")
-            print(bir.to_dict())
-        except ApiException as e:
-            log.info(e)
-            if e.status == HTTP_NOT_FOUND:
-                print(TextColor.red(f"BackupRestore CR not found: restore_name={restore_name}, cr_namespace={cr_namespace}"))
-                return
-            raise e
-        except Exception as e:
-            log.info(e)
-            raise Exception(e)
+        print()
+        print(TextColor.blue(f"** Checking BackupRestore CR status... (restore_name={restore_name}, cr_namespace={cr_namespace})"))
 
         if wait:
             try:
@@ -851,12 +896,27 @@ class TridentProtectManager:
                 log.info(e)
                 raise Exception(e)
 
-        if getattr(bir, "status") is None:
+        backup_restore_obj = None
+        try:
+            backup_restore_obj = self.get_backuprestore_by_name(restore_name, cr_namespace)
+            log.info(f"BackupRestore CR for {restore_name}: \n\n{backup_restore_obj}")
+        except ApiException as e:
+            log.info(e)
+            if e.status == HTTP_NOT_FOUND:
+                print(TextColor.red(f"BackupRestore CR not found: restore_name={restore_name}, cr_namespace={cr_namespace}"))
+                return
+            raise e
+        except Exception as e:
+            log.info(e)
+            raise Exception(e)
+
+        if getattr(backup_restore_obj, "status") is None:
             raise Exception(f'missing "status" field in BackupRestore "{restore_name}"')
-        if getattr(bir.status, "state") is None:
+        if getattr(backup_restore_obj.status, "state") is None:
             raise Exception(f'missing ".status.state" field in BackupRestore "{restore_name}"')
-        if bir.status.state != TRIDENT_PROTECT_STATUS_COMPLETED:
-            raise Exception(f'expected BackupRestore "{restore_name}" to be "{TRIDENT_PROTECT_STATUS_COMPLETED}", received "{bir.status.state}"')
+        if backup_restore_obj.status.state != TRIDENT_PROTECT_STATUS_COMPLETED:
+            raise Exception(f'expected BackupRestore "{restore_name}" to be "{TRIDENT_PROTECT_STATUS_COMPLETED}", received "{backup_restore_obj.status.state}"')
+
 
         msg = f'BackupRestore completed successfully: "{restore_name}"'
         log.info(msg)
@@ -864,7 +924,7 @@ class TridentProtectManager:
 
         # retrieve the ExecHooksRun for post restore
         print(TextColor.blue("** Resolving Post Restore ExecHooksRun CR..."))
-        ehr_list = self.get_exechooksruns_owned_by_uid(bir.metadata.uid, cr_namespace)
+        ehr_list = self.get_exechooksruns_owned_by_uid(backup_restore_obj.metadata.uid, cr_namespace)
         if ehr_list is None:
             raise Exception(f'no ExecHooksRun found for BackupRestore "{restore_name}"')
         if len(ehr_list) == 0:
@@ -1542,6 +1602,7 @@ def command_install(args):
     arg_cpdbr_tenant_service_image_prefix = str(args.cpdbr_tenant_service_image_prefix)
     arg_exec_hook_timeout = int(args.exec_hook_timeout)
     arg_dry_run = bool(args.dry_run)
+    args_label_main_crds = bool(args.label_main_crds)
 
     print(TextColor.blue("** Checking for installation of OpenShift CLI (oc) in system PATH..."))
     Path.check_oc_installed()
@@ -1549,7 +1610,7 @@ def command_install(args):
 
     try:
         tpm = TridentProtectManager(arg_trident_protect_operator_ns)
-        tpm.do_install(application_name=arg_application_name, cpd_operator_ns=arg_cpd_operator_ns, cpdbr_tenant_service_image_prefix=arg_cpdbr_tenant_service_image_prefix, exec_hook_timeout=arg_exec_hook_timeout, dry_run=arg_dry_run)
+        tpm.do_install(application_name=arg_application_name, cpd_operator_ns=arg_cpd_operator_ns, cpdbr_tenant_service_image_prefix=arg_cpdbr_tenant_service_image_prefix, exec_hook_timeout=arg_exec_hook_timeout, dry_run=arg_dry_run, label_main_crds=args_label_main_crds)
     except Exception as e:
         raise Exception(f"Install failed with error: {e}")
 
@@ -1791,6 +1852,7 @@ def main():
     parser_install.add_argument("--cpdbr_tenant_service_image_prefix", type=str, help=f'image prefix of the cpdbr-tenant-service deployment installed in the CPD tenant operator namespace (default="{DEFAULT_CPDBR_TENANT_SERVICE_IMG_PREFIX}")', default=DEFAULT_CPDBR_TENANT_SERVICE_IMG_PREFIX, required=False)
     parser_install.add_argument("--exec_hook_timeout", type=int, default=DEFAULT_EXEC_HOOK_TIMEOUT, help="max time in minutes an execution hook will be allowed to run (default=60)", required=False)
     parser_install.add_argument("--dry_run", action="store_true", help="Set to True to preview the installation steps without automatically applying them (default=False)", required=False)
+    parser_install.add_argument("--label_main_crds", action="store_true", help="Set to True to label main crds for Cloud Pak for Data with icpdsupport/cpdbr=true to be backed up together with trident protect volume backup", required=False, default=True)
 
     parser_uninstall = subparsers.add_parser("uninstall", help="Perform installation of Cloud Pak for Data Backup & Restore integration with NetApp Trident Protect")
     parser_uninstall.add_argument("--application_name", type=non_empty_string, help="name of the Trident Protect Application CR to create (required)", required=True)
