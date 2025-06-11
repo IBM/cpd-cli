@@ -1,6 +1,6 @@
 """
 Licensed Materials - Property of IBM
-(c) Copyright IBM Corporation 2024. All Rights Reserved.
+(c) Copyright IBM Corporation 2025. All Rights Reserved.
 
 Note to U.S. Government Users Restricted Rights:
 Use, duplication or disclosure restricted by GSA ADP Schedule
@@ -21,8 +21,9 @@ import yaml
 urllib3.disable_warnings()
 
 # constants
-CLI_VERSION = "1.0.0"
-BUILD_NUMBER = "3"
+CLI_VERSION = "5.2.0"
+BUILD_NUMBER = "1"
+
 CMD_INSTALL = "install"
 CMD_UNINSTALL = "uninstall"
 
@@ -38,15 +39,18 @@ CMD_RESTORE_STATUS = "status"
 CMD_VERSION = "version"
 
 DEFAULT_TRIDENT_PROTECT_NS = "trident-protect"
-DEFAULT_EXEC_HOOK_TIMEOUT = 60
+DEFAULT_EXEC_HOOK_TIMEOUT = 120
 
 CPDBR_TENANT_SERVICE_DEPLOYMENT_NAME = "cpdbr-tenant-service"
 DEFAULT_CPDBR_TENANT_SERVICE_IMG_PREFIX = "icr.io/cpopen/cpd/cpdbr-oadp"
+
+DEFAULT_NAMESPACE_MAPPING_CM_NAME = "cpdbr-trident-protect-namespace-mapping-cm"
 
 TRIDENT_PROTECT_STATUS_COMPLETED = "Completed"
 TRIDENT_PROTECT_STATUS_FAILED = "Failed"
 TRIDENT_PROTECT_STATUS_REMOVED = "Removed"
 TRIDENT_PROTECT_STATUS_ERROR = "Error"
+TRIDENT_PROTECT_STATUS_RUNNING = "Running"
 
 TRIDENT_PROTECT_EHR_ACTION_RESTORE = "Restore"
 
@@ -55,6 +59,8 @@ TRIDENT_PROTECT_EHR_STAGE_POST = "Post"
 CPD_NAMESPACESCOPE_NAME = "common-service"
 
 HTTP_NOT_FOUND = 404
+
+LABEL_GENERATED_BY_CPDBR="icpdsupport/generated-by-cpdbr=true"
 
 log = logging.getLogger(__name__)
 logging.basicConfig(format="%(asctime)s %(levelname)s:%(message)s", filename="cpd-tp.log", encoding="utf-8", level=logging.DEBUG)
@@ -66,73 +72,85 @@ class ExecHookScripts:
     SCRIPT_PRE_BACKUP = textwrap.dedent(
     """
     #!/bin/bash
-    echo "*** cpdbr-pre-backup.sh prepare invoked ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
+
+    export CPDBR_FLAG_USE_STRICT_CLIENT_SERVER_VALIDATION=false
+    export CPDBR_ENABLE_FEATURES=experimental    
+
+    echo "*** cpdbr-tenant-v2.sh pre-backup prepare invoked ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
     /cpdbr-scripts/cpdbr/cpdbr-logrotate.sh
-    echo "*** cpdbr-tenant.sh pre-backup prepare start ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
+    echo "*** cpdbr-tenant-v2.sh pre-backup prepare start ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
     CPDBR_SCRIPT_OUTPUT=""
-    CPDBR_SCRIPT_OUTPUT="$(/cpdbr-scripts/cpdbr/cpdbr-tenant.sh pre-backup prepare --tenant-operator-namespace $1 2>&1)"
+    CPDBR_SCRIPT_OUTPUT="$(/cpdbr-scripts/cpdbr/cpdbr-tenant-v2.sh pre-backup prepare --vendor=trident-protect --tenant-operator-namespace ${MY_POD_NAMESPACE} 2>&1)"
     CHECK_RC=$?
     echo "${CPDBR_SCRIPT_OUTPUT}" | tee -a /cpdbr-scripts/cpdbr-tenant.log
-    echo "/cpdbr-scripts/cpdbr/cpdbr-tenant.sh pre-backup prepare exit code=${CHECK_RC}" | tee -a /cpdbr-scripts/cpdbr-tenant.log
+    echo "/cpdbr-scripts/cpdbr/cpdbr-tenant-v2.sh pre-backup prepare exit code=${CHECK_RC}" | tee -a /cpdbr-scripts/cpdbr-tenant.log
     if [ $CHECK_RC -eq 0 ]; then
-      echo "*** cpdbr-tenant.sh pre-backup prepare complete ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
+      echo "*** cpdbr-tenant-v2.sh pre-backup prepare complete ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
     else
-      echo "*** cpdbr-tenant.sh pre-backup prepare failed ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
+      echo "*** cpdbr-tenant-v2.sh pre-backup prepare failed ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
       exit 1
     fi
     
-    echo "*** cpdbr-pre-backup.sh prehooks invoked ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
+    echo "*** cpdbr-tenant-v2.sh pre-backup prehooks invoked ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
     /cpdbr-scripts/cpdbr/cpdbr-logrotate.sh
-    echo "*** cpdbr-tenant.sh pre-backup prehooks start ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
+    echo "*** cpdbr-tenant-v2.sh pre-backup prehooks start ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
     CPDBR_SCRIPT_OUTPUT=""
-    CPDBR_SCRIPT_OUTPUT="$(/cpdbr-scripts/cpdbr/cpdbr-tenant.sh pre-backup prehooks --tenant-operator-namespace $1 2>&1)"
+    CPDBR_SCRIPT_OUTPUT="$(/cpdbr-scripts/cpdbr/cpdbr-tenant-v2.sh pre-backup prehooks --vendor=trident-protect --tenant-operator-namespace ${MY_POD_NAMESPACE} 2>&1)"
     CHECK_RC=$?
     echo "${CPDBR_SCRIPT_OUTPUT}" | tee -a /cpdbr-scripts/cpdbr-tenant.log
-    echo "/cpdbr-scripts/cpdbr/cpdbr-tenant.sh pre-backup prehooks exit code=${CHECK_RC}" | tee -a /cpdbr-scripts/cpdbr-tenant.log
+    echo "/cpdbr-scripts/cpdbr/cpdbr-tenant-v2.sh pre-backup prehooks exit code=${CHECK_RC}" | tee -a /cpdbr-scripts/cpdbr-tenant.log
     if [ $CHECK_RC -eq 0 ]; then
-      echo "*** cpdbr-tenant.sh pre-backup prehooks complete ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
+      echo "*** cpdbr-tenant-v2.sh pre-backup prehooks complete ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
     else
-      echo "*** cpdbr-tenant.sh pre-backup prehooks failed ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
+      echo "*** cpdbr-tenant-v2.sh pre-backup prehooks failed ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
       exit 1
     fi
     """
     )
 
     SCRIPT_POST_BACKUP = textwrap.dedent(
-        """
+    """
     #!/bin/bash
-    echo "*** cpdbr-post-backup.sh invoked ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
+    
+    export CPDBR_FLAG_USE_STRICT_CLIENT_SERVER_VALIDATION=false
+    export CPDBR_ENABLE_FEATURES=experimental
+    
+    echo "*** cpdbr-tenant-v2.sh post-backup invoked ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
     /cpdbr-scripts/cpdbr/cpdbr-logrotate.sh
-    echo "*** cpdbr-tenant.sh post-backup start ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
+    echo "*** cpdbr-tenant-v2.sh post-backup start ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
     CPDBR_SCRIPT_OUTPUT=""
-    CPDBR_SCRIPT_OUTPUT="$(/cpdbr-scripts/cpdbr/cpdbr-tenant.sh post-backup --tenant-operator-namespace $1 2>&1)"
+    CPDBR_SCRIPT_OUTPUT="$(/cpdbr-scripts/cpdbr/cpdbr-tenant-v2.sh post-backup --vendor=trident-protect --tenant-operator-namespace ${MY_POD_NAMESPACE} 2>&1)"
     CHECK_RC=$?
     echo "${CPDBR_SCRIPT_OUTPUT}" | tee -a /cpdbr-scripts/cpdbr-tenant.log
-    echo "/cpdbr-scripts/cpdbr/cpdbr-tenant.sh post-backup exit code=${CHECK_RC}" | tee -a /cpdbr-scripts/cpdbr-tenant.log
+    echo "/cpdbr-scripts/cpdbr/cpdbr-tenant-v2.sh post-backup exit code=${CHECK_RC}" | tee -a /cpdbr-scripts/cpdbr-tenant.log
     if [ $CHECK_RC -eq 0 ]; then
-      echo "*** cpdbr-tenant.sh post-backup complete ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
+      echo "*** cpdbr-tenant-v2.sh post-backup complete ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
     else
-      echo "*** cpdbr-tenant.sh post-backup failed ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
+      echo "*** cpdbr-tenant-v2.sh post-backup failed ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
       exit 1
     fi
     """
     )
 
     SCRIPT_POST_RESTORE = textwrap.dedent(
-        """
+    """
     #!/bin/bash
-    echo "*** cpdbr-post-restore.sh invoked ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
+    
+    export CPDBR_FLAG_USE_STRICT_CLIENT_SERVER_VALIDATION=false
+    export CPDBR_ENABLE_FEATURES=experimental
+    
+    echo "*** cpdbr-tenant-v2.sh post-restore invoked ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
     /cpdbr-scripts/cpdbr/cpdbr-logrotate.sh
-    echo "*** cpdbr-tenant.sh post-restore start ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
+    echo "*** cpdbr-tenant-v2.sh post-restore start ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
     CPDBR_SCRIPT_OUTPUT=""
-    CPDBR_SCRIPT_OUTPUT="$(/cpdbr-scripts/cpdbr/cpdbr-tenant.sh post-restore --tenant-operator-namespace $1 --scale-wait-timeout 30m 2>&1)"
+    CPDBR_SCRIPT_OUTPUT="$(/cpdbr-scripts/cpdbr/cpdbr-tenant-v2.sh post-restore --vendor=trident-protect --tenant-operator-namespace ${MY_POD_NAMESPACE} --scale-wait-timeout 30m2>&1)"
     CHECK_RC=$?
     echo "${CPDBR_SCRIPT_OUTPUT}" | tee -a /cpdbr-scripts/cpdbr-tenant.log
-    echo "/cpdbr-scripts/cpdbr/cpdbr-tenant.sh post-restore exit code=${CHECK_RC}" | tee -a /cpdbr-scripts/cpdbr-tenant.log
+    echo "/cpdbr-scripts/cpdbr/cpdbr-tenant-v2.sh post-restore exit code=${CHECK_RC}" | tee -a /cpdbr-scripts/cpdbr-tenant.log
     if [ $CHECK_RC -eq 0 ]; then
-      echo "*** cpdbr-tenant.sh post-restore complete ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
+      echo "*** cpdbr-tenant-v2.sh post-restore complete ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
     else
-      echo "*** cpdbr-tenant.sh post-restore failed ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
+      echo "*** cpdbr-tenant-v2.sh post-restore failed ***" | tee -a /cpdbr-scripts/cpdbr-tenant.log
       exit 1
     fi
     """
@@ -184,8 +202,6 @@ class YamlTemplates:
       enabled: true
       hookSource: {CPDBR_HOOK_SOURCE}
       timeout: {TRIDENT_PROTECT_EXEC_HOOK_TIMEOUT}
-      arguments:
-        - {PROJECT_CPD_INST_OPERATORS}
       matchingCriteria:
         - type: containerImage
           value: "{CPDBR_TENANT_SERVICE_IMAGE_PREFIX}"
@@ -206,8 +222,6 @@ class YamlTemplates:
       enabled: true
       hookSource: {CPDBR_HOOK_SOURCE}
       timeout: {TRIDENT_PROTECT_EXEC_HOOK_TIMEOUT}
-      arguments:
-        - {PROJECT_CPD_INST_OPERATORS}
       matchingCriteria:
         - type: containerImage
           value: "{CPDBR_TENANT_SERVICE_IMAGE_PREFIX}"
@@ -228,8 +242,6 @@ class YamlTemplates:
       enabled: true
       hookSource: {CPDBR_HOOK_SOURCE}
       timeout: {TRIDENT_PROTECT_EXEC_HOOK_TIMEOUT}
-      arguments:
-        - {PROJECT_CPD_INST_OPERATORS}
       matchingCriteria:
         - type: containerImage
           value: "{CPDBR_TENANT_SERVICE_IMAGE_PREFIX}"
@@ -250,8 +262,6 @@ class YamlTemplates:
       enabled: true
       hookSource: {CPDBR_HOOK_SOURCE}
       timeout: {TRIDENT_PROTECT_EXEC_HOOK_TIMEOUT}
-      arguments:
-        - {PROJECT_CPD_INST_OPERATORS}
       matchingCriteria:
         - type: containerImage
           value: "{CPDBR_TENANT_SERVICE_IMAGE_PREFIX}"
@@ -545,6 +555,7 @@ class TridentProtectCliWrapper:
             f"--tp-namespace={tp_namespace}",
             f"--dry-run={str(dry_run).lower()}",
             f'--annotation="protect.trident.netapp.io/data-mover-timeout-sec={data_mover_timeout_sec}"',
+            f'--label="{LABEL_GENERATED_BY_CPDBR}"',
         ]
         if data_mover != "":
             command.append(f"--data-mover={data_mover}")
@@ -572,6 +583,7 @@ class TridentProtectCliWrapper:
         app_archive_path: str,
         dry_run: bool,
         data_mover_timeout_sec: int,
+        storageclass_mappings: str,
     ):
         command = [
             "tridentctl-protect",
@@ -584,7 +596,12 @@ class TridentProtectCliWrapper:
             f"--path={app_archive_path}",
             f"--dry-run={str(dry_run).lower()}",
             f'--annotation="protect.trident.netapp.io/data-mover-timeout-sec={data_mover_timeout_sec}"',
+            f'--label="{LABEL_GENERATED_BY_CPDBR}"',
         ]
+
+        if storageclass_mappings != "":
+            command.append(f"--storageclass-mapping={storageclass_mappings}")
+        
         commandStr = " ".join(command)
         print(f"executing command: {commandStr}\n")
 
@@ -655,6 +672,89 @@ class CpdbrManager:
             raise Exception(f"{CPDBR_TENANT_SERVICE_DEPLOYMENT_NAME} deployment is not healthy: {available_replicas}/{replicas} replicas are ready (cpd_operator_ns={cpd_operator_ns})")
         log.info(f"{CPDBR_TENANT_SERVICE_DEPLOYMENT_NAME} deployment is healthy ({available_replicas}/{replicas} replicas are ready) (namespace={cpd_operator_ns})")
         return deploy
+    
+    def refresh_cpdbr_trident_protect_namespace_mapping_cm(self, cm_name:str, namespace: str, mapping_string: str, dry_run: bool):
+        """
+        Create, updates, or deletes the ConfigMap for Trident Protect Namespace Mapping based on the provided namespace mappings
+        
+        - If the mappings indicate no changes, delete the configmap if it exists
+        - If the mappings indicate changes, create the configmap or update it if it already exists
+
+        Args:
+            cm_name (str): Name of the ConfigMap.
+            namespace (str): Namespace to create the ConfigMap in.
+            mapping_string (str): Comma-separated string of namespace mapping key-value pairs.
+            dry_run (bool): Whether to perform a dry run.
+
+        Returns:
+            None
+        """
+        # Parse the input string into a dictionary
+        mapping_dict = {}
+        for pair in mapping_string.split(','):
+            key, value = pair.split(':')
+            mapping_dict[key] = value
+            
+        config_map = client.V1ConfigMap(
+            api_version="v1",
+            kind="ConfigMap",
+            metadata=client.V1ObjectMeta(name=cm_name, namespace=namespace),
+            data=mapping_dict
+        )
+        
+        log.info(f"Creating or updating configmap \"{cm_name}\" in namespace \"{namespace}\" (dry_run={dry_run}): \n\n{config_map}\n")
+        
+        num_mappings_with_change_detected = 0
+        for sourceNs, mappedNs in mapping_dict.items():
+            log.info(f"sourceNs \"{sourceNs}\" -> mappedNs \"{mappedNs}\"")
+            if sourceNs != mappedNs:
+                num_mappings_with_change_detected += 1
+
+        # Update the ConfigMap if it exists ... 
+        api_instance = client.CoreV1Api()
+        
+        existing_config_map = None
+        try:
+            existing_config_map = api_instance.read_namespaced_config_map(name=cm_name, namespace=namespace)
+        except ApiException as e:
+            if e.status == HTTP_NOT_FOUND:
+                log.info(f"No pre-existing configmap \"{cm_name}\" in namespace \"{namespace}\"")
+            else:
+                raise Exception(f"Error checking configmap \"{cm_name}\" in namespace \"{namespace}\": {e}")
+        
+        if num_mappings_with_change_detected == 0:
+            if existing_config_map:
+                log.info(f"No mappings detected (num_mappings_with_change_detected={num_mappings_with_change_detected}) - deleting pre-existing configmap \"{cm_name}\" in namespace \"{namespace}\" (dry_run={dry_run})")
+                try:
+                    log.info(f"Deleting pre-existing configmap \"{cm_name}\" in namespace \"{namespace}\" (dry_run={dry_run})")
+                    api_instance.delete_namespaced_config_map(name=cm_name, namespace=namespace, dry_run="All" if dry_run else None)
+                    log.info(f"Deleted pre-existing configmap \"{cm_name}\" in namespace \"{namespace}\" (dry_run={dry_run})")
+                except ApiException as e:
+                    raise Exception(f"Failed to delete configmap \"{cm_name}\" in namespace \"{namespace}\" (dry_run={dry_run}): {e}")
+                return
+
+            log.info(f"No mappings detected (num_mappings_with_change_detected={num_mappings_with_change_detected}) - Skip creation of configmap \"{cm_name}\" in namespace \"{namespace}\"")
+            return
+        
+        if existing_config_map:
+            try:
+                log.info(f"Updating pre-existing configmap \"{cm_name}\" in namespace \"{namespace}\" (dry_run={dry_run})")
+                api_instance.replace_namespaced_config_map(name=cm_name, namespace=namespace, body=config_map, dry_run="All" if dry_run else None)
+                log.info(f"Updated pre-existing configmap \"{cm_name}\" in namespace \"{namespace}\" (dry_run={dry_run})")
+            except Exception as e:
+                raise Exception(f"Failed to create configmap \"{cm_name}\" in namespace \"{namespace}\" (dry_run={dry_run}): {e}")
+            return
+
+        # ... Or create a new one
+        try:
+            log.info(f"Creating configmap \"{cm_name}\" in namespace \"{namespace}\" (dry_run={dry_run})")
+            api_instance.create_namespaced_config_map(namespace=namespace, body=config_map, dry_run="All" if dry_run else None)
+            log.info(f"Created configmap \"{cm_name}\" in namespace \"{namespace}\" (dry_run={dry_run})")
+        except Exception as e:
+            raise Exception(f"Failed to create configmap \"{cm_name}\" in namespace \"{namespace}\" (dry_run={dry_run}): {e}")
+        return
+        
+
 
 
 class TridentProtectManager:
@@ -767,8 +867,23 @@ class TridentProtectManager:
         snapshot: str,
         data_mover_timeout_sec: int,
     ):
-        print(f"trident protect namespace: {self.get_tp_namespace()}")
+        tp_namespace=self.get_tp_namespace()
+        
+        print(f"trident protect namespace: {tp_namespace}")
         print(f"cr namespace: {cr_namespace}")
+
+        print()
+        print(TextColor.blue(f"** Checking existing Trident Protect Backup CR(s)..."))
+        tpm = TridentProtectManager(tp_namespace)
+        try:
+            cpdbr_trident_backups=tpm.get_backups(cr_namespace, f"{LABEL_GENERATED_BY_CPDBR}").items
+            running=[backup for backup in cpdbr_trident_backups if backup.status.state == TRIDENT_PROTECT_STATUS_RUNNING]
+            num_running=len(running)
+            if num_running > 0:
+                log.info(f"found {num_running} Running Trident Protect Backup CR(s): \n\n{cpdbr_trident_backups}")
+                raise Exception(f'Detected {num_running} existing Trident Protect Backup CR(s) with {LABEL_GENERATED_BY_CPDBR} in a Running state - only one Running CPD Trident Protect backup is allowed at a time. Aborting backup...')
+        except Exception as e:
+            raise Exception(f'Error detecting existing Trident Protect Backup CR(s): {e}')
 
         existing_backup = self.get_backup_by_name_or_none(backup_name, cr_namespace)
         if existing_backup is not None:
@@ -801,6 +916,7 @@ class TridentProtectManager:
         restore_name: str,
         dry_run: bool,
         data_mover_timeout_sec: int,
+        storageclass_mappings: str,
     ):
 
         print(f"trident protect namespace: {self.get_tp_namespace()}")
@@ -817,6 +933,7 @@ class TridentProtectManager:
                 app_archive_path=app_archive_path,
                 dry_run=dry_run,
                 data_mover_timeout_sec=data_mover_timeout_sec,
+                storageclass_mappings=storageclass_mappings,
             )
             print(stdout)
             print()
@@ -829,7 +946,7 @@ class TridentProtectManager:
     def do_backup_status(self, backup_name: str, cr_namespace: str, wait: bool):
 
         print(f"trident protect namespace: {self.get_tp_namespace()}")
-        print(f"restore name: {backup_name}")
+        print(f"backup name: {backup_name}")
         print(f"cr namespace: {cr_namespace}")
         print(f"wait: {wait}")
 
@@ -961,11 +1078,11 @@ class TridentProtectManager:
 
         print()
 
-    def get_backups(self, cr_namespace: str):
+    def get_backups(self, cr_namespace: str, label_selector: str):
         try:
             backups_api = self.k8s_dyn_client.resources.get(api_version="protect.trident.netapp.io/v1", kind="Backup")
 
-            res = backups_api.get(namespace=cr_namespace)
+            res = backups_api.get(namespace=cr_namespace, label_selector=label_selector)
             return res
         except ResourceNotFoundError as ex:
             raise ex
@@ -1740,8 +1857,10 @@ def command_restore_create(args):
     arg_cpd_operator_namespace = str(args.namespace)
     arg_namespace_mappings = str(args.namespace_mappings)
     arg_trident_protect_operator_ns = str(args.trident_protect_operator_ns)
+    arg_oadp_namespace = str(args.oadp_namespace)
     arg_dry_run = bool(args.dry_run)
     arg_data_mover_timeout_sec = int(args.data_mover_timeout_sec)
+    arg_storageclass_mappings = str(args.storageclass_mappings)
 
     print(TextColor.blue("** Checking for installation of OpenShift CLI (oc) in system PATH..."))
     Path.check_oc_installed()
@@ -1757,8 +1876,11 @@ def command_restore_create(args):
     print()
 
     try:
+        cpdbr = CpdbrManager()
         tpm = TridentProtectManager(tp_namespace=arg_trident_protect_operator_ns)
-        tpm.do_restore_create(app_vault=arg_appvault_name, cr_namespace=arg_cpd_operator_namespace, namespace_mappings=arg_namespace_mappings, app_archive_path=arg_path, restore_name=arg_restore_name, dry_run=arg_dry_run, data_mover_timeout_sec=arg_data_mover_timeout_sec)
+        
+        cpdbr.refresh_cpdbr_trident_protect_namespace_mapping_cm(cm_name=DEFAULT_NAMESPACE_MAPPING_CM_NAME, namespace=arg_oadp_namespace,mapping_string=arg_namespace_mappings, dry_run=arg_dry_run)
+        tpm.do_restore_create(app_vault=arg_appvault_name, cr_namespace=arg_cpd_operator_namespace, namespace_mappings=arg_namespace_mappings, app_archive_path=arg_path, restore_name=arg_restore_name, dry_run=arg_dry_run, data_mover_timeout_sec=arg_data_mover_timeout_sec, storageclass_mappings=arg_storageclass_mappings)
     except Exception as e:
         raise Exception(f"An error occurred during the restore (app_vault={arg_appvault_name}, path={arg_path}, restore_name={arg_restore_name}): {e}")
 
@@ -1830,11 +1952,10 @@ def command_restore_status(args):
 
 
 def command_version():
-    print(f"version {CLI_VERSION}")
+    print(f"version {CLI_VERSION} build {BUILD_NUMBER}")
 
 
 def main():
-
     parser = argparse.ArgumentParser(prog="cpd-trident-protect", description="Utility script for Cloud Pak for Data Backup & Restore integration with NetApp Trident Protect")
     subparsers = parser.add_subparsers(dest="command", help="subcommand to execute")
 
@@ -1892,8 +2013,10 @@ def main():
     parser_restore_create.add_argument("--path", type=non_empty_string, help="path inside AppVault where the backup contents are stored (required)", required=True)
     parser_restore_create.add_argument("--namespace", type=non_empty_string, help="CPD tenant operator namespace (required)", required=True)
     parser_restore_create.add_argument("--trident_protect_operator_ns", type=str, default=DEFAULT_TRIDENT_PROTECT_NS, help="namespace of the Trident Protect operator", required=False)
+    parser_restore_create.add_argument("--oadp_namespace", type=str, help="OADP operator namespace", required=True)
     parser_restore_create.add_argument("--dry_run", action="store_true", help="Set to True to preview the restore steps without automatically applying them (default=False)", required=False)
     parser_restore_create.add_argument("--data_mover_timeout_sec", type=int, default=3600, help="Data mover timeout for Trident Protect volume restores, in seconds (default=3600)", required=False)
+    parser_restore_create.add_argument("--storageclass_mappings", type=str, default="", help="storage class mappings to use for the Trident Protect BackupRestore CR", required=False)
 
     parser_restore_status = subparsers_restore.add_parser("status", help="Check the status of a restore operation")
     parser_restore_status.add_argument("--restore_name", type=non_empty_string, help="name of the Trident Protect BackupRestore CR (required)", required=True)

@@ -7,7 +7,7 @@
 # as a cluster admin.
 #
 # 
-VERSION="5.1.0"
+VERSION="5.2.0"
 
 scriptdir=`dirname $0`
 cd ${scriptdir}
@@ -180,7 +180,7 @@ function getRSIWebHookService() {
 	if [ $RESOURCE_RC -eq 1 ]; then
 		displayMessage info "oc get service ${RESOURCE_NAME} -n ${NAMESPACE_NAME} Not Found"
 	else
-		RESOURCE_JSON=`oc get service "$RESOURCE_NAME" -n ${NAMESPACE_NAME} -o json | jq -c -M 'del(.metadata.creationTimestamp, .metadata.generation, .metadata.resourceVersion, .metadata.uid, .metadata.annotations.managedFields, .metadata.annotations."kubectl.kubernetes.io/last-applied-configuration", .metadata.ownerReferences, .status)' | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
+		RESOURCE_JSON=`oc get service "$RESOURCE_NAME" -n ${NAMESPACE_NAME} -o json | jq -c -M 'del(.metadata.creationTimestamp, .metadata.generation, .metadata.resourceVersion, .metadata.uid, .metadata.managedFields, .metadata.annotations."kubectl.kubernetes.io/last-applied-configuration", .metadata.ownerReferences, .status)' | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
 		local RSI_WEBHOOK_SERVICE="\"${RESOURCE_NAME}\": ${RESOURCE_JSON}"
 		if [ "${BACKUP_RSI_WEBHOOK_SERVICE}" == "" ]; then
 			BACKUP_RSI_WEBHOOK_SERVICE="${RSI_WEBHOOK_SERVICE}"
@@ -200,7 +200,7 @@ function getRSIWebHookConfiguration() {
 	if [ $RESOURCE_RC -eq 1 ]; then
 		displayMessage info "oc get MutatingWebhookConfiguration ${RESOURCE_NAME} Not Found"
 	else
-		RESOURCE_JSON=`oc get MutatingWebhookConfiguration "$RESOURCE_NAME" -o json | jq -c -M 'del(.metadata.creationTimestamp, .metadata.generation, .metadata.resourceVersion, .metadata.uid, .metadata.annotations.managedFields, .metadata.annotations."kubectl.kubernetes.io/last-applied-configuration", .metadata.ownerReferences)' | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
+		RESOURCE_JSON=`oc get MutatingWebhookConfiguration "$RESOURCE_NAME" -o json | jq -c -M 'del(.metadata.creationTimestamp, .metadata.generation, .metadata.resourceVersion, .metadata.uid, .metadata.managedFields, .metadata.annotations."kubectl.kubernetes.io/last-applied-configuration", .metadata.ownerReferences)' | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
 		local RSI_WEBHOOK_CONFIG="\"${RESOURCE_NAME}\": ${RESOURCE_JSON}"
 		if [ "${BACKUP_RSI_WEBHOOK_CONFIG}" == "" ]; then
 			BACKUP_RSI_WEBHOOK_CONFIG="${RSI_WEBHOOK_CONFIG}"
@@ -228,7 +228,7 @@ function getCACertSecretInNamespace() {
 		if [ $RESOURCE_RC -eq 1 ]; then
 			displayMessage info "oc get secret ${RESOURCE_NAME} -n ${NAMESPACE_NAME} Not Found"
 		else
-			RESOURCE_JSON=`oc get secret "$RESOURCE_NAME" -n "$NAMESPACE_NAME" -o json | jq -c -M 'del(.metadata.creationTimestamp, .metadata.generation, .metadata.resourceVersion, .metadata.uid, .metadata.annotations.managedFields, .metadata.annotations."kubectl.kubernetes.io/last-applied-configuration", .metadata.ownerReferences, .status)' | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
+			RESOURCE_JSON=`oc get secret "$RESOURCE_NAME" -n "$NAMESPACE_NAME" -o json | jq -c -M 'del(.metadata.creationTimestamp, .metadata.generation, .metadata.resourceVersion, .metadata.uid, .metadata.managedFields, .metadata.annotations."kubectl.kubernetes.io/last-applied-configuration", .metadata.ownerReferences, .status)' | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
 			local CA_CERT_SECRET="\"${NAMESPACE_NAME}-${RESOURCE_NAME}\": ${RESOURCE_JSON}"
 			if [ "${BACKUP_CA_CERT_SECRETS}" == "" ]; then
 				BACKUP_CA_CERT_SECRETS="${CA_CERT_SECRET}"
@@ -267,7 +267,7 @@ function getCACertInNamespace() {
 		if [ $RESOURCE_RC -eq 1 ]; then
 			displayMessage info "oc get $RESOURCE_TYPE ${RESOURCE_NAME} -n ${NAMESPACE_NAME} Not Found"
 		else
-			RESOURCE_JSON=`oc get "$RESOURCE_TYPE" "$RESOURCE_NAME" -n "$NAMESPACE_NAME" -o json | jq -c -M 'del(.metadata.creationTimestamp, .metadata.generation, .metadata.resourceVersion, .metadata.uid, .metadata.annotations.managedFields, .metadata.annotations."kubectl.kubernetes.io/last-applied-configuration", .status)' | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
+			RESOURCE_JSON=`oc get "$RESOURCE_TYPE" "$RESOURCE_NAME" -n "$NAMESPACE_NAME" -o json | jq -c -M 'del(.metadata.creationTimestamp, .metadata.generation, .metadata.resourceVersion, .metadata.uid, .metadata.managedFields, .metadata.annotations."kubectl.kubernetes.io/last-applied-configuration", .status)' | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
 			local CA_CERT="\"${NAMESPACE_NAME}-${RESOURCE_NAME}\": ${RESOURCE_JSON}"
 			if [ "${BACKUP_CA_CERTS}" == "" ]; then
 				BACKUP_CA_CERTS="${CA_CERT}"
@@ -308,7 +308,7 @@ function getSSIssuerInNamespace() {
 		if [ $RESOURCE_RC -eq 1 ]; then
 			displayMessage info "oc get $RESOURCE_TYPE ${RESOURCE_NAME} -n ${NAMESPACE_NAME} Not Found"
 		else
-			RESOURCE_JSON=`oc get "$RESOURCE_TYPE" "$RESOURCE_NAME" -n "$NAMESPACE_NAME" -o json | jq -c -M 'del(.metadata.creationTimestamp, .metadata.generation, .metadata.resourceVersion, .metadata.uid, .metadata.annotations.managedFields, .metadata.annotations."kubectl.kubernetes.io/last-applied-configuration", .status)' | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
+			RESOURCE_JSON=`oc get "$RESOURCE_TYPE" "$RESOURCE_NAME" -n "$NAMESPACE_NAME" -o json | jq -c -M 'del(.metadata.creationTimestamp, .metadata.generation, .metadata.resourceVersion, .metadata.uid, .metadata.managedFields, .metadata.annotations."kubectl.kubernetes.io/last-applied-configuration", .status)' | awk -vORS=, '{print $0}' | sed -e "s|,$||" -e 's|"|\\"|g'`
 			local SS_ISSUER="\"${NAMESPACE_NAME}-${RESOURCE_NAME}\": ${RESOURCE_JSON}"
 			if [ "${BACKUP_SS_ISSUERS}" == "" ]; then
 				BACKUP_SS_ISSUERS="${SS_ISSUER}"
@@ -1122,11 +1122,11 @@ function checkCreateRSIWebHookConfiguration() {
 
 			## Replace the MutatingWebhookConfiguration's caBundle with the rsi-webhook-svc-certs secret tls crt value
 			## Note that its original backed up value needs to be replaced here because it is re-generated by the rsi-webhook-svc service when it is restored
-			local CA_BUNDLE_REPLACE="\"caBundle\": \"${TLS_CRT}\","
-			sed -i "s/\"caBundle\":.*/${CA_BUNDLE_REPLACE}/" ${RESOURCE_ID}.json
+			cat ${RESOURCE_ID}.json | jq --arg tlsCrt "${TLS_CRT}" '.webhooks |= map(if .name == "rsi.ibm.com" then .clientConfig.caBundle |= $tlsCrt else . end)' > ${RESOURCE_ID}-temp.json && mv ${RESOURCE_ID}-temp.json ${RESOURCE_ID}.json
+
 			RESOURCE_RC=$?
 			if [ $RESOURCE_RC -ne 0 ]; then
-				displayMessage error "Error replacing caBundle value in ${RESOURCE_ID}.json - FAILED with:  ${RESOURCE_APPLY}"
+				displayMessage error "Error replacing caBundle value in ${RESOURCE_ID}.json"
 			fi
 			displayMessage info "Successfully updated caBundle value in ${RESOURCE_ID}.json"
 
@@ -2741,7 +2741,7 @@ function waitForExampleAuthentication () {
 	local RETRY_COUNT=0
 	local SLEEP_SECONDS=1
 	until [ "${RESOURCE_READY}" == "true" ] || [ "${RETRY_COUNT}" -gt "${RETRY_LIMIT}" ]; do
-		local RESOURCE_STATUS=`oc get authentications.operator.ibm.com example-authentication -n ${CPFS_OPERANDS_NAMESPACE} -o jsonpath='{.status.service.status}' 2> /dev/null`
+		local RESOURCE_STATUS=`oc get authentications.operator.ibm.com example-authentication -n ${CPFS_OPERANDS_NAMESPACE} -o jsonpath='{.status.service.managedResources[?(@.objectName == "oidc-client-registration")].status}' 2> /dev/null`
 		RESOURCE_RC=$?
 		if [ $RESOURCE_RC -ne 0 ]; then
 			displayMessage info "example-authentication not found - Waiting..."
@@ -2980,8 +2980,8 @@ PREVIEW=0
 IAM_DATA="false"
 PRIVATE_CATALOGS="false"
 
-# Retry constants: 20 intervals of 2* seconds
-RETRY_LIMIT=10
+# Retry constants: 20 intervals of 2* seconds by default
+RETRY_LIMIT=${RETRY_LIMIT:-20}
 
 # Process COMMANDS and parameters
 PARAMS=""
@@ -3192,6 +3192,7 @@ if [ $BACKUP -eq 1 ]; then
 	getTopology
 	displayMessage no-prefix "    Foundational Operands namespace: $CPFS_OPERANDS_NAMESPACE"
 	displayMessage no-prefix "    Private Catalog Sources: $PRIVATE_CATALOGS"
+	displayMessage no-prefix "    Retry limit: $RETRY_LIMIT"
 	displayDivider
 	cpd-operators-backup
 fi 
@@ -3218,6 +3219,7 @@ if [ $RESTORE -eq 1 ] || [ $RESTORE_INSTANCE -eq 1 ] || [ $RESTORE_OP_REQS -eq 1
 	fi
 	displayMessage no-prefix "    Foundational Operands namespace: $CPFS_OPERANDS_NAMESPACE"
 	displayMessage no-prefix "    Private Catalog Sources: $PRIVATE_CATALOGS"
+	displayMessage no-prefix "    Retry limit: $RETRY_LIMIT"
 	displayDivider
 	BACKEDUP_LABELS=`oc get configmap cpd-operators -n $OPERATORS_NAMESPACE -o jsonpath="{.metadata.labels}"`
 	displayMessage info "cpd-operators ConfigMap labels: ${BACKEDUP_LABELS}"
