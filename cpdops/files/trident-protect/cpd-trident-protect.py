@@ -543,6 +543,7 @@ class TridentProtectCliWrapper:
         reclaim_policy: str,
         snapshot: str,
         data_mover_timeout_sec: int,
+        full_backup: bool=False,
     ):
         command = [
             "tridentctl-protect",
@@ -565,6 +566,8 @@ class TridentProtectCliWrapper:
             command.append(f"--reclaim-policy={reclaim_policy}")
         if snapshot != "":
             command.append(f"--snapshot={snapshot}")
+        if full_backup:
+            command.append(f"--full-backup")
         commandStr = " ".join(command)
         print(f"executing command: {commandStr}\n")
 
@@ -866,6 +869,7 @@ class TridentProtectManager:
         reclaim_policy: str,
         snapshot: str,
         data_mover_timeout_sec: int,
+        full_backup: bool=False
     ):
         tp_namespace=self.get_tp_namespace()
         
@@ -903,6 +907,7 @@ class TridentProtectManager:
             reclaim_policy=reclaim_policy,
             snapshot=snapshot,
             data_mover_timeout_sec=data_mover_timeout_sec,
+            full_backup=full_backup
         )
         print(stdout)
         print(TextColor.green("Successfully created Backup via tridentctl-protect")) if not dry_run else None
@@ -1779,6 +1784,7 @@ def command_backup_create(args):
     arg_reclaim_policy = str(args.reclaim_policy)
     arg_snapshot = str(args.snapshot)
     arg_data_mover_timeout_sec = int(args.data_mover_timeout_sec)
+    arg_full_backup = bool(args.full_backup)
 
     print(TextColor.blue("** Checking for installation of OpenShift CLI (oc) in system PATH..."))
     Path.check_oc_installed()
@@ -1837,6 +1843,7 @@ def command_backup_create(args):
             reclaim_policy=arg_reclaim_policy,
             snapshot=arg_snapshot,
             data_mover_timeout_sec=arg_data_mover_timeout_sec,
+            full_backup=arg_full_backup
         )
     except Exception as e:
         raise Exception(f"An error occurred during the backup (app_vault={arg_appvault_name}, application={arg_application_name}, backup_name={arg_backup_name}): {e}")
@@ -1996,6 +2003,7 @@ def main():
     parser_backup_create.add_argument("--reclaim_policy", type=str, default="", help="Reclaim policy", required=False)
     parser_backup_create.add_argument("--snapshot", type=str, default="", help="Snapshot to backup from", required=False)
     parser_backup_create.add_argument("--data_mover_timeout_sec", type=int, default=3600, help="Data mover timeout for Trident Protect volume backups, in seconds (default=3600)", required=False)
+    parser_backup_create.add_argument("--full_backup", type=bool, default=False, help="Specify whether an on-demand backup should be non-incremental (default=False)", required=False)
 
     parser_backup_status = subparsers_backup.add_parser("status", help="Check the status of a backup operation")
     parser_backup_status.add_argument("--backup_name", type=non_empty_string, help="name of the Trident Protect Backup CR (required)", required=True)
