@@ -7,7 +7,7 @@
 # as a cluster admin.
 #
 # 
-VERSION="5.2.0"
+VERSION="5.2.1"
 
 scriptdir=`dirname $0`
 cd ${scriptdir}
