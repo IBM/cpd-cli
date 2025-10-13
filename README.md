@@ -156,7 +156,7 @@ For information on installing IBM Cloud Pak for Data, see [Installing IBM Cloud 
 
 You can install Cloud Pak for Data from a remote system that can connect to your cluster.
 
-Download the Enterprise Edition (EE) package or the Standard Edition (EE) package. The package includes the appropriate licenses and installer files.
+Download the Enterprise Edition (EE) package or the Standard Edition (SE) package. The package includes the appropriate licenses and installer files.
 
 Ensure that you use the installer that corresponds to the operating system where you will run the installation.
 
@@ -199,7 +199,7 @@ To install Cloud Pak for Data:
 
 You can install Cloud Pak for Data from a remote system that can connect to your cluster.
 
-Download the Enterprise Edition (EE) package or the Standard Edition (EE) package. The package includes the appropriate licenses and installer files.
+Download the Enterprise Edition (EE) package or the Standard Edition (SE) package. The package includes the appropriate licenses and installer files.
 
 Ensure that you use the installer that corresponds to the operating system where you will run the installation.
 
