@@ -21,7 +21,7 @@ import yaml
 urllib3.disable_warnings()
 
 # constants
-CLI_VERSION = "5.2.1"
+CLI_VERSION = "5.2.2"
 BUILD_NUMBER = "1"
 
 CMD_INSTALL = "install"
