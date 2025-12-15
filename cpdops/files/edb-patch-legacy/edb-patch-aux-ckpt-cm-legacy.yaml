@@ -1,0 +1,101 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: edb-patch-aux-ckpt-cm
+  labels:
+    app.kubernetes.io/name: edb-patch-aux
+    cpdfwk.aux-kind: checkpoint
+    cpdfwk.component: cpdbr-edb-patch-ckpt
+    cpdfwk.managed-by: ibm-cpd-sre
+    cpdfwk.module: edb-patch-aux
+    cpdfwk.name: edb-patch-aux-ckpt-cm
+    cpdfwk.vendor: ibm
+    cpdfwk.version: 1.0.0
+    icpdsupport/addOnId: cpdbr
+data:
+  aux-meta: |
+    name: edb-patch-aux
+    description: This is the auxiliary meta to assure the labels and annotations in all present EDB Postgres cluster resources are updated after a switchover of the EDB Postgres cluster's primary instance and replica.
+    version: 1.0.0
+    component: cpdbr-edb-patch-ckpt
+    aux-kind: checkpoint
+    priority-order: 0
+    support-instances: false
+    addon-name: cpdbr
+    owner: ibm-cpd-sre
+  checkpoint-meta: |
+    exec-hooks:
+      exec-rules: []
+  backup-meta: |
+    pre-hooks:
+      exec-rules:
+      - on-error: Fail
+        actions:
+        - job:
+            job-key: edb-patch-aux-job
+            timeout: 900s
+    post-hooks:
+      exec-rules: []
+  restore-meta: |
+    pre-workload-hooks:
+      exec-rules: []
+    post-hooks:
+      exec-rules: []
+  edb-patch-aux-job: |
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      generateName: edb-patch-aux-job-
+      labels:
+        app: edb-patch-aux-job
+    spec:
+      backoffLimit: 3
+      template:
+        spec:
+          serviceAccountName: zen-admin-sa
+          containers:
+          - name: edb-patch-aux
+            image: icr.io/cpopen/cpd/cpdbr-hook-utils:5.2.0
+            imagePullPolicy: IfNotPresent
+            command: ["sh"]
+            args:
+            - -c
+            - |
+              echo "executing edb-patch-aux checkpoint hook..."
+
+              # avoiding to use new env vars to support old versions of CPD
+              zen_namespace=${CPD_FWK_NAMESPACE}
+
+              # for each cluster
+              for cluster_name in $(oc get cluster.postgresql.k8s.enterprisedb.io --no-headers -n $zen_namespace | awk '{print $1}'); do
+
+                echo "Check if EDB cluster $cluster_name is using External Backup Adapter"
+                if oc get cluster.postgresql.k8s.enterprisedb.io $cluster_name -n $zen_namespace -o jsonpath='{.metadata.annotations.k8s\.enterprisedb\.io/addons}' | grep -q "external-backup-adapter-cluster"; then
+
+                  echo "Removing Backup Instance annotation from EDB cluster $cluster_name"
+                  oc annotate cluster.postgresql.k8s.enterprisedb.io $cluster_name -n $zen_namespace k8s.enterprisedb.io/backupInstance-
+
+                  echo "Waiting for Backup Instance annotation for EDB cluster $cluster_name to be refreshed..."
+                  until oc get cluster.postgresql.k8s.enterprisedb.io $cluster_name -n $zen_namespace -o jsonpath='{.metadata.annotations.k8s\.enterprisedb\.io/backupInstance}' | grep -q .; do sleep 3; done
+
+                  echo "Reset of Backup Adapter Instance for EDB cluster $cluster_name is complete."
+                else
+                  echo "Skipping EDB cluster $cluster_name as it is not using External Backup Adapter"
+                fi
+
+              done
+
+              echo "completed edb-patch-aux checkpoint hook"
+            env:
+            - name: CUR_JOB_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['job-name']
+            resources:
+              limits:
+                cpu: 1000m
+                memory: 512Mi
+              requests:
+                cpu: 100m
+                memory: 256Mi
+          restartPolicy: Never
