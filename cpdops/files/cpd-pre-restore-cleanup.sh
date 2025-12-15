@@ -235,6 +235,15 @@ Cleanup()
     echo -e
     echo -e "${BLUE}** Deleting ValidatingWebhookConfiguration(s) associated with namespace: \"${namespace}\"...${NC}"
     oc delete validatingwebhookconfigurations.admissionregistration.k8s.io -l olm.owner.namespace=${namespace}
+    oc delete validatingwebhookconfigurations.admissionregistration.k8s.io "postgresql-operator-validating-webhook-configuration-${namespace}"
+    oc delete validatingwebhookconfigurations.admissionregistration.k8s.io "postgresql-operator-validating-webhook-configuration"
+    
+    echo -e
+    echo -e "${BLUE}** Deleting MutatingWebhookConfiguration(s) associated with namespace: \"${namespace}\"...${NC}"
+    oc delete mutatingwebhookconfigurations.admissionregistration.k8s.io "postgresql-operator-mutating-webhook-configuration"
+    oc delete mutatingwebhookconfigurations.admissionregistration.k8s.io "postgresql-operator-mutating-webhook-configuration-${namespace}"
+    oc delete mutatingwebhookconfigurations.admissionregistration.k8s.io "postgresql-operator-webhook-service.${namespace}"
+    
   done
 
   if [[ -n "${remaining_namespaces}" ]]; then
