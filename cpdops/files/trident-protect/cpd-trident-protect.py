@@ -21,7 +21,7 @@ import yaml
 urllib3.disable_warnings()
 
 # constants
-CLI_VERSION = "5.2.2"
+CLI_VERSION = "5.3.0"
 BUILD_NUMBER = "1"
 
 CMD_INSTALL = "install"
@@ -587,6 +587,7 @@ class TridentProtectCliWrapper:
         dry_run: bool,
         data_mover_timeout_sec: int,
         storageclass_mappings: str,
+        pvc_bind_timeout_sec: str,
     ):
         command = [
             "tridentctl-protect",
@@ -604,6 +605,8 @@ class TridentProtectCliWrapper:
 
         if storageclass_mappings != "":
             command.append(f"--storageclass-mapping={storageclass_mappings}")
+        if pvc_bind_timeout_sec != "":
+            command.append(f"--pvc-bind-timeout-sec={pvc_bind_timeout_sec}")
         
         commandStr = " ".join(command)
         print(f"executing command: {commandStr}\n")
@@ -922,6 +925,7 @@ class TridentProtectManager:
         dry_run: bool,
         data_mover_timeout_sec: int,
         storageclass_mappings: str,
+        pvc_bind_timeout_sec: str
     ):
 
         print(f"trident protect namespace: {self.get_tp_namespace()}")
@@ -939,6 +943,7 @@ class TridentProtectManager:
                 dry_run=dry_run,
                 data_mover_timeout_sec=data_mover_timeout_sec,
                 storageclass_mappings=storageclass_mappings,
+                pvc_bind_timeout_sec=pvc_bind_timeout_sec
             )
             print(stdout)
             print()
@@ -1868,6 +1873,7 @@ def command_restore_create(args):
     arg_dry_run = bool(args.dry_run)
     arg_data_mover_timeout_sec = int(args.data_mover_timeout_sec)
     arg_storageclass_mappings = str(args.storageclass_mappings)
+    arg_pvc_bind_timeout_sec = str(args.pvc_bind_timeout_sec)
 
     print(TextColor.blue("** Checking for installation of OpenShift CLI (oc) in system PATH..."))
     Path.check_oc_installed()
@@ -1887,7 +1893,7 @@ def command_restore_create(args):
         tpm = TridentProtectManager(tp_namespace=arg_trident_protect_operator_ns)
         
         cpdbr.refresh_cpdbr_trident_protect_namespace_mapping_cm(cm_name=DEFAULT_NAMESPACE_MAPPING_CM_NAME, namespace=arg_oadp_namespace,mapping_string=arg_namespace_mappings, dry_run=arg_dry_run)
-        tpm.do_restore_create(app_vault=arg_appvault_name, cr_namespace=arg_cpd_operator_namespace, namespace_mappings=arg_namespace_mappings, app_archive_path=arg_path, restore_name=arg_restore_name, dry_run=arg_dry_run, data_mover_timeout_sec=arg_data_mover_timeout_sec, storageclass_mappings=arg_storageclass_mappings)
+        tpm.do_restore_create(app_vault=arg_appvault_name, cr_namespace=arg_cpd_operator_namespace, namespace_mappings=arg_namespace_mappings, app_archive_path=arg_path, restore_name=arg_restore_name, dry_run=arg_dry_run, data_mover_timeout_sec=arg_data_mover_timeout_sec, storageclass_mappings=arg_storageclass_mappings, pvc_bind_timeout_sec=arg_pvc_bind_timeout_sec)
     except Exception as e:
         raise Exception(f"An error occurred during the restore (app_vault={arg_appvault_name}, path={arg_path}, restore_name={arg_restore_name}): {e}")
 
@@ -2025,6 +2031,7 @@ def main():
     parser_restore_create.add_argument("--dry_run", action="store_true", help="Set to True to preview the restore steps without automatically applying them (default=False)", required=False)
     parser_restore_create.add_argument("--data_mover_timeout_sec", type=int, default=3600, help="Data mover timeout for Trident Protect volume restores, in seconds (default=3600)", required=False)
     parser_restore_create.add_argument("--storageclass_mappings", type=str, default="", help="storage class mappings to use for the Trident Protect BackupRestore CR", required=False)
+    parser_restore_create.add_argument("--pvc_bind_timeout_sec", type=str, default="", help="timeout in seconds for PVC binding (negative values means a TP system default is used) (default -1)", required=False)
 
     parser_restore_status = subparsers_restore.add_parser("status", help="Check the status of a restore operation")
     parser_restore_status.add_argument("--restore_name", type=non_empty_string, help="name of the Trident Protect BackupRestore CR (required)", required=True)
