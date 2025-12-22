@@ -52,10 +52,10 @@ data:
       backoffLimit: 3
       template:
         spec:
-          serviceAccountName: zen-admin-sa
+          serviceAccountName: edb-patch-sa
           containers:
           - name: edb-patch-aux
-            image: icr.io/cpopen/cpd/cpdbr-hook-utils:5.2.0
+            image: icr.io/cpopen/cpd/cpdbr-oadp:VERSION_PLACEHOLDER
             imagePullPolicy: IfNotPresent
             command: ["sh"]
             args:
