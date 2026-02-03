@@ -7,7 +7,7 @@
 # Use, duplication or disclosure restricted by GSA ADP Schedule
 # Contract with IBM Corp.
 
-VERSION=1.0.1
+VERSION=1.0.2
 
 ############################################################
 # Defaults                                                 #
@@ -165,10 +165,10 @@ while [ $# -gt 0 ]; do
       namespace_flag="${1#*=}"
       ;;
     -t=*|--tenant-operator-namespace=*)
-      cpd_instance_or_operator_ns_flag="${1#*=}"
+      cpd_operator_ns_flag="${1#*=}"
       ;;
     -c=*|--cpd-namespace=*)
-      cpd_instance_or_operator_ns_flag="${1#*=}"
+      cpd_instance_ns_flag="${1#*=}"
       ;;
     -a=*|--additional-namespaces=*)
       additional_namespaces_flag="${1#*=}"
@@ -195,17 +195,38 @@ done
 
 # parsing flags
 OADP_OPERATOR_NS=$namespace_flag
-if [[ $cpd_instance_or_operator_ns_flag ]]; then
-  CPD_INSTANCE_NS=$(oc get commonservice common-service -n $cpd_instance_or_operator_ns_flag -o jsonpath='{.spec.servicesNamespace}')
-  CPD_OPERATOR_NS=$(oc get commonservice common-service -n $cpd_instance_or_operator_ns_flag -o jsonpath='{.spec.operatorNamespace}')
-  if [[ $CPD_INSTANCE_NS ]]; then
-    TETHERED_NAMESPACES=$(oc get zenservice lite-cr -n $CPD_INSTANCE_NS -o jsonpath='{.spec.tetheredNamespaces}' | tr ',' ' ' | tr -d '"' | tr -d '[' | tr -d ']')
-  fi
+if [[ $cpd_operator_ns_flag ]]; then
+  CPD_INSTANCE_NS=$(oc get commonservice common-service -n $cpd_operator_ns_flag -o jsonpath='{.spec.servicesNamespace}' || echo $cpd_instance_ns_flag)
+  CPD_OPERATOR_NS=$(oc get commonservice common-service -n $cpd_operator_ns_flag -o jsonpath='{.spec.operatorNamespace}' || echo $cpd_operator_ns_flag)
+elif [[ $cpd_instance_ns_flag ]]; then
+  CPD_INSTANCE_NS=$(oc get commonservice common-service -n $cpd_instance_ns_flag -o jsonpath='{.spec.servicesNamespace}' || echo $cpd_instance_ns_flag)
+  CPD_OPERATOR_NS=$(oc get commonservice common-service -n $cpd_instance_ns_flag -o jsonpath='{.spec.operatorNamespace}' || echo $cpd_operator_ns_flag)
 fi
+if [[ $CPD_INSTANCE_NS ]]; then
+  TETHERED_NAMESPACES=$(oc get zenservice lite-cr -n $CPD_INSTANCE_NS -o jsonpath='{.spec.tetheredNamespaces}' | tr ',' ' ' | tr -d '"' | tr -d '[' | tr -d ']')
+fi
+
 ADDITIONAL_NAMESPACES=$(echo $additional_namespaces_flag | tr ',' ' ')
+# assure additional namespaces does not contain duplicates
+if [[ "$ADDITIONAL_NAMESPACES" == *"$CPD_INSTANCE_NS"* ]]; then
+    ADDITIONAL_NAMESPACES="${ADDITIONAL_NAMESPACES/$CPD_INSTANCE_NS/}"
+fi
+if [[ "$ADDITIONAL_NAMESPACES" == *"$CPD_OPERATOR_NS"* ]]; then
+    ADDITIONAL_NAMESPACES="${ADDITIONAL_NAMESPACES/$CPD_OPERATOR_NS/}"
+fi
+for tethered_ns in $(echo $TETHERED_NAMESPACES); do
+  if [[ "$ADDITIONAL_NAMESPACES" == *"$tethered_ns"* ]]; then
+      ADDITIONAL_NAMESPACES="${ADDITIONAL_NAMESPACES/$tethered_ns/}"
+  fi
+done
+if [[ "$ADDITIONAL_NAMESPACES" == *"$OADP_OPERATOR_NS"* ]]; then
+    ADDITIONAL_NAMESPACES="${ADDITIONAL_NAMESPACES/$OADP_OPERATOR_NS/}"
+fi
+
 if [[ $insecure_skip_tls_verify_flag == "true" ]]; then
   INSECURE_SKIP_TLS_VERIFY="--insecure-skip-tls-verify"
 fi
+
 MAX_PARALLEL_OPS=${max_parallel_ops_flag:-$MAX_PARALLEL_OPS_DEFAULT}
 if [[ $MAX_PARALLEL_OPS == 0 ]]; then
   MAX_PARALLEL_OPS=$(nproc)
@@ -220,5 +241,14 @@ if [[ $dest_dir_flag ]]; then
   DIR="${dest_dir_flag%/}/${DIR}"
 fi
 mkdir -p $DIR
+
+# echo OADP_OPERATOR_NS=$OADP_OPERATOR_NS
+# echo CPD_INSTANCE_NS=$CPD_INSTANCE_NS
+# echo CPD_OPERATOR_NS=$CPD_OPERATOR_NS
+# echo TETHERED_NAMESPACES=$TETHERED_NAMESPACES
+# echo ADDITIONAL_NAMESPACES=$ADDITIONAL_NAMESPACES
+# echo INSECURE_SKIP_TLS_VERIFY=$INSECURE_SKIP_TLS_VERIFY
+# echo MAX_PARALLEL_OPS=$MAX_PARALLEL_OPS
+# echo DIR=$DIR
 
 GatherInfo
