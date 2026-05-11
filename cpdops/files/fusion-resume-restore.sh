@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Licensed Materials - Property of IBM
-# (c) Copyright IBM Corporation 2025. All Rights Reserved.
+# (c) Copyright IBM Corporation 2026. All Rights Reserved.
 # 
 # Note to U.S. Government Users Restricted Rights:
 # Use, duplication or disclosure restricted by GSA ADP Schedule
@@ -302,7 +302,7 @@ if [ $? -ne 0 ]; then
 fi
 newRestoreName=${restoreName}-cont-$(date '+%Y%m%d%H%M')
 newRestorePath=${WORK_DIR}/${newRestoreName}.json
-cat ${originalRestorePath} | jq --arg newRestoreName "${newRestoreName}" --arg tenantOpNs "${tenantOpNs}" 'del(.metadata.creationTimestamp) | del(.metadata.uid) | del(.metadata.finalizers) | del(.metadata.generation) | del(.metadata.resourceVersion) | del(.status) | .metadata.name = $newRestoreName | .spec.recipe += {"name": "ibmcpd-tenant-cont", "namespace": $tenantOpNs}' &> ${newRestorePath}
+cat ${originalRestorePath} | jq --arg newRestoreName "${newRestoreName}" --arg tenantOpNs "${tenantOpNs}" 'del(.metadata.annotations) | del(.metadata.creationTimestamp) | del(.metadata.uid) | del(.metadata.finalizers) | del(.metadata.generation) | del(.metadata.resourceVersion) | del(.status) | .metadata.name = $newRestoreName | .spec.recipe += {"name": "ibmcpd-tenant-cont", "namespace": $tenantOpNs}' &> ${newRestorePath}
 echo
 echo -e "${GREEN}Resume Restore YAML Saved: ${newRestorePath}${NC}"
 
