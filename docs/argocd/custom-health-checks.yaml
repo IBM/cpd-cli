@@ -61,6 +61,26 @@ spec:
           hs.status = "Progressing"
           hs.message = ""
           return hs
+      datagate.cpd.ibm.com/DatagateService:
+        health.lua: |
+          hs = {}
+          if obj.status ~= nil then
+            if obj.status.datagateStatus ~= nil then
+              if obj.status.datagateStatus == "Completed" then
+                hs.status = "Healthy"
+                hs.message = ""
+                return hs
+              end
+              if obj.status.datagateStatus == "Failed" then
+                hs.status = "Degraded"
+                hs.message = ""
+                return hs
+              end
+            end
+          end
+          hs.status = "Progressing"
+          hs.message = ""
+          return hs
       ds.cpd.ibm.com/DataStage:
         health.lua: |
           hs = {}
@@ -260,7 +280,6 @@ spec:
           end
           hs.status = "Progressing"
           hs.message = ""
-          return hs
       streamsets.cpd.ibm.com/StreamSetsInstaller:
         health.lua: |
           hs = {}
@@ -284,6 +303,28 @@ spec:
           hs.message = ""
           return hs
       streamsets-sdi.cpd.ibm.com/sdiInstaller:
+        health.lua: |
+          hs = {}
+          if obj.status ~= nil then
+            if obj.status.chartStatus ~= nil then
+              for _, v in pairs(obj.status.chartStatus) do
+                if v == "Failed" or v == "Error" then
+                  hs.status = "Degraded"
+                  hs.message = ""
+                  return hs
+                end
+              end
+            end
+            if obj.status.status ~= nil and obj.status.status == "Completed" then
+              hs.status = "Healthy"
+              hs.message = ""
+              return hs
+            end
+          end
+          hs.status = "Progressing"
+          hs.message = ""
+          return hs
+      databand.cpd.ibm.com/databandInstaller:
         health.lua: |
           hs = {}
           if obj.status ~= nil then
@@ -436,6 +477,26 @@ spec:
                 return hs
               end
               if obj.status.dpStatus == "Failed" then
+                hs.status = "Degraded"
+                hs.message = ""
+                return hs
+              end
+            end
+          end
+          hs.status = "Progressing"
+          hs.message = ""
+          return hs
+      wxdi.cpd.ibm.com/WatsonxDataIntegration:
+        health.lua: |
+          hs = {}
+          if obj.status ~= nil then
+            if obj.status.wxdiStatus ~= nil then
+              if obj.status.wxdiStatus == "Completed" then
+                hs.status = "Healthy"
+                hs.message = ""
+                return hs
+              end
+              if obj.status.wxdiStatus == "Failed" then
                 hs.status = "Degraded"
                 hs.message = ""
                 return hs
@@ -646,7 +707,7 @@ spec:
           end
           hs.status = "Progressing"
           hs.message = ""
-          return hs
+          return hs         
       databases.cpd.ibm.com/Db2whService:
         health.lua: |
           hs = {}
@@ -666,7 +727,7 @@ spec:
           end
           hs.status = "Progressing"
           hs.message = ""
-          return hs
+          return hs            
       wml.cpd.ibm.com/WmlBase:
         health.lua: |
           hs = {}
@@ -745,10 +806,10 @@ spec:
               return hs
             end
           end
-
+          
           hs.status = "Progressing"
           hs.message = (obj.status and obj.status.progressMessage) or ""
-          return hs
+          return hs         
 
       ws.cpd.ibm.com/WS:
         health.lua: |
@@ -958,7 +1019,7 @@ spec:
           end
           hs.status = "Progressing"
           hs.message = ""
-          return hs
+          return hs      
 
       marketplace.redhat.com/MarketplaceConfig:
         health.lua: |
@@ -1396,208 +1457,6 @@ spec:
             end
           end
           return hs
-      wca.cpd.ibm.com/WCABase:
-        health.lua: |
-          hs = {}
-          hs.status = "Progressing"
-          hs.message = "Unknown status"
-          if obj.status ~= nil then
-            if obj.status.wcabaseStatus ~= nil then
-              if obj.status.wcabaseStatus == "Completed" then
-                hs.status = "Healthy"
-                hs.message = obj.status.progressMessage
-              elseif obj.status.wcabaseStatus == "InProgress" then
-                hs.status = "Progressing"
-                hs.message = obj.status.progressMessage
-              elseif obj.status.wcabaseStatus == "Failed" then
-                hs.status = "Degraded"
-                hs.message = "Unknown reason"
-                if obj.status.conditions ~= nil then
-                  for i, condition in ipairs(obj.status.conditions) do
-                    if condition.type == "Failure" then
-                      hs.message = condition.message
-                    end
-                  end
-                end
-              end
-            end
-          end
-          return hs
-      wca.cpd.ibm.com/WCAAnsible:
-        health.lua: |
-          hs = {}
-          hs.status = "Progressing"
-          hs.message = "Unknown status"
-          if obj.status ~= nil then
-            if obj.status.wcaansibleStatus ~= nil then
-              if obj.status.wcaansibleStatus == "Completed" then
-                hs.status = "Healthy"
-                hs.message = obj.status.progressMessage
-              elseif obj.status.wcaansibleStatus == "InProgress" then
-                hs.status = "Progressing"
-                hs.message = obj.status.progressMessage
-              elseif obj.status.wcaansibleStatus == "Failed" then
-                hs.status = "Degraded"
-                hs.message = "Unknown reason"
-                if obj.status.conditions ~= nil then
-                  for i, condition in ipairs(obj.status.conditions) do
-                    if condition.type == "Failure" then
-                      hs.message = condition.message
-                    end
-                  end
-                end
-              end
-            end
-          end
-          return hs
-      wca.cpd.ibm.com/WCA:
-        health.lua: |
-          hs = {}
-          hs.status = "Progressing"
-          hs.message = "Unknown status"
-          if obj.status ~= nil then
-            if obj.status.wcaStatus ~= nil then
-              if obj.status.wcaStatus == "Completed" then
-                hs.status = "Healthy"
-                hs.message = obj.status.progressMessage
-              elseif obj.status.wcaStatus == "InProgress" then
-                hs.status = "Progressing"
-                hs.message = obj.status.progressMessage
-              elseif obj.status.wcaStatus == "Failed" then
-                hs.status = "Degraded"
-                hs.message = "Unknown reason"
-                if obj.status.conditions ~= nil then
-                  for i, condition in ipairs(obj.status.conditions) do
-                    if condition.type == "Failure" then
-                      hs.message = condition.message
-                    end
-                  end
-                end
-              end
-            end
-          end
-          return hs
-      understand.wca.cpd.ibm.com/UnderstandAgentOrchestrator:
-        health.lua: |
-          hs = {}
-          hs.status = "Progressing"
-          hs.message = ""
-          if obj.status ~= nil then
-            if obj.status.understandStatus ~= nil then
-              if obj.status.understandStatus == "Completed" then
-                hs.status = "Healthy"
-                hs.message = obj.status.progressMessage or ""
-              elseif obj.status.understandStatus == "Failed" then
-                hs.status = "Degraded"
-                hs.message = obj.status.progressMessage or ""
-              else
-                hs.status = "Progressing"
-                hs.message = obj.status.progressMessage or ""
-              end
-            end
-          end
-          return hs
-      agentic.wca.cpd.ibm.com/WCAZAgents:
-        health.lua: |
-          hs = {}
-          hs.status = "Progressing"
-          hs.message = ""
-          if obj.status ~= nil then
-            if obj.status.agentsStatus ~= nil then
-              if obj.status.agentsStatus == "Completed" then
-                hs.status = "Healthy"
-                hs.message = obj.status.progressMessage or ""
-              elseif obj.status.agentsStatus == "Failed" then
-                hs.status = "Degraded"
-                hs.message = obj.status.progressMessage or ""
-              else
-                hs.status = "Progressing"
-                hs.message = obj.status.progressMessage or ""
-              end
-            end
-          end
-          return hs
-      dmc.databases.ibm.com/Dmcaddon:
-        health.lua: |
-          hs = {}
-          if obj.status ~= nil then
-            if obj.status.dmcAddonStatus ~= nil then
-              if obj.status.dmcAddonStatus == "Completed" then
-                hs.status = "Healthy"
-                hs.message = ""
-                return hs
-              end
-              if obj.status.dmcAddonStatus == "Failed" then
-                hs.status = "Degraded"
-                hs.message = ""
-                return hs
-              end
-            end
-          end
-          hs.status = "Progressing"
-          hs.message = ""
-          return hs
-      wca.cpd.ibm.com/WCAZ:
-        health.lua: |
-          hs = {}
-          hs.status = "Progressing"
-          hs.message = ""
-          if obj.status ~= nil then
-            if obj.status.wcazStatus ~= nil then
-              if obj.status.wcazStatus == "Completed" then
-                hs.status = "Healthy"
-                hs.message = obj.status.progressMessage or ""
-              elseif obj.status.wcazStatus == "Failed" then
-                hs.status = "Degraded"
-                hs.message = obj.status.progressMessage or ""
-              else
-                hs.status = "Progressing"
-                hs.message = obj.status.progressMessage or ""
-              end
-            end
-          end
-          return hs
-      wca.cpd.ibm.com/CodeExplanation:
-        health.lua: |
-          hs = {}
-          hs.status = "Progressing"
-          hs.message = ""
-          if obj.status ~= nil then
-            if obj.status.status ~= nil then
-              if obj.status.status == "Completed" then
-                hs.status = "Healthy"
-                hs.message = obj.status.progressMessage or ""
-              elseif obj.status.status == "Failed" then
-                hs.status = "Degraded"
-                hs.message = obj.status.progressMessage or ""
-              else
-                hs.status = "Progressing"
-                hs.message = obj.status.progressMessage or ""
-              end
-            end
-          end
-          return hs
-      wca.cpd.ibm.com/CodeGeneration:
-        health.lua: |
-          hs = {}
-          hs.status = "Progressing"
-          hs.message = ""
-          if obj.status ~= nil then
-            if obj.status.status ~= nil then
-              if obj.status.status == "Completed" then
-                hs.status = "Healthy"
-                hs.message = obj.status.progressMessage or ""
-              elseif obj.status.status == "Failed" then
-                hs.status = "Degraded"
-                hs.message = obj.status.progressMessage or ""
-              else
-                hs.status = "Progressing"
-                hs.message = obj.status.progressMessage or ""
-              end
-            end
-          end
-          return hs
-
       wo.watsonx.ibm.com/WatsonxOrchestrate:
         health.lua: |
           hs = {}
@@ -1623,20 +1482,79 @@ spec:
           hs.status = "Progressing"
           hs.message = ""
           return hs
-
-      assistant.watson.ibm.com/WatsonAssistant:
+      operator.ibm.com/IBMUsageMetering:
         health.lua: |
           hs = {}
           if obj.status ~= nil then
-            if obj.status.watsonAssistantStatus ~= nil then
-              if obj.status.watsonAssistantStatus == "Completed" then
+            if obj.status.phase ~= nil then
+              if obj.status.phase == "Ready" then
+                hs.status = "Healthy"
+                hs.message = obj.status.message
+                return hs
+              end
+              if obj.status.phase == "Failed" then
+                hs.status = "Degraded"
+                hs.message = obj.status.message
+                return hs
+              end
+            end
+          end
+          hs.status = "Progressing"
+          hs.message = ""
+          return hs
+      operator.ibm.com/Authentication:
+        health.lua: |
+          hs = {}
+          if obj.status ~= nil then
+            if obj.status.service ~= nil then
+              if obj.status.service.status == "Ready" then
                 hs.status = "Healthy"
                 hs.message = ""
                 return hs
               end
-              if obj.status.watsonAssistantStatus == "Failed" then
-                hs.status = "Degraded"
+              if obj.status.service.status == "Unknown" then
+                hs.status = "Unknown"
                 hs.message = ""
+                return hs
+              end
+            end
+          end
+          hs.status = "Progressing"
+          hs.message = ""
+          return hs
+      operators.ibm.com/CommonWebUI:
+        health.lua: |
+          hs = {}
+          if obj.status ~= nil then
+            if obj.status.service ~= nil then
+              if obj.status.service.status == "Ready" then
+                hs.status = "Healthy"
+                hs.message = ""
+                return hs
+              end
+              if obj.status.service.status == "Unknown" then
+                hs.status = "Unknown"
+                hs.message = ""
+                return hs
+              end
+            end
+          end
+          hs.status = "Progressing"
+          hs.message = ""
+          return hs
+      operator.ibm.com/CommonService:
+        health.lua: |
+          hs = {}
+          if obj.status ~= nil then
+            if obj.status.phase ~= nil then
+              if obj.status.phase == "Ready" then
+                hs.status = "Healthy"
+                hs.message = obj.status.message
+                return hs
+              end
+              if obj.status.phase == "Failed" then
+                hs.status = "Degraded"
+                hs.message = obj.status.message
                 return hs
               end
             end

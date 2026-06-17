@@ -1,12 +1,12 @@
-This document describes the patching process on cluster installed by `cpd-cli manage create-argo-apps` for release 5.3.0.
+This document describes the patching process on cluster installed by `cpd-cli manage create-argo-apps` for release 5.3.1.
 
 
 
 ## 1. Prerequisites
 
-1. Purchase IBM Software Hub Premium, and acquire Olm Utils Premium image (release >= 5.3.0)
+1. Purchase IBM Software Hub Premium, and acquire Olm Utils Premium image (release >= 5.3.1)
 2. Download latest cpd-cli
-3. A cluster with IBM Software Hub (release >= 5.3.0)
+3. A cluster with IBM Software Hub (release >= 5.3.1)
 4. The original overrides.yaml file when installing or upgrading Software Hub using ArgoCD
 
 
@@ -27,11 +27,12 @@ The procedure describe below is for an air gapped environment. For internet-conn
 
 2. Move the `cpd-cli-workspace` folder to an internet-connected environment.
 
-3. From the internet facing environment, start olm utils premium container
+3. From the internet facing environment, start olm utils premium container and login to your openshift cluster
 
    ```bash
    export OLM_UTILS_IMAGE=<olm-utils-premium>
    cpd-cli manage restart-container
+   cpd-cli manage login-to-ocp
    ```
 
 4. Set up environment variables
@@ -41,36 +42,33 @@ The procedure describe below is for an air gapped environment. For internet-conn
    export private_registry_url=<url to private image registry>
    ```
 
-5. Download latest patch metadata by 
-   ```bash
-   cpd-cli manage list-patch --release=$release
-   ```
 
-6. Download case packages
+6. Download patch metadata and case packages
    ```bash
    cpd-cli manage case-download --release=$release --components=$components
    ```
-
-7. Mirror images
+   Confirm the patch metadata file under `cpd-cli-workspace/olm-utils-workspace/work/offline/patch/`
+   
+8. Mirror images
    ```bash
    cpd-cli manage mirror-images --release=$release --components=$components \
    	--target_registry=$private_registry_url
    ```
 
-8. Clone IBM Software Hub Helm Chart repo (URL pending) and host inside the air-gapped environment as a helm repo.
+9. Clone IBM Software Hub Helm Chart repo (URL pending) and host inside the air-gapped environment as a helm repo.
 
-9. Move `cpd-cli-workspace` folder to the air-gapped environment.
+10. Move `cpd-cli-workspace` folder to the air-gapped environment.
 
-10. Re-start the olm utils premium container inside the air-gapped environment if the container is not running.
+11. Re-start the olm utils premium container inside the air-gapped environment if the container is not running.
     ```bash
     export OLM_UTILS_IMAGE=<olm-utils-premium>
     cpd-cli manage restart-container
     ```
 
-11. Set up environment variables
+12. Set up environment variables
     ```bash
     #setup variables
-    export release=5.3.0
+    export release=5.3.1
     export operatorNS=<operator namespace>
     export instanceNS=<operand namespace>
     export appSuffix="-my-app" #match the original app suffix
@@ -83,9 +81,9 @@ The procedure describe below is for an air gapped environment. For internet-conn
     export components=cpd_platform # comma-separated list of service component names to install/upgrade
     ```
 
-12. Put the original overrides.yaml file under `cpd-cli-workspace/olm-utils-workspace/work` directory
+13. Put the original overrides.yaml file under `cpd-cli-workspace/olm-utils-workspace/work` directory
 
-13. Run create-argo-apps to regenerate applications
+14. Run create-argo-apps to regenerate applications
     ```bash
     cpd-cli manage create-argo-apps --instance_ns=$instance_ns --operator_ns=$operator_ns \
     --components=$components --file_storage_class=$fileStorageClass \
@@ -93,6 +91,11 @@ The procedure describe below is for an air gapped environment. For internet-conn
     --argo_ns=$argoNS --repo_url=$helmRepoURL --app-name-suffix=$appSuffix
     ```
 
-14. Review and apply all "namespaced" applications.
+15. Review all "namespaced" applications. Things to check for each generated namespaced app:
+    - App names are not changed
+    - Storage classes are not changed
+    - Operator and instance namespaces are not changed in global
+    - Target ArgoCD project is not changed (if configured)
 
-15. Sync all patched applications.
+16. Apply all namespaced applications (using `oc apply`)
+17. Sync all patched applications.

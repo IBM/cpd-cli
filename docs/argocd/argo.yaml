@@ -8,6 +8,7 @@ metadata:
   name: openshift-gitops
   namespace: openshift-gitops
 spec:
+  resourceTrackingMethod: label
   server:
     autoscale:
       enabled: false

@@ -1,7 +1,7 @@
 # Know Issues and Limitations 
 
 
-Release: 5.3.1
+Release: 5.3.x
 
 
 ### Issue: Opencontent_fdb Application Stuck in "Out of Sync"
@@ -226,24 +226,3 @@ Kubernetes treats null, an empty string, and a missing field as different values
 Confirm that the "Diff" of the application is only limited to the operator pod, as described in the Root Cause, either by ArgoCD web UI, or `argocd app diff` command.
 
 ---
-### Issue: Data Product Operator Pod Stuck in Crash Loop Backoff
-
-**Description**: Data Product app shows a degraded health, with the operator pod in Crash Loop Backoff state
-
-**Resolution:** 
-Grant the cluster admin permissions to the Data Product Operator Service Account to allow the Operator to proceed with the installation:
-
-```bash
-#swap <operator-ns> with actual operator namespace
-oc adm policy add-cluster-role-to-user cluster-admin system:serviceaccount:<operator-ns>:ibm-cpd-data-product-operator-serviceaccount
-```
-
-**Root Cause:**
-The RBAC shipped in Data Product chart is incorrect.
-
-**DDiagnostic Steps:**
-Confirm the data operator pod is in crash loop backoff state by
-
-```
-oc get po -n <operator-ns> |grep ibm-cpd-data-product-operator
-```

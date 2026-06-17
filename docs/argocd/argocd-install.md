@@ -1,11 +1,6 @@
-## Change Log In Release 5.3.1
-1. create-argo-apps command will now join the app name with suffix with `-` instead of directly concatenate. For example, app name "ccs-app" with suffix "dev" will now be "ccs-app-dev" instead of "ccs-appdev". When upgrading from 5.3.0, you need to revisit the name suffix value. Default suffix value below is now updated.
-2. create-argo-apps command now requires `--license_acceptance=true`, making it consistent with other commands in olm-utils
-
----
 ## 1. Introduction
 
-This document will go through step by step on how to install and upgrade IBM Software Hub services using ArgoCD, leveraging IBM Software Hub's Premium feature. We will use release 5.3.1 as an example.
+This document will go through step by step on how to install and upgrade IBM Software Hub services using ArgoCD, leveraging IBM Software Hub's Premium feature. We will use release 5.3.0 as an example.
 
 ## 2. Prerequisites
 
@@ -25,7 +20,7 @@ If your cluster is in air gapped environment, complete steps in this section bef
 
 1. Start in an internet-facing environment, download case packages for all your services.
    ```bash
-   export release=5.3.1
+   export release=5.3.0
    export components=<comma-separated component name list>
    cpd-cli manage download-case --release=$release --components=$components --cluster_resources=true
    ```
@@ -73,10 +68,10 @@ If your cluster is in air gapped environment, complete steps in this section bef
 3. Set up env vars
    ```bash
    #setup variables
-   export release=5.3.1
+   export release=5.3.0
    export operatorNS=<operator namespace>
    export instanceNS=<operand namespace>
-   export appSuffix="my-app" #this string is added to all applications created in this doc
+   export appSuffix="-my-app" #this string is added to all applications created in this doc
    export fileStorageClass=<file-sc>
    export blockStorageClass=<block-sc>
    export imagePullPrefix=<private-registry-url>
@@ -86,23 +81,19 @@ If your cluster is in air gapped environment, complete steps in this section bef
    export components=cpd_platform # comma-separated list of service component names to install/upgrade
    ```
 
-   Note:
-   
-   If you are upgrading a cluster already managed by ArgoCD, ensure that the storage classes and appSuffx values are not changed.
-   
-5. Connect ArgoCD to the helm chart repo. See https://argo-cd.readthedocs.io/en/stable/user-guide/private-repositories/.
+4. Connect ArgoCD to the helm chart repo. See https://argo-cd.readthedocs.io/en/stable/user-guide/private-repositories/.
 
    ```bash
    argocd repo add $helmRepoURL --name local-charts --username <w3@ibm.com> --password xxxxx --type helm
    ```
 
-6. Log in to the cluster if you haven't done so
+5. Log in to the cluster if you haven't done so
 
    ```bash
    oc login -u $user -p $password --server=<your cluster>
    ```
 
-7. Create namespaces
+6. Create namespaces
 
    ```bash
    oc new-project $operatorNS
@@ -111,17 +102,17 @@ If your cluster is in air gapped environment, complete steps in this section bef
    oc project $argocdNS #switch back
    ```
 
-8. Grant ArgoCD access by binding admin role to `system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller` service account in those namespaces above. 
+7. Grant ArgoCD access by binding admin role to `system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller` service account in those namespaces above. 
 
-9. Create an image pull secret `ibm-entitlement-key` in the operator and instance namespace and licensing namespace. Make sure the credentials can pull images from your private registry.
+8. Create an image pull secret `ibm-entitlement-key` in the operator and instance namespace and licensing namespace. Make sure the credentials can pull images from your private registry.
 
-10. Start up olm-utils container with Premium
+9. Start up olm-utils container with Premium
    ```bash
-   export OLM_UTILS_IMAGE=<olm-utils-premium-image> #e.g. cp.icr.io/cp/cpd/olm-utils-premium-v4:5.3.1
+   export OLM_UTILS_IMAGE=<olm-utils-premium-image> #e.g. cp.icr.io/cp/cpd/olm-utils-premium-v4:5.3.0
    cpd-cli manage restart-container
    ```
 
-11. Set up an override file to pass custom values. If you are upgrading, please make sure the content of the override file
+10. Set up an override file to pass custom values. If you are upgrading, please make sure the content of the override file
    ```bash
    cat << EOF > override.yaml
    global:
@@ -137,13 +128,6 @@ If your cluster is in air gapped environment, complete steps in this section bef
 
    Put this file under `cpd-cli-workspace/olm-utils-workspace/work`
 
-   If you intend to install Software Hub Control Center after installing Software Hub, make sure you include the following in the override values
-   ```yaml
-   zen:
-     zen_vault_enabled: false
-     admin_hub_enabled: true
-   ```
-
 11. Use `cpd-cli manage create-argo-apps` command to generate application yamls
     ```bash
     cpd-cli manage create-argo-apps --instance_ns=$instance_ns --operator_ns=$operator_ns \
@@ -156,7 +140,7 @@ If your cluster is in air gapped environment, complete steps in this section bef
 
 12. Apply all cluster-scoped applications (ArgoCD will need cluster admin permission for this). This will deploy all CRDs and cluster RBAC objects. Alternatively, apply all cluster scope objects generated by `cpd-cli manage download-case --cluster_resources=true` , as described in the previous section, if you do not want ArgoCD to manage cluster scoped objects.
 
-13. (Upgrade from OLM Only; Skip if cluster is already managed ArgoCD) If you are upgrading from a pre-5.3.0 release of Software Hub, `oc apply` all migration apps listed from `create-argo-apps` command. Then ync them with:
+13. (Upgrade Only) If you are upgrading from a pre-5.3.0 release of Software Hub, `oc apply` all migration apps listed from `create-argo-apps` command. and sync them with
 
     ```bash
     argocd app list
@@ -177,4 +161,4 @@ If your cluster is in air gapped environment, complete steps in this section bef
     This will create operators and CRs for service components. It will take some time before all apps complete syncing (depending on the number of service components).
 
 ## 5. Day-2 Operations
-As of Software Hub release ver 5.3.1, day-2 operations like shutdown, restart, and scaling are handled by cpd-cli. Note that cpd-cli operation may cause out-of-sync to applications affected, and it is necessary to disable auto-sync for these applications. The `create-argo-apps` doesn't enable auto-sync but may be enabled separately.
+As of Software Hub release ver 5.3.0, day-2 operations like shutdown, restart, and scaling are handled by cpd-cli. Note that cpd-cli operation may cause out-of-sync to applications affected, and it is necessary to disable auto-sync for these applications. The `create-argo-apps` doesn't enable auto-sync but may be enabled separately.
