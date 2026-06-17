@@ -7,6 +7,8 @@
 # Use, duplication or disclosure restricted by GSA ADP Schedule
 # Contract with IBM Corp.
 
+VERSION=1.0.0
+
 ############################################################
 # Color Escape Codes                                       #
 ############################################################
