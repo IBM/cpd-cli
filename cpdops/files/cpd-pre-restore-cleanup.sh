@@ -7,6 +7,8 @@
 # Use, duplication or disclosure restricted by GSA ADP Schedule
 # Contract with IBM Corp.
 
+VERSION=1.0.0
+
 ############################################################
 # Color Escape Codes                                       #
 ############################################################
@@ -95,16 +97,19 @@ Cleanup()
   function check_namespace_exists() 
   {
     local namespace=$1
+    oc whoami > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+      echo -e
+      echo -e "${RED}Error: failed to connect to OpenShift cluster${NC}"
+      echo -e
+      echo -e "  Verify you are logged in to your OpenShift cluster via oc"
+      exit 1
+    fi
     oc get project "${namespace}" > /dev/null 2>&1
     if [ $? -ne 0 ]; then
-    echo -e
-    echo -e "${RED}Error: failed to get namespace ${namespace}${NC}"
-    echo -e
-    echo -e "  1) verify you are logged in to your OpenShift cluster via oc"
-    echo -e
-    echo -e "  2) verify the namespace you want to delete exists and is not already deleted"
-    echo -e
-    exit 1
+      echo -e
+      echo -e "${GREEN}**  SUCCESS - namespace \"${namespace}\" does not exist / already deleted.${NC}"
+      exit 0
     fi
   }
 
@@ -130,8 +135,8 @@ Cleanup()
     echo -e "${BLUE}** finished clearing finalizers for resource in namespace \"${namespace}\"...${NC}"
     echo -e
 
-    retry_limit=15
-    retry_delay=5
+    retry_limit=35
+    retry_delay=6
     for i in $(seq $retry_limit)
     do
       echo -e
@@ -258,7 +263,7 @@ Cleanup()
     echo -e "    If you need to re-run this clean up script, you can use \`${0} --additional-namespaces=${remaining_namespaces}\`                                                  "                                                                                           
     echo -e
 
-    return
+    exit 1
   fi
 
   
