@@ -43,6 +43,9 @@ CMD_VERSION = "version"
 
 DEFAULT_TRIDENT_PROTECT_NS = "trident-protect"
 DEFAULT_EXEC_HOOK_TIMEOUT = 120
+DEFAULT_SNAPSHOT_COMPLETION_TIMEOUT = "80m"
+DEFAULT_VOLUME_SNAPSHOTS_CREATED_TIMEOUT = "15m"
+DEFAULT_VOLUME_SNAPSHOTS_READY_TO_USE_TIMEOUT = "60m"
 
 CPDBR_TENANT_SERVICE_DEPLOYMENT_NAME = "cpdbr-tenant-service"
 DEFAULT_PRIVATE_REGISTRY_LOCATION = "icr.io"
@@ -649,6 +652,9 @@ class TridentProtectCliWrapper:
         snapshot: str,
         data_mover_timeout_sec: int,
         full_backup: bool=False,
+        snapshot_completion_timeout: str=DEFAULT_SNAPSHOT_COMPLETION_TIMEOUT,
+        volume_snapshots_created_timeout: str=DEFAULT_VOLUME_SNAPSHOTS_CREATED_TIMEOUT,
+        volume_snapshots_ready_to_use_timeout: str=DEFAULT_VOLUME_SNAPSHOTS_READY_TO_USE_TIMEOUT
     ):
         command = [
             "tridentctl-protect",
@@ -661,6 +667,9 @@ class TridentProtectCliWrapper:
             f"--tp-namespace={tp_namespace}",
             f"--dry-run={str(dry_run).lower()}",
             f'--annotation="protect.trident.netapp.io/data-mover-timeout-sec={data_mover_timeout_sec}"',
+            f'--annotation="protect.trident.netapp.io/snapshot-completion-timeout={snapshot_completion_timeout}"',
+            f'--annotation="protect.trident.netapp.io/volume-snapshots-created-timeout={volume_snapshots_created_timeout}"',
+            f'--annotation="protect.trident.netapp.io/volume-snapshots-ready-to-use-timeout={volume_snapshots_ready_to_use_timeout}"',
             f'--label="{LABEL_GENERATED_BY_CPDBR}"',
         ]
         if data_mover != "":
@@ -1184,7 +1193,10 @@ class TridentProtectManager:
         reclaim_policy: str,
         snapshot: str,
         data_mover_timeout_sec: int,
-        full_backup: bool=False
+        full_backup: bool=False,
+        snapshot_completion_timeout: str=DEFAULT_SNAPSHOT_COMPLETION_TIMEOUT,
+        volume_snapshots_created_timeout: str=DEFAULT_VOLUME_SNAPSHOTS_CREATED_TIMEOUT,
+        volume_snapshots_ready_to_use_timeout: str=DEFAULT_VOLUME_SNAPSHOTS_READY_TO_USE_TIMEOUT
     ):
         tp_namespace=self.get_tp_namespace()
         
@@ -1222,7 +1234,10 @@ class TridentProtectManager:
             reclaim_policy=reclaim_policy,
             snapshot=snapshot,
             data_mover_timeout_sec=data_mover_timeout_sec,
-            full_backup=full_backup
+            full_backup=full_backup,
+            snapshot_completion_timeout=snapshot_completion_timeout,
+            volume_snapshots_created_timeout=volume_snapshots_created_timeout,
+            volume_snapshots_ready_to_use_timeout=volume_snapshots_ready_to_use_timeout
         )
         print(stdout)
         print(TextColor.green("Successfully created Backup via tridentctl-protect")) if not dry_run else None
@@ -2217,6 +2232,9 @@ def command_backup_create(args):
     arg_snapshot = str(args.snapshot)
     arg_data_mover_timeout_sec = int(args.data_mover_timeout_sec)
     arg_full_backup = bool(args.full_backup)
+    arg_snapshot_completion_timeout = str(args.snapshot_completion_timeout)
+    arg_volume_snapshots_created_timeout = str(args.volume_snapshots_created_timeout)
+    arg_volume_snapshots_ready_to_use_timeout = str(args.volume_snapshots_ready_to_use_timeout)
 
     print(TextColor.blue("** Checking for installation of OpenShift CLI (oc) in system PATH..."))
     Path.check_oc_installed()
@@ -2277,7 +2295,10 @@ def command_backup_create(args):
             reclaim_policy=arg_reclaim_policy,
             snapshot=arg_snapshot,
             data_mover_timeout_sec=arg_data_mover_timeout_sec,
-            full_backup=arg_full_backup
+            full_backup=arg_full_backup,
+            snapshot_completion_timeout=arg_snapshot_completion_timeout,
+            volume_snapshots_created_timeout=arg_volume_snapshots_created_timeout,
+            volume_snapshots_ready_to_use_timeout=arg_volume_snapshots_ready_to_use_timeout
         )
     except Exception as e:
         raise Exception(f"An error occurred during the backup (app_vault={arg_appvault_name}, application={arg_application_name}, backup_name={arg_backup_name}): {e}")
@@ -2502,6 +2523,9 @@ def main():
     parser_backup_create.add_argument("--snapshot", type=str, default="", help="Snapshot to backup from", required=False)
     parser_backup_create.add_argument("--data_mover_timeout_sec", type=int, default=3600, help="Data mover timeout for Trident Protect volume backups, in seconds (default=3600)", required=False)
     parser_backup_create.add_argument("--full_backup", type=bool, default=False, help="Specify whether an on-demand backup should be non-incremental (default=False)", required=False)
+    parser_backup_create.add_argument("--snapshot_completion_timeout", type=str, default=DEFAULT_SNAPSHOT_COMPLETION_TIMEOUT, help=f"Timeout for snapshot completion (default={DEFAULT_SNAPSHOT_COMPLETION_TIMEOUT})", required=False)
+    parser_backup_create.add_argument("--volume_snapshots_created_timeout", type=str, default=DEFAULT_VOLUME_SNAPSHOTS_CREATED_TIMEOUT, help=f"Timeout for volume snapshots to be created (default={DEFAULT_VOLUME_SNAPSHOTS_CREATED_TIMEOUT})", required=False)
+    parser_backup_create.add_argument("--volume_snapshots_ready_to_use_timeout", type=str, default=DEFAULT_VOLUME_SNAPSHOTS_READY_TO_USE_TIMEOUT, help=f"Timeout for volume snapshots to be ready to use (default={DEFAULT_VOLUME_SNAPSHOTS_READY_TO_USE_TIMEOUT})", required=False)
 
     parser_backup_status = subparsers_backup.add_parser("status", help="Check the status of a backup operation")
     parser_backup_status.add_argument("--backup_name", type=non_empty_string, help="name of the Trident Protect Backup CR (required)", required=True)
