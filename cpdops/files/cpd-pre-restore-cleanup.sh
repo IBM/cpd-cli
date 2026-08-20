@@ -71,6 +71,62 @@ Cleanup()
     done <<< "$resources"
   }
 
+  # Deletes any ValidatingWebhookConfiguration or MutatingWebhookConfiguration
+  # whose clientConfig.service.namespace matches the given namespace.
+  # This prevents "failed calling webhook: service not found" errors when the
+  # operator backing a webhook has already been removed before the namespace
+  # is deleted (e.g. DataStax, PostgreSQL, ibm-pg, or any future operator).
+  function delete_stale_webhooks_for_namespace()
+  {
+    local namespace=$1
+
+    echo -e
+    echo -e "${BLUE}** Deleting stale ValidatingWebhookConfiguration(s) with service in namespace \"${namespace}\"...${NC}"
+    local vwc_names
+    vwc_names=$(oc get validatingwebhookconfigurations.admissionregistration.k8s.io \
+      -o jsonpath="{range .items[*]}{.metadata.name}{'\t'}{range .webhooks[*]}{.clientConfig.service.namespace}{' '}{end}{'\n'}{end}" 2>/dev/null \
+      | awk -v ns="${namespace}" '$0 ~ "(^|\t| )"ns"( |\t|$)" {print $1}')
+    if [ -n "${vwc_names}" ]; then
+      echo -e "${YELLOW}The following ValidatingWebhookConfiguration(s) were found with backend service in namespace \"${namespace}\":${NC}"
+      echo -e "${vwc_names}"
+      echo -e
+      echo -e "${RED}>>> Delete these ValidatingWebhookConfiguration(s)? Leaving them will block namespace deletion.${NC} (y/n)"
+      read -p "? " -n 1 -r; echo -e
+      if [[ "${REPLY}" =~ ^[Yy]$ ]]; then
+        echo "${vwc_names}" | xargs oc delete validatingwebhookconfigurations.admissionregistration.k8s.io --ignore-not-found
+      else
+        echo -e "${RED}Skipped deletion of ValidatingWebhookConfiguration(s). You must manually remove namespace \"${namespace}\" after resolving the webhooks.${NC}"
+        echo -e "${RED}To manually delete the namespace run: oc delete project \"${namespace}\"${NC}"
+        exit 1
+      fi
+    else
+      echo -e "${YELLOW}No stale ValidatingWebhookConfiguration(s) found for namespace \"${namespace}\" - skipping...${NC}"
+    fi
+
+    echo -e
+    echo -e "${BLUE}** Deleting stale MutatingWebhookConfiguration(s) with service in namespace \"${namespace}\"...${NC}"
+    local mwc_names
+    mwc_names=$(oc get mutatingwebhookconfigurations.admissionregistration.k8s.io \
+      -o jsonpath="{range .items[*]}{.metadata.name}{'\t'}{range .webhooks[*]}{.clientConfig.service.namespace}{' '}{end}{'\n'}{end}" 2>/dev/null \
+      | awk -v ns="${namespace}" '$0 ~ "(^|\t| )"ns"( |\t|$)" {print $1}')
+    if [ -n "${mwc_names}" ]; then
+      echo -e "${YELLOW}The following MutatingWebhookConfiguration(s) were found with backend service in namespace \"${namespace}\":${NC}"
+      echo -e "${mwc_names}"
+      echo -e
+      echo -e "${RED}>>> Delete these MutatingWebhookConfiguration(s)? Leaving them will block namespace deletion.${NC} (y/n)"
+      read -p "? " -n 1 -r; echo -e
+      if [[ "${REPLY}" =~ ^[Yy]$ ]]; then
+        echo "${mwc_names}" | xargs oc delete mutatingwebhookconfigurations.admissionregistration.k8s.io --ignore-not-found
+      else
+        echo -e "${RED}Skipped deletion of MutatingWebhookConfiguration(s). You must manually remove namespace \"${namespace}\" after resolving the webhooks.${NC}"
+        echo -e "${RED}To manually delete the namespace run: oc delete project \"${namespace}\"${NC}"
+        exit 1
+      fi
+    else
+      echo -e "${YELLOW}No stale MutatingWebhookConfiguration(s) found for namespace \"${namespace}\" - skipping...${NC}"
+    fi
+  }
+
   local remainingFinalizerResourceTypes=""
   function get_remaining_ns_finalizer_resource_types()
   {
@@ -219,6 +275,32 @@ Cleanup()
 
   remaining_namespaces=""
   for namespace in ${namespaces_to_delete}; do
+    # ---------------------------------------------------------------
+    # Delete webhook configurations BEFORE deleting the namespace.
+    # Webhooks whose backend service is gone cause "failed calling
+    # webhook: service not found" InternalErrors that block oc patch
+    # from clearing finalizers, permanently stalling namespace deletion.
+    # ---------------------------------------------------------------
+
+    echo -e
+    echo -e "${BLUE}** Deleting ValidatingWebhookConfiguration(s) associated with namespace: \"${namespace}\"...${NC}"
+    oc delete validatingwebhookconfigurations.admissionregistration.k8s.io -l olm.owner.namespace=${namespace} 2>/dev/null || true
+    oc delete validatingwebhookconfigurations.admissionregistration.k8s.io "postgresql-operator-validating-webhook-configuration-${namespace}" 2>/dev/null || true
+    oc delete validatingwebhookconfigurations.admissionregistration.k8s.io "postgresql-operator-validating-webhook-configuration" 2>/dev/null || true
+
+    echo -e
+    echo -e "${BLUE}** Deleting MutatingWebhookConfiguration(s) associated with namespace: \"${namespace}\"...${NC}"
+    oc delete mutatingwebhookconfigurations.admissionregistration.k8s.io "postgresql-operator-mutating-webhook-configuration" 2>/dev/null || true
+    oc delete mutatingwebhookconfigurations.admissionregistration.k8s.io "postgresql-operator-mutating-webhook-configuration-${namespace}" 2>/dev/null || true
+    oc delete mutatingwebhookconfigurations.admissionregistration.k8s.io "postgresql-operator-webhook-service.${namespace}" 2>/dev/null || true
+
+    # Generic: find and delete any remaining ValidatingWebhookConfiguration or
+    # MutatingWebhookConfiguration whose clientConfig.service.namespace
+    # matches this namespace (covers DataStax, ibm-pg, and any future operator
+    # not covered by the hardcoded names above).
+    delete_stale_webhooks_for_namespace "${namespace}"
+
+    echo -e
     echo -e "${BLUE}** Deleting namespace: \"${namespace}\"...${NC}"
     delete_namespace "${namespace}"
 
@@ -236,18 +318,6 @@ Cleanup()
     echo -e
     echo -e "${BLUE}** Deleting SecurityContextConstraint(s) associated with namespace: \"${namespace}\"...${NC}"
     oc get scc | grep ${namespace} | awk '{print $1}' | xargs oc delete scc
-
-    echo -e
-    echo -e "${BLUE}** Deleting ValidatingWebhookConfiguration(s) associated with namespace: \"${namespace}\"...${NC}"
-    oc delete validatingwebhookconfigurations.admissionregistration.k8s.io -l olm.owner.namespace=${namespace}
-    oc delete validatingwebhookconfigurations.admissionregistration.k8s.io "postgresql-operator-validating-webhook-configuration-${namespace}"
-    oc delete validatingwebhookconfigurations.admissionregistration.k8s.io "postgresql-operator-validating-webhook-configuration"
-    
-    echo -e
-    echo -e "${BLUE}** Deleting MutatingWebhookConfiguration(s) associated with namespace: \"${namespace}\"...${NC}"
-    oc delete mutatingwebhookconfigurations.admissionregistration.k8s.io "postgresql-operator-mutating-webhook-configuration"
-    oc delete mutatingwebhookconfigurations.admissionregistration.k8s.io "postgresql-operator-mutating-webhook-configuration-${namespace}"
-    oc delete mutatingwebhookconfigurations.admissionregistration.k8s.io "postgresql-operator-webhook-service.${namespace}"
     
   done
 
