@@ -38,7 +38,7 @@ If your cluster is in air gapped environment, complete steps in this section bef
 
 3. Move the entire `cpd-cli-workspace` folder to the air-gapped environment. You may copy the folder, or simply connect the machine to said air-gapped environment.
 
-4. Clone IBM Software Hub Helm Chart repo (URL pending) and host inside the air-gapped environment as a helm repo. The repo url will be used for install, upgrade and patches.
+4. Clone IBM Software Hub Helm Chart repo (https://github.com/IBM/charts/tree/master/repo/ibm-helm) and host inside the air-gapped environment as a helm repo. The repo url will be used for install, upgrade and patches.
 
 ## 4. Install and Upgrade Procedure
 
