@@ -7,7 +7,7 @@
 # Use, duplication or disclosure restricted by GSA ADP Schedule
 # Contract with IBM Corp.
 
-VERSION=1.0.0
+VERSION=1.0.1
 
 ############################################################
 # Color Escape Codes                                       #
@@ -90,10 +90,23 @@ if [ -f "${backupInventoryPath}" ] && [ -f "${inventoryRecipePath}" ]; then
   echo "If you need to get these files from scratch, please remove the following, and re-run the script:"
   echo "- ${backupInventoryPath}"
   echo "- ${inventoryRecipePath}"
-else 
-  oc exec mongodb-0 -n ibm-backup-restore -- bash -c "mongosh --quiet --username \"\$MONGODB_USERNAME\" --password \"\$MONGODB_PASSWORD\" \$MONGODB_DATABASE --eval \"JSON.stringify(db.APPLICATION_inventory.find({_id: \\\"${backupUID}\\\"}).toArray())\"" > ${backupInventoryPath}
+else
+  # mongodb-v2-0 is for fusion 2.14, for fusion < 2.14, mongodb-0
+  mongoPod=""
+  for pod in mongodb-0 mongodb-v2-0; do
+    if oc get pod "${pod}" -n ibm-backup-restore > /dev/null 2>&1; then
+      mongoPod="${pod}"
+      break
+    fi
+  done
+  if [ -z "${mongoPod}" ]; then
+    echo -e "${RED}Error: mongodb pod (mongodb-0 or mongodb-v2-0) not found in namespace ibm-backup-restore${NC}"
+    exit 1
+  fi
+
+  oc exec "${mongoPod}" -n ibm-backup-restore -- bash -c "mongosh --quiet --username \"\$MONGODB_USERNAME\" --password \"\$MONGODB_PASSWORD\" \$MONGODB_DATABASE --eval \"JSON.stringify(db.APPLICATION_inventory.find({_id: \\\"${backupUID}\\\"}).toArray())\"" > ${backupInventoryPath}
   if [ $? -ne 0 ]; then
-      echo -e "${RED}Error: failed to get backup inventory from database${NC}"
+      echo -e "${RED}Error: failed to get backup inventory from database (${mongoPod})${NC}"
       exit 1
   fi
   echo "Backup Inventory JSON Saved: ${backupInventoryPath}"
@@ -143,6 +156,13 @@ while true; do
   if [[ "${startFromIndex}" -lt 0 || "${startFromIndex}" -gt ${maxIndex} ]]; then
       echo -e "${RED}Resume key must be between 0 and ${maxIndex} (inclusive) - please see the key-value pairs above.${NC}\n"
       continue
+  fi
+
+  isCpdVolumes=$(echo "${restoreWorkflow}" | INDEX="${startFromIndex}" yq '.[env(INDEX) | tonumber].group == "cpd-volumes"')
+  if [ "${isCpdVolumes}" = "true" ]; then
+      echo -e "${RED}Error: Resuming from 'cpd-volumes' is blocked. It should not be attempted to start from there.${NC}"
+      echo -e "${YELLOW}Please clean up the namespaces and restart the restore from the beginning if you want to resume from cpd-volumes.${NC}\n"
+      exit 1
   fi
   
   startFromWorkflow=$(echo "${restoreWorkflow}" | yq ".[$startFromIndex]")
