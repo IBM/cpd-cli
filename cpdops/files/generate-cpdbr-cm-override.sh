@@ -3,7 +3,7 @@
 # Generates a CPDBR ConfigMap override YAML from an existing ConfigMap YAML file.
 #
 # Usage:
-#   ./generate-cpdbr-cm-override.sh <configmap-yaml-path> [--replace-image-instances <old-image>,<new-image> ...]
+#   ./generate-cpdbr-cm-override.sh <configmap-yaml-path> --tag <tag> [--ki-link <url>] [--manage-next-steps] [--replace-image-instances <old-image>,<new-image> ...]
 #
 # Output:
 #   <configmap-yaml-path without .yaml>_override.yaml
@@ -11,7 +11,7 @@
 #
 # Requires: yq (https://github.com/mikefarah/yq) v4+
 
-VERSION="1.0.0"
+VERSION="1.0.1"
 
 set -euo pipefail
 
@@ -20,13 +20,26 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 
 usage() {
-  echo "Usage: $0 <configmap-yaml-path> [--replace-image-instances <old-image>,<new-image> ...]"
+  echo "Usage: $0 <configmap-yaml-path> --tag <tag> [--ki-link <url>] [--manage-next-steps] [--replace-image-instances <old-image>,<new-image> ...]"
   echo ""
   echo "  Generates a CPDBR ConfigMap override YAML."
   echo "  The override name is set to <original-name>-override."
   echo "  The version in aux-meta and the cpdfwk.version label are bumped."
   echo ""
+  echo "Required:"
+  echo "  --tag <tag>"
+  echo "      Tag value applied to the override ConfigMap as the label"
+  echo "      cpdbr.cpd.ibm.com/override-configmap-tag=<tag>. Useful for labeling configmaps after a Known Issue."
+  echo ""
   echo "Options:"
+  echo "  --ki-link <url>"
+  echo "      URL to the known-issue documentation. When provided, sets the annotation"
+  echo "      cpdbr.cpd.ibm.com/override-configmap-known-issue-link=<url> on the override ConfigMap."
+  echo ""
+  echo "  --manage-next-steps"
+  echo "      Suppress the 'Next steps' instructions printed at the end."
+  echo "      Use when the caller script manages apply/delete separately."
+  echo ""
   echo "  --replace-image-instances <old-image>,<new-image>"
   echo "      Replace all occurrences of 'image: <old-image>' with 'image: <new-image>'"
   echo "      in the generated override file. Can be specified multiple times."
@@ -70,10 +83,33 @@ bump_version() {
 [[ $# -lt 1 ]] && usage
 
 INPUT_FILE=""
+TAG=""
+KI_LINK=""
+MANAGE_NEXT_STEPS=0
 IMAGE_REPLACEMENTS=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --ki-link)
+      if [[ $# -lt 2 || -z "$2" ]]; then
+        echo "ERROR: --ki-link requires a non-empty URL value" >&2
+        exit 1
+      fi
+      KI_LINK="$2"
+      shift 2
+      ;;
+    --manage-next-steps)
+      MANAGE_NEXT_STEPS=1
+      shift
+      ;;
+    --tag)
+      if [[ $# -lt 2 || -z "$2" ]]; then
+        echo "ERROR: --tag requires a non-empty value" >&2
+        exit 1
+      fi
+      TAG="$2"
+      shift 2
+      ;;
     --replace-image-instances)
       if [[ $# -lt 2 || -z "$2" ]]; then
         echo "ERROR: --replace-image-instances requires a value in the form <old-image>,<new-image>" >&2
@@ -103,6 +139,11 @@ done
 
 if [[ -z "$INPUT_FILE" ]]; then
   echo "ERROR: missing <configmap-yaml-path>" >&2
+  usage
+fi
+
+if [[ -z "$TAG" ]]; then
+  echo "ERROR: --tag <tag> is required" >&2
   usage
 fi
 
@@ -174,11 +215,12 @@ PATCHED_AUX_META="$(
 )"
 
 # Write all changes to the output file in a single yq expression
-export OVERRIDE_NAME NEW_VERSION ORIG_NAME
-yq e '
+export OVERRIDE_NAME NEW_VERSION ORIG_NAME TAG KI_LINK VERSION
+YQ_EXPR='
   .metadata.name = strenv(OVERRIDE_NAME) |
   .metadata.labels["cpdfwk.version"] = strenv(NEW_VERSION) |
   .metadata.labels["cpdbr.cpd.ibm.com/override-configmap"] = strenv(ORIG_NAME) |
+  .metadata.labels["cpdbr.cpd.ibm.com/override-configmap-tag"] = strenv(TAG) |
   del(
     .metadata.resourceVersion,
     .metadata.uid,
@@ -189,8 +231,13 @@ yq e '
     .status
   ) |
   del(.metadata.annotations | select(length == 0)) |
+  .metadata.annotations["cpdbr.cpd.ibm.com/override-configmap-generator-version"] = strenv(VERSION) |
   .data["aux-meta"] = strenv(PATCHED_AUX_META)
-' "${INPUT_FILE}" > "${OUTPUT_FILE}"
+'
+if [[ -n "$KI_LINK" ]]; then
+  YQ_EXPR+=' | .metadata.annotations["cpdbr.cpd.ibm.com/override-configmap-known-issue-link"] = strenv(KI_LINK)'
+fi
+yq e "${YQ_EXPR}" "${INPUT_FILE}" > "${OUTPUT_FILE}"
 
 # ---------------------------------------------------------------------------
 # Replace image instances if requested
@@ -216,14 +263,17 @@ echo "  Original ConfigMap : ${ORIG_NAME}"
 echo "  Override name      : ${OVERRIDE_NAME}"
 echo "  Version bumped     : ${ORIG_VERSION} -> ${NEW_VERSION}"
 echo "  Override label     : cpdbr.cpd.ibm.com/override-configmap=${ORIG_NAME}"
+echo "  Tag label          : cpdbr.cpd.ibm.com/override-configmap-tag=${TAG}"
+[[ -n "$KI_LINK" ]] && echo "  KI annotation      : cpdbr.cpd.ibm.com/override-configmap-known-issue-link=${KI_LINK}"
 for pair in ${IMAGE_REPLACEMENTS[@]+"${IMAGE_REPLACEMENTS[@]}"}; do
   old_img="${pair%%,*}"
   new_img="${pair#*,}"
   echo "  Image replaced     : ${old_img} -> ${new_img}"
 done
-echo ""
-echo "Next steps:"
-echo "  1. Edit ${OUTPUT_FILE} to apply your desired changes."
-echo "  2. Apply:  oc apply -f ${OUTPUT_FILE}"
-echo "  3. Remove after upgrade (or once the fix is shipped):"
-echo "             oc delete -f ${OUTPUT_FILE}"
+if [[ "${MANAGE_NEXT_STEPS}" -eq 0 ]]; then
+  echo "Next steps:"
+  echo "  1. Edit ${OUTPUT_FILE} to apply your desired changes."
+  echo "  2. Apply:  oc apply -f ${OUTPUT_FILE}"
+  echo "  3. Remove after upgrade (or once the fix is shipped):"
+  echo "             oc delete -f ${OUTPUT_FILE}"
+fi
