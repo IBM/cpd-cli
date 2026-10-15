@@ -7,7 +7,7 @@
 # Use, duplication or disclosure restricted by GSA ADP Schedule
 # Contract with IBM Corp.
 
-VERSION=1.0.0
+VERSION=1.0.1
 
 ############################################################
 # Color Escape Codes                                       #
@@ -26,10 +26,13 @@ Help()
    # Display Help
    echo "CPD pre-restore namespace cleanup script"
    echo
-   echo "Syntax: ${0} [--tenant-operator-namespace/-t|--additional-namespaces/-a|-h/--help]"
+   echo "Syntax: ${0} [--tenant-operator-namespace/-t|--additional-namespaces/-a|--exclude-pvc-finalizer-removal|-h/--help]"
    echo "options:"
    echo "-t, --tenant-operator-namespace   CPD operator namespace"
    echo "-a, --additional-namespaces       List of additional namespaces to delete"
+   echo "--exclude-pvc-finalizer-removal   Do not force remove finalizers from PersistentVolumeClaims;"
+   echo "                                  PVCs are deleted with 'oc delete' instead, so their finalizers"
+   echo "                                  stay until Kubernetes finishes deleting the PVC"
    echo "-h, --help                        Help for ${0}"
    echo
 }
@@ -43,6 +46,33 @@ Cleanup()
   local tenant_operator_namespace="${2}"
 
   # region - helper functions
+  # Used instead of clear_finalizers for PVCs when --exclude-pvc-finalizer-removal
+  # is set: PVCs are deleted normally so their finalizers stay until Kubernetes
+  # has finished cleaning up.
+  function delete_pvcs()
+  {
+    local namespace=$1
+    local resource_type=$2
+
+    echo -e
+    echo -e "${BLUE}** --exclude-pvc-finalizer-removal set - deleting resource type \"${resource_type}\" in namespace \"${namespace}\" without removing finalizers...${NC}"
+    get_resources=$(oc get -n "${namespace}" "${resource_type}" 2>&1)
+    if [ $? -ne 0 ]; then
+        echo -e "${YELLOW}resource type \"${resource_type}\" not found - skipping...${NC}"
+        return
+    fi
+    none_found=$(echo -e $get_resources | grep "No resources found")
+    if [ $? -eq 0 ]; then
+        echo -e "${YELLOW}no resources for \"${resource_type}\" found - skipping...${NC}"
+        return
+    fi
+
+    resources=$(oc get -n $namespace $resource_type -o jsonpath='{range .items[*]}{.metadata.name} {end}')
+    while read -r i; do
+        oc delete -n "${namespace}" "${resource_type}" $i --wait=false --ignore-not-found
+    done <<< "$resources"
+  }
+
   function clear_finalizers()
   {
     local namespace=$1
@@ -50,7 +80,15 @@ Cleanup()
     if [ -z "${resource_type}" ]; then
         echo -e "${RED}usage: clear_finalizers <namespace> <resource_type>${NC}"
         return
-    fi 
+    fi
+
+    if [ "${exclude_pvc_finalizer_removal}" = "true" ]; then
+      case "${resource_type}" in
+        persistentvolumeclaims|persistentvolumeclaims.*|pvc|pvc.*)
+          return
+          ;;
+      esac
+    fi
 
     echo -e
     echo -e "${BLUE}** clearing finalizers for resource type \"${resource_type}\" in namespace \"${namespace}\"...${NC}"
@@ -179,6 +217,10 @@ Cleanup()
     echo -e
     echo -e "${BLUE}** deleting namespace \"${namespace}\"...${NC}"
     nohup oc delete project "${namespace}" > /dev/null 2>&1&
+
+    if [ "${exclude_pvc_finalizer_removal}" = "true" ]; then
+      delete_pvcs "${namespace}" "persistentvolumeclaims"
+    fi
 
     echo -e "${BLUE}** clearing finalizers for the following resource types:${NC}"
     echo -e "${resource_types}"
@@ -359,6 +401,9 @@ while [ $# -gt 0 ]; do
     -a=*|--additional-namespaces=*)
       additional_namespaces="${1#*=}"
       ;;
+    --exclude-pvc-finalizer-removal)
+      exclude_pvc_finalizer_removal="true"
+      ;;
     -h| --help)
       Help
       exit 0
@@ -378,6 +423,7 @@ fi
 echo
 echo -e "tenant_operator_namespace: ${tenant_operator_namespace:-<empty>}"
 echo -e "additional_namespaces: ${additional_namespaces:-<empty>}"
+echo -e "exclude_pvc_finalizer_removal: ${exclude_pvc_finalizer_removal:-false}"
 echo
 
 resolved_namespaces=""
