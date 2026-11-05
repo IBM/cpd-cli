@@ -354,8 +354,8 @@ Cleanup()
 
 
     echo -e
-    echo -e "${BLUE}** Deleting Released PersistentVolume(s) associated with namespace: \"${namespace}\"...${NC}"
-    oc get pv --no-headers | grep "Released.*${namespace}/.*" | awk '{print $1}' | xargs oc delete pv
+    echo -e "${BLUE}** Skipping automatic deletion of Released PersistentVolume(s) associated with namespace: \"${namespace}\". Review and delete manually if needed:${NC}"
+    oc get pv --no-headers | grep "Released.*${namespace}/.*" || echo "No Released PersistentVolumes found for namespace \"${namespace}\""
 
     echo -e
     echo -e "${BLUE}** Deleting SecurityContextConstraint(s) associated with namespace: \"${namespace}\"...${NC}"
