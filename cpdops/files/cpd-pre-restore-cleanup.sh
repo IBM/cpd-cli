@@ -7,7 +7,7 @@
 # Use, duplication or disclosure restricted by GSA ADP Schedule
 # Contract with IBM Corp.
 
-VERSION=1.0.1
+VERSION=1.0.2
 
 ############################################################
 # Color Escape Codes                                       #
@@ -335,6 +335,15 @@ Cleanup()
     oc delete mutatingwebhookconfigurations.admissionregistration.k8s.io "postgresql-operator-mutating-webhook-configuration" 2>/dev/null || true
     oc delete mutatingwebhookconfigurations.admissionregistration.k8s.io "postgresql-operator-mutating-webhook-configuration-${namespace}" 2>/dev/null || true
     oc delete mutatingwebhookconfigurations.admissionregistration.k8s.io "postgresql-operator-webhook-service.${namespace}" 2>/dev/null || true
+
+    # DataStax Mission Control webhooks, deleted by explicit name only.
+    # --ignore-not-found makes these no-ops (exit 0) if they do not exist.
+    echo -e "${BLUE}** Deleting DataStax Mission Control webhook configuration(s)...${NC}"
+    oc delete validatingwebhookconfigurations.admissionregistration.k8s.io \
+      datastax-mc-cass-operator datastax-mc-k8ssandra-operator datastax-mc-validating-mc \
+      --ignore-not-found 2>/dev/null || true
+    oc delete mutatingwebhookconfigurations.admissionregistration.k8s.io \
+      datastax-mc-mutating-pod --ignore-not-found 2>/dev/null || true
 
     # Generic: find and delete any remaining ValidatingWebhookConfiguration or
     # MutatingWebhookConfiguration whose clientConfig.service.namespace
