@@ -7,7 +7,7 @@
 # Use, duplication or disclosure restricted by GSA ADP Schedule
 # Contract with IBM Corp.
 
-VERSION=1.0.2
+VERSION=1.0.3
 
 ############################################################
 # Color Escape Codes                                       #
@@ -336,14 +336,15 @@ Cleanup()
     oc delete mutatingwebhookconfigurations.admissionregistration.k8s.io "postgresql-operator-mutating-webhook-configuration-${namespace}" 2>/dev/null || true
     oc delete mutatingwebhookconfigurations.admissionregistration.k8s.io "postgresql-operator-webhook-service.${namespace}" 2>/dev/null || true
 
-    # DataStax Mission Control webhooks, deleted by explicit name only.
+    # DataStax Mission Control webhooks, deleted by explicit name and suffix.
     # --ignore-not-found makes these no-ops (exit 0) if they do not exist.
     echo -e "${BLUE}** Deleting DataStax Mission Control webhook configuration(s)...${NC}"
     oc delete validatingwebhookconfigurations.admissionregistration.k8s.io \
       datastax-mc-cass-operator datastax-mc-k8ssandra-operator datastax-mc-validating-mc \
+      "datastax-mc-cass-operator-${namespace}" "datastax-mc-k8ssandra-operator-${namespace}" "datastax-mc-validating-mc-${namespace}" \
       --ignore-not-found 2>/dev/null || true
     oc delete mutatingwebhookconfigurations.admissionregistration.k8s.io \
-      datastax-mc-mutating-pod --ignore-not-found 2>/dev/null || true
+      datastax-mc-mutating-pod "datastax-mc-mutating-pod-${namespace}" --ignore-not-found 2>/dev/null || true
 
     # Generic: find and delete any remaining ValidatingWebhookConfiguration or
     # MutatingWebhookConfiguration whose clientConfig.service.namespace
@@ -362,9 +363,20 @@ Cleanup()
     fi
 
 
-    echo -e
-    echo -e "${BLUE}** Skipping automatic deletion of Released PersistentVolume(s) associated with namespace: \"${namespace}\". Review and delete manually if needed:${NC}"
-    oc get pv --no-headers | grep "Released.*${namespace}/.*" || echo "No Released PersistentVolumes found for namespace \"${namespace}\""
+    if [ "${exclude_pvc_finalizer_removal}" = "true" ]; then
+      echo -e
+      echo -e "${BLUE}** Skipping automatic deletion of Released PersistentVolume(s) associated with namespace: \"${namespace}\". Review and delete manually if needed:${NC}"
+      oc get pv --no-headers | grep "Released.*${namespace}/.*" || echo "No Released PersistentVolumes found for namespace \"${namespace}\""
+    else
+      echo -e
+      echo -e "${BLUE}** Deleting Released PersistentVolume(s) associated with namespace: \"${namespace}\"...${NC}"
+      pvs_to_delete=$(oc get pv --no-headers 2>/dev/null | grep "Released.*${namespace}/.*" | awk '{print $1}')
+      if [ -n "${pvs_to_delete}" ]; then
+        echo "${pvs_to_delete}" | xargs oc delete pv --ignore-not-found 2>/dev/null || true
+      else
+        echo "No Released PersistentVolumes found for namespace \"${namespace}\""
+      fi
+    fi
 
     echo -e
     echo -e "${BLUE}** Deleting SecurityContextConstraint(s) associated with namespace: \"${namespace}\"...${NC}"
